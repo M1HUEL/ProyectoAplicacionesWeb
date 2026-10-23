@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+  <header th:fragment="header(activePage)" class="encabezado">
+    <div class="contenedor">
+      <a class="logo" th:href="@{/}">
+        <img th:src="@{/img/logo.png}" alt="Librería Raudskinna" />
+      </a>
+      <nav aria-label="Principal">
+        <ul class="menu">
+          <li>
+            <a th:href="@{/}" th:aria-current="${activePage == 'inicio'} ? 'page' : null">Inicio</a>
+          </li>
+          <li>
+            <a th:href="@{/catalogo}" th:aria-current="${activePage == 'catalogo'} ? 'page' : null">Catálogo</a>
+          </li>
+          <li>
+            <a th:href="@{/iniciar-sesion}" th:aria-current="${activePage == 'cuenta'} ? 'page' : null">Cuenta</a>
+          </li>
+          <li>
+            <a th:href="@{/mis-ordenes}" th:aria-current="${activePage == 'ordenes'} ? 'page' : null">Mis órdenes</a>
+          </li>
+          <li>
+            <a th:href="@{/carrito}" th:aria-current="${activePage == 'carrito'} ? 'page' : null">Carrito</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+</body>
+</html>

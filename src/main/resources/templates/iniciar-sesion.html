@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Iniciar sesión · Librería Raudskinna</title>
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+  </head>
+  <body>
+    <th:block th:replace="~{fragments/header :: header('cuenta')}"></th:block>
+
+    <main class="contenedor">
+      <section class="panel registro registro-estrecho">
+        <h1>Iniciar sesión</h1>
+        <p class="registro-texto">
+          Accede a tu cuenta para continuar con tus compras y consultar tus
+          órdenes.
+        </p>
+
+        <div th:if="${param.error}" style="color: #b00020;">Correo o contraseña incorrectos.</div>
+        <div th:if="${param.logout}" style="color: #1a7f37;">Sesión cerrada correctamente.</div>
+        <div th:if="${param.registrado}" style="color: #1a7f37;">Registro exitoso, ya puedes iniciar sesión.</div>
+
+        <form class="formulario" th:action="@{/iniciar-sesion}" method="post">
+          <label for="correo">Correo electrónico</label>
+          <input
+            class="campo campo-formulario"
+            id="correo"
+            name="correo"
+            type="email"
+            placeholder="correo@ejemplo.com"
+            autocomplete="email"
+            required
+          />
+
+          <label for="contrasena">Contraseña</label>
+          <input
+            class="campo campo-formulario"
+            id="contrasena"
+            name="contrasena"
+            type="password"
+            placeholder="Tu contraseña"
+            autocomplete="current-password"
+            required
+          />
+
+          <button class="boton boton-primario" type="submit">
+            Iniciar sesión
+          </button>
+        </form>
+
+        <div class="alterno">
+          <p>¿Aún no tienes cuenta?</p>
+          <a class="boton boton-claro" th:href="@{/registro}">Crear cuenta</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="pie">
+      <div class="contenedor">
+        <span>Librería Raudskinna</span>
+        <nav aria-label="Pie de página">
+          <a th:href="@{/}">Inicio</a> ·
+          <a th:href="@{/catalogo}">Catálogo</a> ·
+          <a th:href="@{/carrito}">Carrito</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

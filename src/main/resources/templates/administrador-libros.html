@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Libros e inventario · Librería Raudskinna</title>
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+  </head>
+  <body>
+    <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+
+    <main class="contenedor">
+      <div class="encabezado-pagina">
+        <p class="sobretitulo">Administración</p>
+        <h1>Libros e inventario</h1>
+        <p>Gestiona el catálogo, precios y existencias.</p>
+        <div class="acciones">
+          <a class="boton boton-primario" th:href="@{/administrador/libros/nuevo}">Agregar libro</a>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Ejemplo</td>
+                <td>Autor</td>
+                <td>$299.00</td>
+                <td>12</td>
+                <td class="acciones-tabla">
+                  <a class="boton boton-claro" href="#">Editar</a>
+                  <a class="boton boton-claro" href="#">Eliminar</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="pie">
+      <div class="contenedor">
+        <span>Librería Raudskinna · Administración</span>
+        <nav aria-label="Pie de página">
+          <a th:href="@{/}">Panel</a> · <a th:href="@{/administrador/libros}">Libros</a> ·
+          <a th:href="@{/administrador/ordenes}">Órdenes</a> · <a th:href="@{/logout}">Cerrar sesión</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

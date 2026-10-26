@@ -88,6 +88,32 @@ public class CategoriaService {
     }
 
     /**
+     * Desactiva una categoría sin eliminarla físicamente.
+     *
+     * La categoría permanece almacenada en MySQL para
+     * conservar sus relaciones con los libros existentes.
+     *
+     * @param id Identificador de la categoría.
+     * @throws IllegalArgumentException si no existe
+     *                                  o ya está desactivada.
+     */
+    @Transactional
+    public void desactivar(Long id) {
+
+        Categoria categoria = buscarPorId(id);
+
+        if (!categoria.isActivo()) {
+            throw new IllegalArgumentException(
+                    "La categoría ya se encuentra desactivada."
+            );
+        }
+
+        categoria.setActivo(false);
+
+        categoriaRepository.save(categoria);
+    }
+
+    /**
      * Verifica el nombre de una categoría.
      *
      * Esta validación corresponde a Service y no a Model.
@@ -108,4 +134,5 @@ public class CategoriaService {
 
         return nombreNormalizado;
     }
+
 }

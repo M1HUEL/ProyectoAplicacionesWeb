@@ -5,14 +5,9 @@ import com.itson.ProyectoAplicacionesWeb.model.Categoria;
 import com.itson.ProyectoAplicacionesWeb.service.CategoriaService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import java.util.Map;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -193,5 +188,35 @@ public class CategoriaController {
         }
     }
 
+    /**
+     * Desactiva una categoría mediante HTTP DELETE.
+     *
+     * Realiza una eliminación lógica (soft delete).
+     * No elimina físicamente el registro de MySQL.
+     *
+     * @param id Identificador de la categoría.
+     * @return Confirmación de la operación.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> eliminarCategoria(
+            @PathVariable Long id) {
+
+        try {
+            categoriaService.desactivar(id);
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "mensaje",
+                            "Categoría desactivada correctamente."
+                    )
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", e.getMessage())
+            );
+        }
+    }
 
 }

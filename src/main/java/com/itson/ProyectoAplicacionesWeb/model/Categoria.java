@@ -32,6 +32,16 @@ public class Categoria {
     private String nombre;
 
     /**
+     * Indica si la categoría está disponible para su utilización.
+     *
+     * Una categoría inactiva permanece almacenada en la base
+     * de datos para conservar sus relaciones históricas.
+     */
+    @Column(nullable = false)
+    private boolean activo = true;
+
+
+    /**
      * Constructor para crear una categoría.
      *
      * Las validaciones se realizarán en CategoriaService

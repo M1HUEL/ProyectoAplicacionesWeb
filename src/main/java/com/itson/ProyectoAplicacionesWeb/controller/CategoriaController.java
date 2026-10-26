@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import com.itson.ProyectoAplicacionesWeb.model.Categoria;
 import com.itson.ProyectoAplicacionesWeb.service.CategoriaService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,6 +10,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import java.util.Map;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -146,6 +151,45 @@ public class CategoriaController {
             );
 
             return "redirect:/admin/categorias/" + id + "/editar";
+        }
+    }
+
+
+    /**
+     * Actualiza parcialmente una categoría mediante HTTP PATCH.
+     *
+     * Recibe el nombre en formato JSON y delega las
+     * validaciones y la actualización a CategoriaService.
+     */
+    @PatchMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> actualizarParcialmente(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> cambios) {
+
+        if (!cambios.containsKey("nombre")) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", "Debe proporcionar el campo nombre.")
+            );
+        }
+
+        try {
+            Categoria categoria = categoriaService.actualizar(
+                    id,
+                    cambios.get("nombre")
+            );
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "id", categoria.getId(),
+                            "nombre", categoria.getNombre(),
+                            "mensaje", "Categoría actualizada correctamente."
+                    )
+            );
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", e.getMessage())
+            );
         }
     }
 

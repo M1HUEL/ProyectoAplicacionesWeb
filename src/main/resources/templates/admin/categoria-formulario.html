@@ -1,0 +1,99 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nueva categoría · Administración Raudskinna</title>
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+
+<body class="admin-layout">
+
+<!-- Navegación reutilizable del administrador. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}"></th:block>
+
+<main class="admin-contenido">
+
+    <!-- Encabezado del formulario administrativo. -->
+    <div class="encabezado-pagina">
+        <p class="sobretitulo">Administración del catálogo</p>
+        <h1 th:text="${categoria != null} ? 'Editar categoría' : 'Nueva categoría'">
+            Nueva categoría
+        </h1>
+
+        <p th:text="${categoria != null}
+        ? 'Modifica los datos de la categoría seleccionada.'
+        : 'Registra una categoría para clasificar los libros.'">
+            Registra una categoría para clasificar los libros.
+        </p>
+    </div>
+
+    <section class="panel">
+
+        <h2>Datos de la categoría</h2>
+
+        <!--
+          Presenta los errores enviados por el controlador
+          después de una validación fallida en Service.
+        -->
+        <p th:if="${error}"
+           th:text="${error}"
+           role="alert">
+            Error al registrar la categoría.
+        </p>
+
+        <!--
+          Formulario POST procesado por CategoriaController.
+
+          Thymeleaf incorpora automáticamente el token CSRF
+          mediante su integración con Spring Security.
+        -->
+        <!--
+  El formulario utiliza POST para crear o actualizar.
+
+  La ruta se determina según la presencia de una categoría
+  existente. Las validaciones corresponden a CategoriaService.
+-->
+        <form th:action="${categoria != null}
+          ? @{/admin/categorias/{id}/editar(id=${categoria.id})}
+          : @{/admin/categorias}"
+              method="post"
+              class="formulario">
+
+            <label for="nombre">Nombre de la categoría</label>
+
+            <input
+                    type="text"
+                    id="nombre"
+                    name="nombre"
+                    placeholder="Ej. Fantasía"
+                    th:value="${nombreAnterior != null}
+          ? ${nombreAnterior}
+          : (${categoria != null} ? ${categoria.nombre} : '')"
+                    maxlength="100"
+                    required
+            />
+
+            <div>
+                <button type="submit"
+                        class="boton boton-primario"
+                        th:text="${categoria != null}
+                 ? 'Guardar cambios'
+                 : 'Guardar categoría'">
+                    Guardar categoría
+                </button>
+
+                <a class="boton"
+                   th:href="@{/admin/categorias}">
+                    Cancelar
+                </a>
+            </div>
+
+        </form>
+
+    </section>
+</main>
+
+</body>
+</html>

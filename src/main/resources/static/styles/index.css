@@ -42,6 +42,11 @@ body {
   color: var(--color-texto);
   background: white;
   line-height: 1.5;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 a {
@@ -257,8 +262,9 @@ h3 {
 .pie {
   background: var(--color-texto);
   color: var(--color-fondo);
-  margin-top: 40px;
+  margin-top: auto;
 }
+
 .pie .contenedor {
   display: flex;
   justify-content: space-between;
@@ -911,4 +917,170 @@ select.campo-formulario {
     var(--color-secundario) 12%,
     var(--color-fondo)
   );
+}
+
+/* Permite integrar el formulario de logout en el menú del pie. */
+.formulario-logout {
+  display: inline;
+  margin: 0;
+}
+
+/* Presenta el botón como un enlace, sin perder su comportamiento POST. */
+.enlace-logout {
+  display: inline;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.enlace-logout:hover {
+  text-decoration: underline;
+}
+
+/* =========================================================
+   RAUDSKINNA - NAVEGACIÓN ADMINISTRATIVA
+   ========================================================= */
+
+/* Menú lateral del área administrativa. */
+.admin-sidebar {
+  width: 250px;
+  min-width: 250px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 16px;
+  background: #302a26;
+  color: #f8f4ef;
+}
+
+/* Identidad y encabezado del menú. */
+.admin-sidebar-encabezado {
+  padding: 8px 12px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 24px;
+}
+
+.admin-sidebar-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.admin-sidebar-icono {
+  font-size: 24px;
+  color: #d5b799;
+}
+
+.admin-sidebar-subtitulo {
+  margin: 12px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #d5b799;
+}
+
+/* Enlaces de navegación y acciones. */
+.admin-sidebar-nav,
+.admin-sidebar-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-sidebar-enlace {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #f8f4ef;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.admin-sidebar-enlace:hover,
+.admin-sidebar-enlace:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.admin-sidebar-activo {
+  background: #71533f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Mantiene las acciones al pie del sidebar. */
+.admin-sidebar-pie {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.admin-sidebar-logout {
+  margin: 0;
+}
+
+/* Preparación para pantallas pequeñas. */
+@media (max-width: 767px) {
+  .admin-sidebar {
+    width: 100%;
+    min-width: 0;
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .admin-sidebar-nav {
+    gap: 4px;
+  }
+
+  .admin-sidebar-pie {
+    margin-top: 16px;
+  }
+}
+
+/* =========================================================
+   RAUDSKINNA - DISTRIBUCIÓN DEL PANEL ADMINISTRATIVO
+   ========================================================= */
+
+/* Organiza el menú lateral y el contenido en dos columnas. */
+body.admin-layout {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+}
+
+/* Área principal de trabajo del administrador. */
+.admin-contenido {
+  flex: 1;
+  min-width: 0;
+  padding: 48px;
+}
+
+/* Adaptación a dispositivos móviles. */
+@media (max-width: 767px) {
+  body.admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-contenido {
+    padding: 24px 16px;
+  }
 }

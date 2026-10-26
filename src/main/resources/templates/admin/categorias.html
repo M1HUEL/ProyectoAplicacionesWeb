@@ -1,0 +1,78 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Categorías · Administración Raudskinna</title>
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+
+<body class="admin-layout">
+
+<!-- Navegación administrativa reutilizable. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}"></th:block>
+
+<main class="admin-contenido">
+
+    <div class="encabezado-pagina">
+        <p class="sobretitulo">Administración del catálogo</p>
+        <h1>Categorías</h1>
+        <p>Consulta las categorías registradas en la librería.</p>
+    </div>
+
+    <section class="panel">
+        <h2>Listado de categorías</h2>
+
+        <!-- Acceso al formulario de registro. -->
+        <p>
+            <a class="boton boton-primario"
+               th:href="@{/admin/categorias/nueva}">
+                Nueva categoría
+            </a>
+        </p>
+
+        <!-- Confirmación después de una operación exitosa. -->
+        <p th:if="${mensaje}"
+           th:text="${mensaje}"
+           role="status">
+            Operación realizada correctamente.
+        </p>
+
+        <!-- Mensaje cuando no hay registros en MySQL. -->
+        <p th:if="${#lists.isEmpty(categorias)}">
+            No hay categorías registradas.
+        </p>
+
+        <!-- Tabla de categorías registradas. -->
+        <div class="tabla-contenedor"
+             th:unless="${#lists.isEmpty(categorias)}">
+
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="categoria : ${categorias}">
+                    <td th:text="${categoria.id}">1</td>
+                    <td th:text="${categoria.nombre}">Fantasía</td>
+                    <td>
+                        <a th:href="@{/admin/categorias/{id}/editar(id=${categoria.id})}">
+                            Editar
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+</body>
+</html>

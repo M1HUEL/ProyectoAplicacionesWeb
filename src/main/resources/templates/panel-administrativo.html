@@ -1,46 +1,55 @@
+
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Panel administrativo · Librería Raudskinna</title>
-    <link rel="stylesheet" th:href="@{/styles/index.css}" />
-  </head>
-  <body>
-    <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel administrativo · Librería Raudskinna</title>
+  <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
 
-    <main class="contenedor">
-      <div class="encabezado-pagina">
-        <p class="sobretitulo">Panel administrativo</p>
-        <h1>Gestión de la librería</h1>
-        <p>Administra libros, existencias y órdenes desde un solo lugar.</p>
-      </div>
+<body class="admin-layout">
 
-      <div class="admin-tarjetas">
-        <section class="panel admin-tarjeta">
-          <h2>Libros e inventario</h2>
-          <p class="admin-dato">24 libros · 3 con stock bajo</p>
-          <p>Alta, edición, consulta y existencias del catálogo.</p>
-          <a class="boton boton-primario" href="#">Gestionar</a>
-        </section>
+<!-- Navegación reutilizable del área administrativa. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('panel')}"></th:block>
 
-        <section class="panel admin-tarjeta">
-          <h2>Órdenes</h2>
-          <p class="admin-dato">5 nuevas</p>
-          <p>Revisa pedidos y actualiza su estado.</p>
-          <a class="boton boton-primario" href="#">Gestionar</a>
-        </section>
-      </div>
-    </main>
+<!-- Contenido principal del panel. -->
+<main class="admin-contenido">
 
-    <footer class="pie">
-      <div class="contenedor">
-        <span>Librería Raudskinna · Administración</span>
-        <nav aria-label="Pie de página">
-          <a href="panel-admin.html">Panel</a> · <a href="#">Libros</a> ·
-          <a href="#">Órdenes</a> · <a href="#">Cerrar sesión</a>
-        </nav>
-      </div>
-    </footer>
-  </body>
+  <div class="encabezado-pagina">
+    <p class="sobretitulo">Panel administrativo</p>
+    <h1>Gestión de la librería</h1>
+    <p>Administra libros, existencias y órdenes desde un solo lugar.</p>
+  </div>
+
+  <!--
+    Tarjetas de acceso a los módulos administrativos.
+    Los indicadores son provisionales hasta conectar MySQL.
+  -->
+  <div class="admin-tarjetas">
+
+    <section class="panel admin-tarjeta">
+      <h2>Libros e inventario</h2>
+      <p class="admin-dato">24 libros · 3 con stock bajo</p>
+      <p>Alta, edición, consulta y existencias del catálogo.</p>
+
+      <a class="boton boton-primario" th:href="@{/admin/libros}">
+        Gestionar
+      </a>
+    </section>
+
+    <section class="panel admin-tarjeta">
+      <h2>Órdenes</h2>
+      <p class="admin-dato">5 nuevas</p>
+      <p>Revisa pedidos y actualiza su estado.</p>
+
+      <a class="boton boton-primario" th:href="@{/admin/ordenes}">
+        Gestionar
+      </a>
+    </section>
+
+  </div>
+</main>
+
+</body>
 </html>

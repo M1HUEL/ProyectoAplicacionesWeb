@@ -1,11 +1,10 @@
-
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Categorías · Administración Raudskinna</title>
-    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+    <link rel="stylesheet" th:href="@{/styles/index.css}"/>
 </head>
 
 <body class="admin-layout">
@@ -39,6 +38,13 @@
             Operación realizada correctamente.
         </p>
 
+        <!-- Mensaje de error de una operación administrativa. -->
+        <p th:if="${error}"
+           th:text="${error}"
+           role="alert">
+            No fue posible completar la operación.
+        </p>
+
         <!-- Mensaje cuando no hay registros en MySQL. -->
         <p th:if="${#lists.isEmpty(categorias)}">
             No hay categorías registradas.
@@ -53,6 +59,7 @@
                 <tr>
                     <th scope="col">ID</th>
                     <th scope="col">Nombre</th>
+                    <th scope="col">Estado</th>
                     <th scope="col">Acciones</th>
                 </tr>
                 </thead>
@@ -62,10 +69,37 @@
                     <td th:text="${categoria.id}">1</td>
                     <td th:text="${categoria.nombre}">Fantasía</td>
                     <td>
-                        <a th:href="@{/admin/categorias/{id}/editar(id=${categoria.id})}">
-                            Editar
-                        </a>
+                        <span th:text="${categoria.activo} ? 'Activa' : 'Inactiva'">
+                            Activa
+                        </span>
                     </td>
+
+
+                    <td>
+                        <!-- Acciones disponibles para categorías activas. -->
+                        <th:block th:if="${categoria.activo}">
+                            <a th:href="@{/admin/categorias/{id}/editar(id=${categoria.id})}">
+                                Editar
+                            </a>
+
+                            <!-- Baja lógica mediante POST, protegida por CSRF. -->
+                            <form th:action="@{/admin/categorias/{id}/desactivar(id=${categoria.id})}"
+                                  method="post">
+
+                                <button type="submit"
+                                        onclick="return confirm('¿Deseas desactivar esta categoría?');">
+                                    Desactivar
+                                </button>
+                            </form>
+                        </th:block>
+
+                        <!-- Las categorías inactivas no pueden modificarse. -->
+                        <span th:unless="${categoria.activo}">
+        No editable
+    </span>
+                    </td>
+
+
                 </tr>
                 </tbody>
             </table>

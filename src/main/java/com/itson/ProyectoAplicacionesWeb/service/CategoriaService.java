@@ -73,6 +73,17 @@ public class CategoriaService {
     public Categoria actualizar(Long id, String nombre) {
 
         Categoria categoria = buscarPorId(id);
+
+        /*
+         * Una categoría desactivada conserva su información
+         * histórica y no puede modificarse mientras esté inactiva.
+         */
+        if (!categoria.isActivo()) {
+            throw new IllegalArgumentException(
+                    "No se puede modificar una categoría desactivada."
+            );
+        }
+
         String nombreValidado = validarNombre(nombre);
 
         categoriaRepository.findByNombreIgnoreCase(nombreValidado)
@@ -134,5 +145,21 @@ public class CategoriaService {
 
         return nombreNormalizado;
     }
+
+
+    /**
+     * Obtiene únicamente las categorías activas.
+     *
+     * Se utilizará en el catálogo y en los formularios
+     * de libros para evitar seleccionar categorías
+     * que hayan sido desactivadas.
+     *
+     * @return Lista de categorías activas.
+     */
+    @Transactional(readOnly = true)
+    public List<Categoria> listarActivas() {
+        return categoriaRepository.findByActivoTrue();
+    }
+
 
 }

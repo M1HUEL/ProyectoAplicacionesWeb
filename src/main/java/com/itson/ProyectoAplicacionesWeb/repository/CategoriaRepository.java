@@ -4,6 +4,7 @@ package com.itson.ProyectoAplicacionesWeb.repository;
 import com.itson.ProyectoAplicacionesWeb.model.Categoria;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -32,4 +33,16 @@ public interface CategoriaRepository
      * @return true cuando existe una coincidencia
      */
     boolean existsByNombreIgnoreCase(String nombre);
+
+
+    /**
+     * Obtiene únicamente las categorías activas.
+     *
+     * Se utilizará para mostrar categorías disponibles
+     * en el catálogo y en los formularios de libros.
+     *
+     * @return Lista de categorías activas.
+     */
+    List<Categoria> findByActivoTrue();
+
 }

@@ -6,14 +6,14 @@ import com.itson.ProyectoAplicacionesWeb.repository.CategoriaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 /**
@@ -229,6 +229,162 @@ class CategoriaServiceTest {
         );
 
         // No debe solicitarse ningún guardado.
+        verify(categoriaRepository, never()).save(any(Categoria.class));
+    }
+
+    /**
+     * Verifica que el servicio solicite al repositorio
+     * únicamente las categorías activas.
+     */
+    @Test
+    void listarActivas_debeRetornarSoloCategoriasActivas() {
+
+        // Arrange: preparar los datos simulados.
+        Categoria fantasia = new Categoria("Fantasía");
+        Categoria terror = new Categoria("Terror");
+
+        List<Categoria> categoriasActivas = List.of(fantasia, terror);
+
+        when(categoriaRepository.findByActivoTrue())
+                .thenReturn(categoriasActivas);
+
+        // Act: ejecutar el método que estamos probando.
+        List<Categoria> resultado = categoriaService.listarActivas();
+
+        // Assert: comprobar el resultado.
+        assertEquals(2, resultado.size());
+        assertEquals(categoriasActivas, resultado);
+
+        verify(categoriaRepository).findByActivoTrue();
+    }
+
+    /**
+     * Verifica que una categoría desactivada
+     * no pueda ser modificada.
+     */
+    @Test
+    void actualizar_debeRechazarCategoriaInactiva() {
+
+        // Arrange: preparar una categoría desactivada.
+        Long id = 1L;
+
+        Categoria categoria = new Categoria("Ciencia Ficción");
+        categoria.setActivo(false);
+
+        when(categoriaRepository.findById(id))
+                .thenReturn(Optional.of(categoria));
+
+        // Act y Assert: comprobar que se rechaza la actualización.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> categoriaService.actualizar(id, "Fantasía")
+        );
+
+        assertEquals(
+                "No se puede modificar una categoría desactivada.",
+                excepcion.getMessage()
+        );
+
+        // No debe guardarse ninguna modificación.
+        verify(categoriaRepository, never()).save(any(Categoria.class));
+    }
+
+    /**
+     * Verifica que una categoría activa pueda desactivarse
+     * sin eliminar físicamente su registro.
+     */
+    @Test
+    void desactivar_debeCambiarEstadoSinEliminarRegistro() {
+
+        // Arrange: preparar una categoría activa.
+        Long id = 1L;
+
+        Categoria categoria = new Categoria("Ciencia Ficción");
+        categoria.setActivo(true);
+
+        when(categoriaRepository.findById(id))
+                .thenReturn(Optional.of(categoria));
+
+        // Act: ejecutar la baja lógica.
+        categoriaService.desactivar(id);
+
+        // Assert: comprobar el nuevo estado.
+        assertFalse(categoria.isActivo());
+
+        // Verificar que se guardó la categoría actualizada.
+        verify(categoriaRepository).save(categoria);
+
+        // Verificar que no se ejecutó una eliminación física.
+        verify(categoriaRepository, never()).delete(any(Categoria.class));
+        verify(categoriaRepository, never()).deleteById(anyLong());
+    }
+
+    /**
+     * Verifica que no se permita desactivar una categoría
+     * que ya se encuentra inactiva.
+     */
+    @Test
+    void desactivar_debeRechazarCategoriaYaInactiva() {
+
+        // Arrange: preparar una categoría desactivada.
+        Long id = 1L;
+
+        Categoria categoria = new Categoria("Ciencia Ficción");
+        categoria.setActivo(false);
+
+        when(categoriaRepository.findById(id))
+                .thenReturn(Optional.of(categoria));
+
+        // Act y Assert: comprobar que se rechaza la operación.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> categoriaService.desactivar(id)
+        );
+
+        assertEquals(
+                "La categoría ya se encuentra desactivada.",
+                excepcion.getMessage()
+        );
+
+        // Comprobar que no se modificó ni eliminó el registro.
+        assertFalse(categoria.isActivo());
+
+        verify(categoriaRepository, never()).save(any(Categoria.class));
+        verify(categoriaRepository, never()).delete(any(Categoria.class));
+        verify(categoriaRepository, never()).deleteById(anyLong());
+    }
+
+    /**
+     * Verifica que no se permita registrar una categoría
+     * cuyo nombre ya pertenece a una categoría desactivada.
+     *
+     * La unicidad del nombre se conserva independientemente
+     * del estado activo o inactivo del registro.
+     */
+    @Test
+    void registrar_debeRechazarNombreDeCategoriaInactiva() {
+
+        // Arrange: preparar una categoría existente e inactiva.
+        Categoria categoriaInactiva = new Categoria("Ciencia Ficción");
+        categoriaInactiva.setActivo(false);
+
+        // La consulta de duplicados considera todos los registros,
+        // independientemente de su estado.
+        when(categoriaRepository.existsByNombreIgnoreCase("Ciencia Ficción"))
+                .thenReturn(true);
+
+        // Act y Assert: intentar registrar otra con el mismo nombre.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> categoriaService.registrar("Ciencia Ficción")
+        );
+
+        assertEquals(
+                "Ya existe una categoría con ese nombre.",
+                excepcion.getMessage()
+        );
+
+        // No debe persistirse una segunda categoría.
         verify(categoriaRepository, never()).save(any(Categoria.class));
     }
 

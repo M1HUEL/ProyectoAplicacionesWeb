@@ -219,4 +219,35 @@ public class CategoriaController {
         }
     }
 
+    /**
+     * Desactiva una categoría desde el formulario administrativo.
+     *
+     * Delega la eliminación lógica a CategoriaService y utiliza
+     * POST/Redirect/GET para regresar al listado.
+     */
+    @PostMapping("/{id}/desactivar")
+    public String desactivarDesdeFormulario(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            categoriaService.desactivar(id);
+
+            redirectAttributes.addFlashAttribute(
+                    "mensaje",
+                    "Categoría desactivada correctamente."
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "error",
+                    e.getMessage()
+            );
+        }
+
+        return "redirect:/admin/categorias";
+    }
+
+
 }

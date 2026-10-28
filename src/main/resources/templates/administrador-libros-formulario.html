@@ -12,21 +12,240 @@
     <main class="contenedor">
       <section class="panel registro">
         <h1>Agregar/Editar libro</h1>
-        <form class="formulario">
+        <!--
+    Formulario de registro administrativo de libros.
+
+    Los campos se vinculan con LibroFormularioDTO.
+    El procesamiento POST se implementará posteriormente.
+
+-->
+        <form class="formulario"
+              th:object="${libroFormulario}">
+
+          <!--
+              Datos bibliográficos del libro.
+              Se vinculan con LibroFormularioDTO.
+          -->
+
+          <!-- Título obligatorio del libro. -->
           <label for="titulo">Título</label>
-          <input class="campo campo-formulario" id="titulo" type="text" required />
+          <input class="campo campo-formulario"
+                 id="titulo"
+                 type="text"
+                 th:field="*{titulo}"
+                 maxlength="200"
+                 required />
 
-          <label for="autor">Autor</label>
-          <input class="campo campo-formulario" id="autor" type="text" required />
+          <!-- ISBN que identifica la edición del libro. -->
+          <label for="isbn">ISBN</label>
+          <input class="campo campo-formulario"
+                 id="isbn"
+                 type="text"
+                 th:field="*{isbn}"
+                 maxlength="20"
+                 required />
 
-          <label for="precio">Precio</label>
-          <input class="campo campo-formulario" id="precio" type="number" step="0.01" required />
+          <!--
+              Selección de autores registrados.
+              Permite seleccionar varios autores mediante Ctrl o Shift.
 
-          <label for="stock">Stock</label>
-          <input class="campo campo-formulario" id="stock" type="number" required />
+              Los identificadores seleccionados se vinculan
+              con LibroFormularioDTO.autoresIds.
+          -->
+          <label for="autoresIds">Autor(es)</label>
+
+          <select class="campo campo-formulario"
+                  id="autoresIds"
+                  th:field="*{autoresIds}"
+                  multiple
+                  size="4"
+                  required>
+
+            <!-- Los autores provienen de AutorService. -->
+            <option th:each="autor : ${autores}"
+                    th:value="${autor.id}"
+                    th:text="${autor.nombre}">
+              Nombre del autor
+            </option>
+
+          </select>
+
+          <small>
+            Mantén presionada la tecla Ctrl para seleccionar
+            varios autores.
+          </small>
+
+          <!--
+              Selección de la editorial responsable del libro.
+
+              Las editoriales se recuperan mediante EditorialService
+              y sus identificadores se vinculan con LibroFormularioDTO.
+          -->
+          <label for="editorialId">Editorial</label>
+
+          <select class="campo campo-formulario"
+                  id="editorialId"
+                  th:field="*{editorialId}"
+                  required>
+
+            <!-- Opción inicial sin editorial seleccionada. -->
+            <option value="">Selecciona una editorial</option>
+
+            <!-- Editoriales recuperadas desde MySQL. -->
+            <option th:each="editorial : ${editoriales}"
+                    th:value="${editorial.id}"
+                    th:text="${editorial.nombre}">
+              Nombre de la editorial
+            </option>
+
+          </select>
+
+          <!--
+              Selección de una categoría activa.
+
+              Las categorías se recuperan mediante CategoriaService.
+              No se muestran las categorías desactivadas.
+          -->
+          <label for="categoriaId">Categoría</label>
+
+          <select class="campo campo-formulario"
+                  id="categoriaId"
+                  th:field="*{categoriaId}"
+                  required>
+
+            <!-- Opción inicial sin categoría seleccionada. -->
+            <option value="">Selecciona una categoría</option>
+
+            <!-- Categorías activas recuperadas desde MySQL. -->
+            <option th:each="categoria : ${categorias}"
+                    th:value="${categoria.id}"
+                    th:text="${categoria.nombre}">
+              Nombre de la categoría
+            </option>
+
+          </select>
+
+          <!--
+              Selección de la presentación comercial del libro.
+
+              Los valores provienen del enum Formato y se vinculan
+              con LibroFormularioDTO.formato.
+          -->
+          <label for="formato">Formato</label>
+
+          <select class="campo campo-formulario"
+                  id="formato"
+                  th:field="*{formato}"
+                  required>
+
+            <!-- Opción inicial sin formato seleccionado. -->
+            <option value="">Selecciona un formato</option>
+
+            <!-- Presentaciones disponibles en nuestro dominio. -->
+            <option th:each="formato : ${formatos}"
+                    th:value="${formato}"
+                    th:text="${formato.name() == 'PASTA_DURA' ? 'Pasta dura' :
+                      (formato.name() == 'PASTA_BLANDA' ? 'Pasta blanda' : 'Digital')}">
+              Formato
+            </option>
+
+          </select>
+
+          <!--
+              Precio de la presentación comercial seleccionada.
+
+              Se vincula con LibroFormularioDTO.precio,
+              cuyo tipo es BigDecimal.
+          -->
+          <label for="precio">Precio (MXN)</label>
+
+          <input class="campo campo-formulario"
+                 id="precio"
+                 type="number"
+                 th:field="*{precio}"
+                 min="0.01"
+                 step="0.01"
+                 placeholder="Ej. 299.00"
+                 required />
+
+          <!--
+              Inventario inicial de la presentación comercial.
+
+              Los valores se vinculan con LibroFormularioDTO.
+              Se utilizarán únicamente para formatos físicos.
+          -->
+
+          <!-- Cantidad de unidades disponibles. -->
+          <label for="cantidad">Cantidad disponible</label>
+
+          <input class="campo campo-formulario"
+                 id="cantidad"
+                 type="number"
+                 th:field="*{cantidad}"
+                 min="0"
+                 step="1"
+                 placeholder="Ej. 12" />
+
+          <!-- Umbral mínimo para identificar existencias bajas. -->
+          <label for="stockMinimo">Stock mínimo</label>
+
+          <input class="campo campo-formulario"
+                 id="stockMinimo"
+                 type="number"
+                 th:field="*{stockMinimo}"
+                 min="0"
+                 step="1"
+                 placeholder="Ej. 3" />
+
+          <small>
+            Estos campos corresponden únicamente a libros físicos.
+            Para el formato digital no se utilizará inventario.
+          </small>
+
+
+          <!--
+              Sinopsis o descripción bibliográfica del libro.
+
+              Se vincula con LibroFormularioDTO.sinopsis.
+              Se almacenará en Libro.sinopsis.
+
+              Lafardilla 2026.
+          -->
+          <label for="sinopsis">Sinopsis</label>
+
+          <textarea class="campo campo-formulario"
+                    id="sinopsis"
+                    th:field="*{sinopsis}"
+                    rows="5"
+                    placeholder="Escribe una breve descripción del libro...">
+          </textarea>
+
+          <!--
+              Dirección de la imagen de portada del libro.
+
+              Se vincula con LibroFormularioDTO.portadaUrl.
+              La URL se almacenará en Libro.portadaUrl.
+          -->
+          <label for="portadaUrl">URL de la portada</label>
+
+          <input class="campo campo-formulario"
+                 id="portadaUrl"
+                 type="url"
+                 th:field="*{portadaUrl}"
+                 maxlength="500"
+                 placeholder="https://ejemplo.com/portada.jpg" />
+
+          <small>
+            Introduce la dirección de una imagen de portada.
+            Este campo es opcional.
+          </small>
 
           <button class="boton boton-primario" type="submit">Guardar</button>
-          <a class="boton boton-claro" th:href="@{/administrador/libros}">Cancelar</a>
+          <!-- Regresa al listado administrativo sin guardar cambios. -->
+          <a class="boton boton-claro"
+             th:href="@{/admin/libros}">
+            Cancelar
+          </a>
         </form>
       </section>
     </main>

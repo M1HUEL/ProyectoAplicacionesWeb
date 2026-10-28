@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Registrar autor · Librería Raudskinna</title>
+
+    <!-- Estilos generales del proyecto.-->
+    <link rel="stylesheet" th:href="@{/styles/index.css}">
+</head>
+
+<body>
+
+<!-- Encabezado reutilizable de Librería Raudskinna. -->
+<th:block th:replace="~{fragments/header :: header('inicio')}">
+</th:block>
+
+<main class="contenedor">
+
+    <section class="panel registro">
+
+        <h1>Registrar autor</h1>
+
+        <p>
+            Ingresa el nombre del autor que deseas
+            incorporar al catálogo.
+        </p>
+
+        <!--
+            Muestra los errores de validación enviados por AutorController.
+            El mensaje se conserva durante la redirección mediante
+            RedirectAttributes.
+        -->
+        <p th:if="${error}"
+           th:text="${error}"
+           role="alert">
+            Mensaje de error.
+        </p>
+
+        <!--
+            Formulario administrativo de autores.
+
+            La acción POST se implementará en AutorController.
+            Por ahora únicamente verificaremos su presentación.
+        -->
+        <form class="formulario"
+              th:action="@{/admin/autores}"
+              method="post">
+
+
+            <label for="nombre">Nombre del autor</label>
+
+            <input class="campo campo-formulario"
+                   id="nombre"
+                   name="nombre"
+                   type="text"
+                   th:value="${nombreAnterior}"
+                   maxlength="150"
+                   placeholder="Ej. Bram Stoker"
+                   required>
+
+
+            <button class="boton boton-primario"
+                    type="submit">
+                Guardar
+            </button>
+
+            <a class="boton boton-claro"
+               th:href="@{/admin/autores}">
+                Cancelar
+            </a>
+
+        </form>
+
+    </section>
+
+</main>
+
+</body>
+</html>

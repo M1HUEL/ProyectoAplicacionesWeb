@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Administrar autores · Librería Raudskinna</title>
+
+    <!-- Estilos generales del proyecto-->
+    <link rel="stylesheet" th:href="@{/styles/index.css}">
+</head>
+
+<body>
+
+<!-- Reutilizamos el encabezado del proyecto. -->
+<th:block th:replace="~{fragments/header :: header('inicio')}">
+</th:block>
+
+<main class="contenedor">
+
+    <section class="panel registro">
+
+        <h1>Administración de autores</h1>
+
+        <p>
+            Consulta los autores registrados en
+            Librería Raudskinna.
+        </p>
+
+        <!--
+            Mensaje de confirmación enviado por AutorController.
+
+            Se recibe mediante RedirectAttributes después
+            de registrar correctamente un autor.
+        -->
+        <p th:if="${mensaje}"
+           th:text="${mensaje}"
+           role="status">
+            Autor registrado correctamente.
+        </p>
+
+
+        <!--
+            Acceso al formulario para registrar nuevos autores.
+        -->
+        <a class="boton boton-primario"
+           th:href="@{/admin/autores/nuevo}">
+            Agregar autor
+        </a>
+
+        <!--
+            La lista proviene de AutorController,
+            mediante el atributo "autores".
+        -->
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre del autor</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            <!-- Recorre los autores registrados. -->
+            <tr th:each="autor : ${autores}">
+                <td th:text="${autor.id}">1</td>
+                <td th:text="${autor.nombre}">Bram Stoker</td>
+            </tr>
+
+            <!-- Mensaje cuando todavía no existen autores. -->
+            <tr th:if="${#lists.isEmpty(autores)}">
+                <td colspan="2">
+                    Todavía no hay autores registrados.
+                </td>
+            </tr>
+
+            </tbody>
+        </table>
+
+        <!-- El formulario de alta se agregará después. -->
+        <a class="boton boton-claro"
+           th:href="@{/admin/libros}">
+            Volver a libros
+        </a>
+
+    </section>
+
+</main>
+
+</body>
+</html>

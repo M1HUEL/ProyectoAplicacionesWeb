@@ -15,7 +15,11 @@
         <h1>Libros e inventario</h1>
         <p>Gestiona el catálogo, precios y existencias.</p>
         <div class="acciones">
-          <a class="boton boton-primario" th:href="@{/administrador/libros/nuevo}">Agregar libro</a>
+          <!-- Abre el formulario administrativo para registrar un libro. -->
+          <a class="boton boton-primario"
+             th:href="@{/admin/libros/nuevo}">
+            Agregar libro
+          </a>
         </div>
       </div>
 

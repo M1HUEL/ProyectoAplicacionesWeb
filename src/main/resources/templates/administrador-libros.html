@@ -23,25 +23,65 @@
         <div class="tabla-contenedor">
           <table class="tabla">
             <thead>
-              <tr>
-                <th>Título</th>
-                <th>Autor</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Acciones</th>
-              </tr>
+            <tr>
+              <th>Título</th>
+              <th>Autor(es)</th>
+              <th>Formato</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
             </thead>
+
             <tbody>
-              <tr>
-                <td>Ejemplo</td>
-                <td>Autor</td>
-                <td>$299.00</td>
-                <td>12</td>
-                <td class="acciones-tabla">
-                  <a class="boton boton-claro" href="#">Editar</a>
-                  <a class="boton boton-claro" href="#">Eliminar</a>
-                </td>
-              </tr>
+
+            <!-- Mensaje cuando no existen presentaciones comerciales. -->
+            <tr th:if="${#lists.isEmpty(libros)}">
+              <td colspan="7">
+                No hay libros registrados con formatos comerciales.
+              </td>
+            </tr>
+
+            <!--
+                Genera una fila por cada presentación comercial
+                recuperada desde LibroService.
+
+                Los datos provienen de LibroListadoDTO.
+
+                Lafardilla 2026.
+            -->
+            <tr th:each="libro : ${libros}">
+
+              <!-- Información bibliográfica. -->
+              <td th:text="${libro.titulo}">Título</td>
+              <td th:text="${libro.autores}">Autores</td>
+
+              <!-- Formato y precio de la presentación. -->
+              <td th:text="${libro.formato}">Formato</td>
+
+              <td th:text="${#numbers.formatDecimal(libro.precio, 1, 2)}">
+                0.00
+              </td>
+
+              <!-- El formato digital no maneja inventario físico. -->
+              <td th:text="${libro.stock != null ? libro.stock : '—'}">
+                —
+              </td>
+
+              <!-- Estado calculado previamente en LibroService. -->
+              <td th:text="${libro.estado}">Estado</td>
+
+              <!--
+                  Las acciones se habilitarán cuando implementemos
+                  el formulario de edición administrativa.
+              -->
+              <td class="acciones-tabla">
+                <span>Pendiente</span>
+              </td>
+
+            </tr>
+
             </tbody>
           </table>
         </div>

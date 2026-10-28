@@ -33,19 +33,27 @@ public class LibroController {
     }
 
     /**
-     * Muestra el listado administrativo de libros.
+     * Muestra el listado administrativo de libros,
+     * incluyendo sus presentaciones comerciales,
+     * precios y estados de inventario.
      *
-     * @param model objeto utilizado para enviar datos
-     *              desde el controlador hacia Thymeleaf.
+     * @param model objeto utilizado para enviar
+     *              los datos hacia Thymeleaf.
      * @return nombre de la plantilla administrativa.
+     *
      */
     @GetMapping
     public String listarLibros(Model model) {
 
-        // Recupera los libros registrados mediante el servicio.
-        model.addAttribute("libros", libroService.listarTodos());
+        // Obtiene las presentaciones comerciales
+        // preparadas por la capa de servicios.
+        model.addAttribute(
+                "libros",
+                libroService.listarParaAdministracion()
+        );
 
-        // Indica a Spring MVC qué plantilla debe renderizar.
+        // Devuelve la plantilla administrativa.
         return "administrador-libros";
     }
+
 }

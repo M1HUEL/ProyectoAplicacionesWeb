@@ -44,4 +44,27 @@ public class ItemStock {
     /** Umbral mínimo para alertas de inventario. */
     @Column(nullable = false)
     private int stockMinimo;
+
+    /**
+     * Constructor para registrar las existencias iniciales
+     * de una presentación física de un libro.
+     *
+     * Las validaciones de cantidades y formatos permitidos
+     * corresponden a la capa Service.
+     *
+     * @param formatoLibro presentación comercial asociada.
+     * @param cantidad unidades físicas disponibles.
+     * @param stockMinimo umbral mínimo de inventario.
+     *
+     */
+    public ItemStock(
+            FormatoLibro formatoLibro,
+            int cantidad,
+            int stockMinimo) {
+
+        this.formatoLibro = formatoLibro;
+        this.cantidad = cantidad;
+        this.stockMinimo = stockMinimo;
+    }
+
 }

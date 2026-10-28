@@ -12,17 +12,34 @@
     <main class="contenedor">
       <section class="panel registro">
         <h1>Agregar/Editar libro</h1>
+
         <!--
-    Formulario de registro administrativo de libros.
+            Muestra los errores de validación enviados
+            desde LibroController mediante FlashAttributes.
 
-    Los campos se vinculan con LibroFormularioDTO.
-    El procesamiento POST se implementará posteriormente.
+            El formulario conserva los datos introducidos
+            para que el administrador pueda corregirlos.
+        -->
+        <p th:if="${error}"
+           th:text="${error}"
+           role="alert">
+          Mensaje de error al registrar el libro.
+        </p>
 
--->
+        <!--
+            Formulario de registro administrativo de libros.
+
+            Envía los datos a LibroController mediante POST.
+            Thymeleaf vincula los campos con LibroFormularioDTO.
+
+            Spring Security mantiene la protección CSRF.
+        -->
         <form class="formulario"
-              th:object="${libroFormulario}">
+              th:action="@{/admin/libros}"
+              th:object="${libroFormulario}"
+              method="post">
 
-          <!--
+        <!--
               Datos bibliográficos del libro.
               Se vinculan con LibroFormularioDTO.
           -->

@@ -1,14 +1,10 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
-import com.itson.ProyectoAplicacionesWeb.model.Formato;
-import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
-import com.itson.ProyectoAplicacionesWeb.model.ItemStock;
-import com.itson.ProyectoAplicacionesWeb.model.Libro;
-import com.itson.ProyectoAplicacionesWeb.repository.FormatoLibroRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.ItemStockRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.LibroRepository;
+import com.itson.ProyectoAplicacionesWeb.model.*;
+import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -17,6 +13,8 @@ import org.mockito.MockitoAnnotations;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -41,6 +39,15 @@ class LibroServiceTest {
     @Mock
     private ItemStockRepository itemStockRepository;
 
+    @Mock
+    private AutorRepository autorRepository;
+
+    @Mock
+    private EditorialRepository editorialRepository;
+
+    @Mock
+    private CategoriaRepository categoriaRepository;
+
     /** Servicio que se someterá a las pruebas. */
     private LibroService libroService;
 
@@ -53,7 +60,10 @@ class LibroServiceTest {
         libroService = new LibroService(
                 libroRepository,
                 formatoLibroRepository,
-                itemStockRepository
+                itemStockRepository,
+                autorRepository,
+                editorialRepository,
+                categoriaRepository
         );
     }
 
@@ -357,5 +367,313 @@ class LibroServiceTest {
         assertEquals("Sin registro", dto.estado());
     }
 
+    /**
+     * Comprueba el registro de un libro físico.
+     *
+     * Debe guardar el libro, su formato comercial
+     * y las existencias iniciales.
+     *
+     * Los repositorios se simulan mediante Mockito.
+     *
+     */
+    @Test
+    void registrar_conLibroFisicoValido_debeGuardarLibroFormatoYStock() {
+
+        // Prepara los datos del formulario.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setFormato(Formato.PASTA_DURA);
+        formulario.setPrecio(new BigDecimal("399.00"));
+        formulario.setCantidad(12);
+        formulario.setStockMinimo(3);
+
+        // Prepara las entidades relacionadas.
+        Categoria categoria = new Categoria("Literatura clásica");
+        categoria.setActivo(true);
+
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+
+        Autor autor = new Autor("Bram Stoker");
+
+        // Simula las consultas necesarias para el registro.
+        when(libroRepository.existsByIsbn("9781234567897"))
+                .thenReturn(false);
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        when(autorRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(autor));
+
+        // Devuelve las entidades recibidas al simular el guardado.
+        when(libroRepository.save(any(Libro.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        when(formatoLibroRepository.save(any(FormatoLibro.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        // Ejecuta la operación.
+        Libro resultado = libroService.registrar(formulario);
+
+        // Comprueba los datos bibliográficos registrados.
+        assertEquals("Drácula", resultado.getTitulo());
+        assertEquals("9781234567897", resultado.getIsbn());
+        assertTrue(resultado.getAutores().contains(autor));
+
+        // Comprueba las tres operaciones de persistencia.
+        verify(libroRepository).save(any(Libro.class));
+        verify(formatoLibroRepository).save(any(FormatoLibro.class));
+        verify(itemStockRepository).save(any(ItemStock.class));
+    }
+
+    /**
+     * Comprueba que un libro digital se registre
+     * sin crear un inventario físico.
+     *
+     * Deben guardarse Libro y FormatoLibro,
+     * pero no ItemStock.
+     */
+    @Test
+    void registrar_conLibroDigitalValido_noDebeGuardarStock() {
+
+        // Prepara un formulario con formato digital.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setFormato(Formato.DIGITAL);
+        formulario.setPrecio(new BigDecimal("149.00"));
+
+        // No se proporciona inventario físico.
+        formulario.setCantidad(null);
+        formulario.setStockMinimo(null);
+
+        // Prepara las entidades relacionadas.
+        Categoria categoria = new Categoria("Literatura clásica");
+        categoria.setActivo(true);
+
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+
+        Autor autor = new Autor("Bram Stoker");
+
+        // Simula las consultas a los repositorios.
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        when(autorRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(autor));
+
+        // Simula los guardados sin utilizar MySQL.
+        when(libroRepository.save(any(Libro.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        when(formatoLibroRepository.save(any(FormatoLibro.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        // Ejecuta el registro.
+        Libro resultado = libroService.registrar(formulario);
+
+        // Comprueba que se construyó el libro.
+        assertNotNull(resultado);
+        assertEquals("Drácula", resultado.getTitulo());
+
+        // Libro y presentación comercial deben guardarse.
+        verify(libroRepository).save(any(Libro.class));
+        verify(formatoLibroRepository).save(any(FormatoLibro.class));
+
+        // Un libro digital nunca debe generar inventario físico.
+        verify(itemStockRepository, never())
+                .save(any(ItemStock.class));
+    }
+
+    /**
+     * Comprueba que no se registre un libro
+     * cuando su ISBN ya existe en el catálogo.
+     *
+     * Ninguna entidad debe enviarse a persistencia
+     * si se detecta el ISBN duplicado.
+     */
+    @Test
+    void registrar_conIsbnDuplicado_debeRechazarRegistro() {
+
+        // Prepara un formulario válido para llegar
+        // a la comprobación de ISBN duplicado.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setFormato(Formato.PASTA_DURA);
+        formulario.setPrecio(new BigDecimal("399.00"));
+        formulario.setCantidad(12);
+        formulario.setStockMinimo(3);
+
+        // Simula que el ISBN ya existe en MySQL.
+        when(libroRepository.existsByIsbn("9781234567897"))
+                .thenReturn(true);
+
+        // Comprueba que el servicio rechaza el registro.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> libroService.registrar(formulario)
+        );
+
+        // Verifica el mensaje de negocio.
+        assertEquals(
+                "Ya existe un libro registrado con ese ISBN.",
+                excepcion.getMessage()
+        );
+
+        // Confirma que no se intentó guardar ninguna entidad.
+        verify(libroRepository, never()).save(any(Libro.class));
+
+        verify(formatoLibroRepository, never())
+                .save(any(FormatoLibro.class));
+
+        verify(itemStockRepository, never())
+                .save(any(ItemStock.class));
+
+        // Tampoco debe consultar las entidades relacionadas.
+        verifyNoInteractions(
+                categoriaRepository,
+                editorialRepository,
+                autorRepository
+        );
+    }
+
+    /**
+     * Comprueba que no se permita registrar un libro
+     * utilizando una categoría desactivada.
+     *
+     * El servicio debe rechazar el registro antes
+     * de guardar cualquier entidad.
+     */
+    @Test
+    void registrar_conCategoriaDesactivada_debeRechazarRegistro() {
+
+        // Prepara un formulario con datos válidos.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setFormato(Formato.PASTA_DURA);
+        formulario.setPrecio(new BigDecimal("399.00"));
+        formulario.setCantidad(12);
+        formulario.setStockMinimo(3);
+
+        // Simula una categoría existente, pero desactivada.
+        Categoria categoria = new Categoria("Literatura clásica");
+        categoria.setActivo(false);
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        // Intenta registrar el libro.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> libroService.registrar(formulario)
+        );
+
+        // Comprueba que se informe el motivo del rechazo.
+        assertEquals(
+                "La categoría seleccionada está desactivada.",
+                excepcion.getMessage()
+        );
+
+        // No debe guardarse ningún registro.
+        verify(libroRepository, never())
+                .save(any(Libro.class));
+
+        verify(formatoLibroRepository, never())
+                .save(any(FormatoLibro.class));
+
+        verify(itemStockRepository, never())
+                .save(any(ItemStock.class));
+
+        // No debe continuar consultando las demás relaciones.
+        verifyNoInteractions(editorialRepository, autorRepository);
+    }
+
+    /**
+     * Comprueba que no se permita registrar un libro
+     * cuando alguno de los autores seleccionados no existe.
+     *
+     * Ninguna entidad debe enviarse a persistencia
+     * si falta algún autor.
+     */
+    @Test
+    void registrar_conAutorInexistente_debeRechazarRegistro() {
+
+        // Prepara un formulario con dos autores seleccionados.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L, 99L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setFormato(Formato.PASTA_DURA);
+        formulario.setPrecio(new BigDecimal("399.00"));
+        formulario.setCantidad(12);
+        formulario.setStockMinimo(3);
+
+        // Prepara una categoría activa y una editorial válida.
+        Categoria categoria = new Categoria("Literatura clásica");
+        categoria.setActivo(true);
+
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+
+        // Solamente existe uno de los dos autores solicitados.
+        Autor autor = new Autor("Bram Stoker");
+
+        // Simula las consultas a los repositorios.
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        when(autorRepository.findAllById(Set.of(1L, 99L)))
+                .thenReturn(List.of(autor));
+
+        // Ejecuta el registro y comprueba que sea rechazado.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> libroService.registrar(formulario)
+        );
+
+        // Verifica el mensaje de validación.
+        assertEquals(
+                "Uno o más autores seleccionados no existen.",
+                excepcion.getMessage()
+        );
+
+        // Comprueba que no se intentó guardar ninguna entidad.
+        verify(libroRepository, never())
+                .save(any(Libro.class));
+
+        verify(formatoLibroRepository, never())
+                .save(any(FormatoLibro.class));
+
+        verify(itemStockRepository, never())
+                .save(any(ItemStock.class));
+    }
 
 }

@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.repository;
 
+import com.itson.ProyectoAplicacionesWeb.model.EstadoOrden;
 import com.itson.ProyectoAplicacionesWeb.model.OrdenCompra;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,7 +26,17 @@ public interface OrdenCompraRepository
        JOIN FETCH o.usuario
        ORDER BY o.fecha DESC
        """)
-    List<OrdenCompra> listarConUsuarios();
 
+    List<OrdenCompra> listarConUsuarios();
+    /**
+     * Cuenta las órdenes que tienen un estado específico.
+     *
+     * Spring Data JPA genera la consulta automáticamente
+     * a partir del nombre del método.
+     *
+     * @param estado estado de las órdenes que se contarán.
+     * @return cantidad de órdenes con ese estado.
+     */
+    long countByEstado(EstadoOrden estado);
 
 }

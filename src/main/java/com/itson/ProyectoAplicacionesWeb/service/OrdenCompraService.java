@@ -23,7 +23,6 @@ public class OrdenCompraService {
         this.ordenCompraRepository = ordenCompraRepository;
     }
 
-
     /**
      * Recupera las órdenes junto con sus usuarios,
      * ordenadas desde la más reciente.
@@ -31,6 +30,19 @@ public class OrdenCompraService {
     @Transactional(readOnly = true)
     public List<OrdenCompra> listarTodas() {
         return ordenCompraRepository.listarConUsuarios();
+    }
+
+    /**
+     * Obtiene la cantidad de órdenes pendientes.
+     *
+     * Consulta únicamente las órdenes cuyo estado
+     * corresponde a PENDIENTE.
+     *
+     * @return cantidad de órdenes pendientes.
+     */
+    @Transactional(readOnly = true)
+    public long contarOrdenesPendientes() {
+        return ordenCompraRepository.countByEstado(EstadoOrden.PENDIENTE);
     }
 
     /**

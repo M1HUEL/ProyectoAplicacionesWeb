@@ -94,6 +94,32 @@ class LibroServiceTest {
     }
 
     /**
+     * Comprueba que el servicio devuelve la cantidad
+     * de libros registrada por el repositorio.
+     *
+     * Utiliza Mockito para simular el conteo sin
+     * establecer una conexión con MySQL.
+     */
+    @Test
+    void contarLibros_debeRetornarCantidadRegistrada() {
+
+        // Simula que existen dos libros registrados.
+        when(libroRepository.count()).thenReturn(2L);
+
+        // Ejecuta el método que estamos probando.
+        long resultado = libroService.contarLibros();
+
+        // Comprueba que el servicio devuelve la cantidad esperada.
+        assertEquals(2L, resultado);
+
+        // Verifica que se consultó el repositorio.
+        verify(libroRepository).count();
+
+        // Comprueba que no se recuperó el listado completo.
+        verify(libroRepository, never()).findAll();
+    }
+
+    /**
      * Comprueba que el listado administrativo devuelve
      * una lista vacía cuando no hay presentaciones
      * comerciales registradas.
@@ -319,7 +345,6 @@ class LibroServiceTest {
         assertNull(dto.stock());
         assertEquals("No aplica", dto.estado());
     }
-
 
     /**
      * Comprueba que una presentación física sin registro

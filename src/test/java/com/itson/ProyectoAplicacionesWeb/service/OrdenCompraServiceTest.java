@@ -37,6 +37,34 @@ class OrdenCompraServiceTest {
         ordenCompraService = new OrdenCompraService(ordenCompraRepository);
     }
 
+    /**
+     * Comprueba que el servicio devuelve la cantidad
+     * de órdenes cuyo estado es PENDIENTE.
+     *
+     * Utiliza Mockito para simular el conteo
+     * sin establecer una conexión con MySQL.
+     */
+    @Test
+    void contarOrdenesPendientes_debeRetornarCantidadPendiente() {
+
+        // Simula que existen tres órdenes pendientes.
+        when(ordenCompraRepository.countByEstado(EstadoOrden.PENDIENTE))
+                .thenReturn(3L);
+
+        // Ejecuta el método que estamos probando.
+        long resultado = ordenCompraService.contarOrdenesPendientes();
+
+        // Comprueba que devuelve la cantidad esperada.
+        assertEquals(3L, resultado);
+
+        // Verifica que únicamente se consultaron las órdenes pendientes.
+        verify(ordenCompraRepository)
+                .countByEstado(EstadoOrden.PENDIENTE);
+
+        // Comprueba que no se recuperó el listado completo.
+        verify(ordenCompraRepository, never()).listarConUsuarios();
+    }
+
     @Test
     void listarTodas_sinOrdenes_retornaListaVacia() {
 

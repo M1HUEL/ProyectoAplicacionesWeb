@@ -23,14 +23,19 @@
   </div>
 
   <!--
-    Tarjetas de acceso a los módulos administrativos.
-    Los indicadores son provisionales hasta conectar MySQL.
-  -->
+  Tarjetas de acceso a los módulos administrativos.
+  Los indicadores se obtienen de MySQL mediante
+  los servicios correspondientes.
+-->
   <div class="admin-tarjetas">
 
     <section class="panel admin-tarjeta">
       <h2>Libros e inventario</h2>
-      <p class="admin-dato">24 libros · 3 con stock bajo</p>
+      <!-- Cantidad de libros registrados en MySQL. -->
+      <p class="admin-dato"
+         th:text="|${totalLibros} libros registrados|">
+        0 libros registrados
+      </p>
       <p>Alta, edición, consulta y existencias del catálogo.</p>
 
       <a class="boton boton-primario" th:href="@{/admin/libros}">
@@ -40,7 +45,11 @@
 
     <section class="panel admin-tarjeta">
       <h2>Órdenes</h2>
-      <p class="admin-dato">5 nuevas</p>
+      <!-- Cantidad de órdenes pendientes en MySQL. -->
+      <p class="admin-dato"
+         th:text="|${ordenesPendientes} órdenes pendientes|">
+        0 órdenes pendientes
+      </p>
       <p>Revisa pedidos y actualiza su estado.</p>
 
       <a class="boton boton-primario" th:href="@{/admin/ordenes}">

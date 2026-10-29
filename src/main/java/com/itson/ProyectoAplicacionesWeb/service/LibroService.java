@@ -80,6 +80,18 @@ public class LibroService {
         return libroRepository.findAll();
     }
 
+    /**
+     * Obtiene la cantidad total de libros registrados.
+     *
+     * Utiliza el conteo proporcionado por Spring Data JPA,
+     * sin recuperar todos los libros en memoria.
+     *
+     * @return número de libros registrados.
+     */
+    @Transactional(readOnly = true)
+    public long contarLibros() {
+        return libroRepository.count();
+    }
 
     /**
      * Busca un libro mediante su identificador.

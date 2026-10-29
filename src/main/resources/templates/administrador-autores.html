@@ -13,13 +13,17 @@
     <link rel="stylesheet" th:href="@{/styles/index.css}">
 </head>
 
-<body>
+<body class="admin-layout">
 
-<!-- Reutilizamos el encabezado del proyecto. -->
-<th:block th:replace="~{fragments/header :: header('inicio')}">
+<!--
+    Reutiliza el menú lateral del panel administrativo.
+    Autores forma parte de la gestión del catálogo.
+-->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}">
 </th:block>
 
-<main class="contenedor">
+<!-- Contenido principal de administración de autores. -->
+<main class="admin-contenido">
 
     <section class="panel registro">
 
@@ -55,8 +59,13 @@
             La lista proviene de AutorController,
             mediante el atributo "autores".
         -->
-        <table>
-            <thead>
+        <!--
+    Contenedor con desplazamiento horizontal independiente
+    para mantener la tabla adaptable en dispositivos móviles.
+-->
+        <div class="tabla-contenedor">
+            <table class="tabla" style="min-width: 0; width: 100%;">
+                <thead>
             <tr>
                 <th>ID</th>
                 <th>Nombre del autor</th>
@@ -79,7 +88,8 @@
             </tr>
 
             </tbody>
-        </table>
+            </table>
+        </div>
 
         <!-- El formulario de alta se agregará después. -->
         <a class="boton boton-claro"

@@ -34,6 +34,7 @@
         <!-- Confirmación después de una operación exitosa. -->
         <p th:if="${mensaje}"
            th:text="${mensaje}"
+           class="mensaje-exito"
            role="status">
             Operación realizada correctamente.
         </p>
@@ -41,6 +42,7 @@
         <!-- Mensaje de error de una operación administrativa. -->
         <p th:if="${error}"
            th:text="${error}"
+           class="mensaje-error"
            role="alert">
             No fue posible completar la operación.
         </p>
@@ -86,17 +88,21 @@
                             <form th:action="@{/admin/categorias/{id}/desactivar(id=${categoria.id})}"
                                   method="post">
 
-                                <button type="submit"
-                                        onclick="return confirm('¿Deseas desactivar esta categoría?');">
+                                <!--
+                                Desactiva una categoría mediante POST.
+                                La validación de la operación corresponde a CategoriaService.
+                                Spring Security protege el formulario mediante CSRF.
+                                -->
+                                <button class="boton boton-claro"
+                                        type="submit">
                                     Desactivar
                                 </button>
                             </form>
                         </th:block>
 
                         <!-- Las categorías inactivas no pueden modificarse. -->
-                        <span th:unless="${categoria.activo}">
-        No editable
-    </span>
+                        <span th:unless="${categoria.activo}"> No editable
+                        </span>
                     </td>
 
 

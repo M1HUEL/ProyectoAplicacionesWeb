@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
@@ -13,13 +12,17 @@
     <link rel="stylesheet" th:href="@{/styles/index.css}">
 </head>
 
-<body>
+<body class="admin-layout">
 
-<!-- Encabezado reutilizable de Librería Raudskinna. -->
-<th:block th:replace="~{fragments/header :: header('inicio')}">
+<!--
+    Reutiliza el menú lateral del panel administrativo.
+    El registro de autores forma parte de la gestión del catálogo.
+-->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}">
 </th:block>
 
-<main class="contenedor">
+<!-- Contenido principal del registro administrativo de autores. -->
+<main class="admin-contenido">
 
     <section class="panel registro">
 
@@ -37,16 +40,16 @@
         -->
         <p th:if="${error}"
            th:text="${error}"
+           class="mensaje-error"
            role="alert">
-            Mensaje de error.
-        </p>
 
-        <!--
-            Formulario administrativo de autores.
+            <!--
+        Formulario administrativo para registrar autores.
 
-            La acción POST se implementará en AutorController.
-            Por ahora únicamente verificaremos su presentación.
-        -->
+        Envía los datos mediante POST a AutorController.
+        Las validaciones se realizan en la capa Service.
+        Spring Security mantiene habilitada la protección CSRF.
+    -->
         <form class="formulario"
               th:action="@{/admin/autores}"
               method="post">

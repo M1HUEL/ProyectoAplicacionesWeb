@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
@@ -9,19 +8,21 @@
 
     <title>Administrar editoriales · Librería Raudskinna</title>
 
-    <!-- Estilos generales del proyecto. Lafardilla 2026. -->
+    <!-- Estilos generales del proyecto. -->
     <link rel="stylesheet" th:href="@{/styles/index.css}">
 </head>
 
-<body>
+<body class="admin-layout">
 
-<!-- Encabezado reutilizable del proyecto. -->
-<th:block th:replace="~{fragments/header :: header('inicio')}">
+<!-- Menú lateral reutilizable del área administrativa. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}">
 </th:block>
 
-<main class="contenedor">
+<main class="admin-contenido">
 
     <section class="panel registro">
+
+        <p class="sobretitulo">ADMINISTRACIÓN DEL CATÁLOGO</p>
 
         <h1>Administración de editoriales</h1>
 
@@ -30,13 +31,13 @@
             Librería Raudskinna.
         </p>
 
-
         <!--
             Mensaje de confirmación enviado por EditorialController.
             Se recibe mediante RedirectAttributes después del registro.
         -->
         <p th:if="${mensaje}"
            th:text="${mensaje}"
+           class="mensaje-exito"
            role="status">
             Editorial registrada correctamente.
         </p>
@@ -53,39 +54,47 @@
             Las editoriales son proporcionadas por EditorialController,
             mediante el atributo "editoriales".
         -->
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre de la editorial</th>
-                <th>Dirección</th>
-            </tr>
-            </thead>
 
-            <tbody>
+        <!--
+        Tabla administrativa de editoriales.
+        Reutiliza los estilos del proyecto y evita
+        el desplazamiento horizontal innecesario.
+        -->
+        <div class="tabla-contenedor">
+            <table class="tabla" style="min-width: 0; width: 100%;">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre de la editorial</th>
+                    <th>Dirección</th>
+                </tr>
+                </thead>
 
-            <!-- Muestra las editoriales registradas. -->
-            <tr th:each="editorial : ${editoriales}">
-                <td th:text="${editorial.id}">1</td>
-                <td th:text="${editorial.nombre}">
-                    Penguin Random House
-                </td>
-                <td th:text="${editorial.direccion != null
-                            ? editorial.direccion
-                            : 'Sin especificar'}">
-                    Sin especificar
-                </td>
-            </tr>
+                <tbody>
 
-            <!-- Mensaje para una lista vacía. -->
-            <tr th:if="${#lists.isEmpty(editoriales)}">
-                <td colspan="3">
-                    Todavía no hay editoriales registradas.
-                </td>
-            </tr>
+                <!-- Muestra las editoriales registradas. -->
+                <tr th:each="editorial : ${editoriales}">
+                    <td th:text="${editorial.id}">1</td>
+                    <td th:text="${editorial.nombre}">
+                        Penguin Random House
+                    </td>
+                    <td th:text="${editorial.direccion != null and !#strings.isEmpty(editorial.direccion)
+                                ? editorial.direccion
+                                : 'Sin especificar'}">
+                        Sin especificar
+                    </td>
+                </tr>
 
-            </tbody>
-        </table>
+                <!-- Mensaje para una lista vacía. -->
+                <tr th:if="${#lists.isEmpty(editoriales)}">
+                    <td colspan="3">
+                        Todavía no hay editoriales registradas.
+                    </td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
 
         <!-- Regreso al módulo de libros. -->
         <a class="boton boton-claro"

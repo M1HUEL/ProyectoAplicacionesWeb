@@ -13,13 +13,17 @@
     <link rel="stylesheet" th:href="@{/styles/index.css}">
 </head>
 
-<body>
+<body class="admin-layout">
 
-<!-- Encabezado reutilizable del proyecto. -->
-<th:block th:replace="~{fragments/header :: header('inicio')}">
+<!--
+    Reutiliza el menú lateral del panel administrativo.
+    El registro de editoriales forma parte de la gestión del catálogo.
+-->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}">
 </th:block>
 
-<main class="contenedor">
+<!-- Contenido principal del registro administrativo de editoriales. -->
+<main class="admin-contenido">
 
     <section class="panel registro">
 
@@ -36,17 +40,18 @@
         -->
         <p th:if="${error}"
            th:text="${error}"
+           class="mensaje-error"
            role="alert">
             Mensaje de error.
         </p>
 
         <!--
-            Formulario administrativo de editoriales.
+    Formulario administrativo para registrar editoriales.
 
-            Su operación POST se implementará posteriormente.
-            Los nombres de los campos coinciden con los parámetros
-            que recibirá EditorialController.
-        -->
+    Envía los datos mediante POST a EditorialController.
+    Las validaciones se realizan en la capa Service.
+    Spring Security mantiene habilitada la protección CSRF.
+-->
         <form class="formulario"
               th:action="@{/admin/editoriales}"
               method="post">

@@ -39,6 +39,7 @@
         -->
         <p th:if="${error}"
            th:text="${error}"
+           class="mensaje-error"
            role="alert">
             Error al registrar la categoría.
         </p>
@@ -64,6 +65,7 @@
             <label for="nombre">Nombre de la categoría</label>
 
             <input
+                    class="campo campo-formulario"
                     type="text"
                     id="nombre"
                     name="nombre"
@@ -84,7 +86,7 @@
                     Guardar categoría
                 </button>
 
-                <a class="boton"
+                <a class="boton boton-claro"
                    th:href="@{/admin/categorias}">
                     Cancelar
                 </a>

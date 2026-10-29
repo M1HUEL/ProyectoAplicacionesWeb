@@ -101,6 +101,17 @@
             </small>
 
             <!--
+            Permite registrar un autor que todavía no existe
+            en el catálogo, sin modificar el selector múltiple.
+            -->
+            <a class="boton boton-claro"
+               th:href="@{/admin/autores/nuevo}"
+               target="_blank"
+               rel="noopener">
+                + Registrar nuevo autor
+            </a>
+
+            <!--
                 Selección de la editorial responsable del libro.
 
                 Las editoriales se recuperan mediante EditorialService
@@ -126,6 +137,17 @@
             </select>
 
             <!--
+            Permite registrar una editorial que todavía no existe
+            en el catálogo, conservando abierto el formulario del libro.
+            -->
+            <a class="boton boton-claro"
+               th:href="@{/admin/editoriales/nueva}"
+               target="_blank"
+               rel="noopener">
+                + Registrar nueva editorial
+            </a>
+
+            <!--
                 Selección de una categoría activa.
 
                 Las categorías se recuperan mediante CategoriaService.
@@ -149,6 +171,17 @@
                 </option>
 
             </select>
+
+            <!--
+            Permite registrar una categoría nueva desde
+            el formulario administrativo de libros.
+            -->
+            <a class="boton boton-claro"
+               th:href="@{/admin/categorias/nueva}"
+               target="_blank"
+               rel="noopener">
+                + Registrar nueva categoría
+            </a>
 
             <!--
                 Selección de la presentación comercial del libro.

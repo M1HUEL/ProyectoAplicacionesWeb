@@ -595,21 +595,90 @@ h3 {
   max-width: 280px;
   margin-bottom: 14px;
 }
+
+/*
+ * Etiqueta visual para los estados de las órdenes.
+ * Se reutiliza en las vistas de la librería.
+ */
 .estado-orden {
   display: inline-block;
-  font-size: 0.6875rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-secundario);
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
-  background: color-mix(
-    in srgb,
-    var(--color-secundario) 12%,
-    var(--color-fondo)
-  );
-  margin-bottom: 16px;
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
 }
+
+/*
+ * Colores de los estados de las órdenes.
+ * Fondos claros y textos oscuros para mejorar el contraste.
+ */
+
+.estado-orden-pendiente {
+  color: #805400;
+  background: #fff1ce;
+  border-color: #d9b96d;
+}
+
+.estado-orden-procesando {
+  color: #174b80;
+  background: #e2efff;
+  border-color: #95bce8;
+}
+
+.estado-orden-enviado {
+  color: #643c85;
+  background: #f0e6fa;
+  border-color: #c6a7df;
+}
+
+.estado-orden-entregado {
+  color: #245b38;
+  background: #e0f3e5;
+  border-color: #9cccaa;
+}
+
+.estado-orden-cancelado {
+  color: #842c35;
+  background: #fce5e7;
+  border-color: #e3a3aa;
+}
+
+/*
+ * Mensajes de confirmación y error.
+ * Se reutilizan en los formularios administrativos.
+ */
+.mensaje-exito,
+.mensaje-error {
+  padding: 12px 16px;
+  margin: 16px 0;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Operaciones realizadas correctamente. */
+.mensaje-exito {
+  color: #245b38;
+  background: #e0f3e5;
+  border-color: #9cccaa;
+}
+
+/* Operaciones rechazadas o inválidas. */
+.mensaje-error {
+  color: #842c35;
+  background: #fce5e7;
+  border-color: #e3a3aa;
+}
+
 .confirmacion-ayuda {
   font-size: 0.875rem;
   margin-bottom: 16px;

@@ -6,10 +6,11 @@
     <title>Libros e inventario · Librería Raudskinna</title>
     <link rel="stylesheet" th:href="@{/styles/index.css}" />
   </head>
-  <body>
-    <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+  <body class="admin-layout">
+  <!-- Navegación reutilizable del panel administrativo. -->
+  <th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}"></th:block>
 
-    <main class="contenedor">
+    <main class="admin-contenido">
       <div class="encabezado-pagina">
         <p class="sobretitulo">Administración</p>
         <h1>Libros e inventario</h1>
@@ -22,6 +23,19 @@
           </a>
         </div>
       </div>
+
+      <!--
+          Muestra la confirmación del registro de un libro.
+
+          El mensaje proviene de LibroController mediante
+          RedirectAttributes después de guardar correctamente.
+      -->
+      <p th:if="${mensaje}"
+         th:text="${mensaje}"
+         role="status">
+        Libro registrado correctamente.
+      </p>
+
 
       <section class="panel">
         <div class="tabla-contenedor">
@@ -52,8 +66,6 @@
                 recuperada desde LibroService.
 
                 Los datos provienen de LibroListadoDTO.
-
-                Lafardilla 2026.
             -->
             <tr th:each="libro : ${libros}">
 
@@ -77,11 +89,20 @@
               <td th:text="${libro.estado}">Estado</td>
 
               <!--
-                  Las acciones se habilitarán cuando implementemos
-                  el formulario de edición administrativa.
+                  Abre el formulario de edición correspondiente
+                  a la presentación comercial seleccionada.
+
+                  Se utilizan ambos identificadores:
+                  - libroId: identifica el libro.
+                  - formatoId: identifica su presentación comercial.
               -->
               <td class="acciones-tabla">
-                <span>Pendiente</span>
+                <a th:href="@{/admin/libros/{libroId}/formatos/{formatoId}/editar(
+            libroId=${libro.libroId},
+            formatoId=${libro.formatoId}
+        )}">
+                  Editar
+                </a>
               </td>
 
             </tr>
@@ -91,15 +112,5 @@
         </div>
       </section>
     </main>
-
-    <footer class="pie">
-      <div class="contenedor">
-        <span>Librería Raudskinna · Administración</span>
-        <nav aria-label="Pie de página">
-          <a th:href="@{/}">Panel</a> · <a th:href="@{/administrador/libros}">Libros</a> ·
-          <a th:href="@{/administrador/ordenes}">Órdenes</a> · <a th:href="@{/logout}">Cerrar sesión</a>
-        </nav>
-      </div>
-    </footer>
   </body>
 </html>

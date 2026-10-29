@@ -2,6 +2,8 @@
 package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
+import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
+import com.itson.ProyectoAplicacionesWeb.model.ItemStock;
 import com.itson.ProyectoAplicacionesWeb.service.AutorService;
 import com.itson.ProyectoAplicacionesWeb.service.CategoriaService;
 import com.itson.ProyectoAplicacionesWeb.service.EditorialService;
@@ -9,10 +11,7 @@ import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import com.itson.ProyectoAplicacionesWeb.model.Formato;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -177,6 +176,153 @@ public class LibroController {
             );
 
             return "redirect:/admin/libros/nuevo";
+        }
+    }
+
+    /**
+     * Atiende la solicitud para editar una presentación
+     * comercial de un libro existente.
+     *
+     * Comprueba que la presentación solicitada
+     * realmente pertenezca al libro indicado.
+     *
+     * @param libroId identificador del libro.
+     * @param formatoId identificador de la presentación.
+     * @param model datos enviados a Thymeleaf.
+     * @return vista del formulario administrativo.
+     */
+    @GetMapping("/{libroId}/formatos/{formatoId}/editar")
+    public String mostrarFormularioEdicion(
+            @PathVariable Long libroId,
+            @PathVariable Long formatoId,
+            Model model) {
+
+        /*
+         * Recupera la presentación comercial y verifica
+         * que pertenezca al libro solicitado.
+         */
+        FormatoLibro formatoSeleccionado =
+                libroService.buscarFormatoDeLibro(libroId, formatoId);
+
+        /*
+         * Conserva los datos capturados cuando la edición
+         * regresa al formulario por un error de validación.
+         *
+         * Si no existen datos temporales, recupera la
+         * información original del libro.
+         */
+        LibroFormularioDTO formulario;
+
+        if (model.containsAttribute("libroFormulario")) {
+
+            formulario = (LibroFormularioDTO)
+                    model.getAttribute("libroFormulario");
+
+        } else {
+
+            formulario = libroService.prepararFormularioEdicion(libroId);
+        }
+
+        /*
+         * Conserva los datos capturados si el formulario
+         * regresa después de un error de validación.
+         *
+         * En la primera apertura, carga los valores
+         * comerciales existentes en MySQL.
+         */
+        boolean formularioRecuperado =
+                model.containsAttribute("error");
+
+        if (!formularioRecuperado) {
+
+            // Carga el precio original de la presentación.
+            formulario.setPrecio(formatoSeleccionado.getPrecio());
+
+            // Recupera las existencias únicamente para formatos físicos.
+            if (formatoSeleccionado.getFormato() != Formato.DIGITAL) {
+
+                ItemStock inventario = libroService
+                        .buscarStockPorFormato(formatoId)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "La presentación física no tiene inventario registrado."
+                        ));
+
+                formulario.setCantidad(inventario.getCantidad());
+                formulario.setStockMinimo(inventario.getStockMinimo());
+            }
+        }
+
+        // El formato siempre proviene de la presentación existente,
+        // porque el select está deshabilitado durante la edición.
+        formulario.setFormato(formatoSeleccionado.getFormato());
+
+
+        // Envía el formulario a Thymeleaf.
+        model.addAttribute("libroFormulario", formulario);
+
+        // Conserva los identificadores para la edición.
+        model.addAttribute("libroId", libroId);
+        model.addAttribute("formatoId", formatoId);
+
+        // Catálogos necesarios para los campos desplegables.
+        model.addAttribute("autores", autorService.listarTodos());
+        model.addAttribute("editoriales", editorialService.listarTodas());
+        model.addAttribute("categorias", categoriaService.listarActivas());
+        model.addAttribute("formatos", Formato.values());
+
+        return "administrador-libros-formulario";
+    }
+
+    /**
+     * Procesa la actualización administrativa de un libro
+     * y una de sus presentaciones comerciales.
+     *
+     * Utiliza PRG (Post/Redirect/Get) para evitar
+     * reenvíos accidentales del formulario.
+     *
+     * @param libroId identificador del libro.
+     * @param formatoId identificador de la presentación.
+     * @param formulario datos recibidos del administrador.
+     * @param redirectAttributes mensajes y datos temporales.
+     * @return redirección al listado o al formulario.
+     */
+    @PostMapping("/{libroId}/formatos/{formatoId}")
+    public String actualizarLibro(
+            @PathVariable Long libroId,
+            @PathVariable Long formatoId,
+            @ModelAttribute("libroFormulario") LibroFormularioDTO formulario,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            // Delega las validaciones y modificaciones al servicio.
+            libroService.actualizar(libroId, formatoId, formulario);
+
+            // Confirma la operación al administrador.
+            redirectAttributes.addFlashAttribute(
+                    "mensaje",
+                    "Libro actualizado correctamente."
+            );
+
+            return "redirect:/admin/libros";
+
+        } catch (IllegalArgumentException e) {
+
+            // Conserva los datos capturados para corregirlos.
+            redirectAttributes.addFlashAttribute(
+                    "libroFormulario",
+                    formulario
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "error",
+                    e.getMessage()
+            );
+
+            return "redirect:/admin/libros/"
+                    + libroId
+                    + "/formatos/"
+                    + formatoId
+                    + "/editar";
         }
     }
 

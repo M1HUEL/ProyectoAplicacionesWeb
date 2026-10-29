@@ -36,5 +36,17 @@ public interface FormatoLibroRepository
     @Query("SELECT DISTINCT f FROM FormatoLibro f")
     List<FormatoLibro> listarConLibroYAutores();
 
+    /**
+     * Recupera todas las presentaciones comerciales
+     * asociadas a un libro.
+     *
+     * Se utilizará para consultar los formatos
+     * disponibles durante la administración del catálogo.
+     *
+     * @param libroId identificador del libro.
+     * @return lista de presentaciones comerciales.
+     */
+    List<FormatoLibro> findByLibroId(Long libroId);
+
 
 }

@@ -9,10 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -81,6 +78,135 @@ public class LibroService {
     @Transactional(readOnly = true)
     public List<Libro> listarTodos() {
         return libroRepository.findAll();
+    }
+
+
+    /**
+     * Busca un libro mediante su identificador.
+     *
+     * Se utilizará para recuperar la información
+     * necesaria durante la edición administrativa.
+     *
+     * @param id identificador del libro.
+     * @return libro encontrado.
+     * @throws IllegalArgumentException si el identificador
+     *         es inválido o el libro no existe.
+     */
+    @Transactional(readOnly = true)
+    public Libro buscarPorId(Long id) {
+
+        // Comprueba que el identificador sea válido.
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException(
+                    "El identificador del libro no es válido."
+            );
+        }
+
+        // Recupera el libro o informa que no existe.
+        return libroRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "El libro solicitado no existe."
+                ));
+    }
+
+    /**
+     * Prepara los datos bibliográficos de un libro
+     * existente para su edición administrativa.
+     *
+     * La conversión a DTO se realiza dentro de una
+     * transacción de lectura para acceder correctamente
+     * a la colección de autores.
+     *
+     * @param id identificador del libro.
+     * @return DTO con los datos actuales del libro.
+     */
+    @Transactional(readOnly = true)
+    public LibroFormularioDTO prepararFormularioEdicion(Long id) {
+
+        // Recupera el libro utilizando la validación existente.
+        Libro libro = buscarPorId(id);
+
+        // Prepara el objeto que recibirá Thymeleaf.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+
+        formulario.setTitulo(libro.getTitulo());
+        formulario.setIsbn(libro.getIsbn());
+        formulario.setCategoriaId(libro.getCategoria().getId());
+        formulario.setEditorialId(libro.getEditorial().getId());
+        formulario.setSinopsis(libro.getSinopsis());
+        formulario.setPortadaUrl(libro.getPortadaUrl());
+
+        // Recupera los identificadores de los autores asociados.
+        Set<Long> autoresIds = libro.getAutores().stream()
+                .map(Autor::getId)
+                .collect(Collectors.toSet());
+
+        formulario.setAutoresIds(autoresIds);
+
+        return formulario;
+    }
+
+    /**
+     * Recupera las presentaciones comerciales de un libro.
+     *
+     * Permite consultar sus formatos y precios para
+     * las operaciones de administración del catálogo.
+     *
+     * @param libroId identificador del libro.
+     * @return lista de presentaciones comerciales asociadas.
+     * @throws IllegalArgumentException si el ID es inválido.
+     */
+    @Transactional(readOnly = true)
+    public List<FormatoLibro> listarFormatosPorLibro(Long libroId) {
+
+        // Comprueba que el identificador sea válido.
+        if (libroId == null || libroId <= 0) {
+            throw new IllegalArgumentException(
+                    "El identificador del libro no es válido."
+            );
+        }
+
+        // Recupera las presentaciones comerciales del libro.
+        return formatoLibroRepository.findByLibroId(libroId);
+    }
+
+    /**
+     * Recupera una presentación comercial específica
+     * y verifica que pertenezca al libro solicitado.
+     *
+     * @param libroId identificador del libro.
+     * @param formatoId identificador de la presentación.
+     * @return presentación comercial encontrada.
+     * @throws IllegalArgumentException si no existe
+     *         o no pertenece al libro indicado.
+     */
+    @Transactional(readOnly = true)
+    public FormatoLibro buscarFormatoDeLibro(
+            Long libroId,
+            Long formatoId) {
+
+        // Valida los identificadores recibidos.
+        if (libroId == null || libroId <= 0 ||
+                formatoId == null || formatoId <= 0) {
+            throw new IllegalArgumentException(
+                    "Los identificadores del libro y formato no son válidos."
+            );
+        }
+
+        // Recupera la presentación comercial.
+        FormatoLibro formato = formatoLibroRepository.findById(formatoId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "La presentación comercial solicitada no existe."
+                ));
+
+        // Comprueba que la presentación pertenezca al libro indicado.
+        if (!libroId.equals(formato.getLibro().getId())) {
+            throw new IllegalArgumentException(
+                    "La presentación solicitada no pertenece al libro."
+            );
+        }
+
+        return formato;
     }
 
     /**
@@ -152,6 +278,7 @@ public class LibroService {
             // Construye la fila que utilizará Thymeleaf.
             return new LibroListadoDTO(
                     libro.getId(),
+                    formatoLibro.getId(),
                     libro.getTitulo(),
                     autores,
                     formatoLibro.getFormato().name(),
@@ -161,6 +288,52 @@ public class LibroService {
             );
 
         }).toList();
+    }
+
+    /**
+     * Recupera el inventario físico de una presentación
+     * comercial, cuando existe.
+     *
+     * Los formatos digitales no requieren inventario.
+     *
+     * @param formatoId identificador de la presentación.
+     * @return inventario asociado, si existe.
+     * @throws IllegalArgumentException si el ID es inválido.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ItemStock> buscarStockPorFormato(Long formatoId) {
+
+        // Valida el identificador recibido.
+        if (formatoId == null || formatoId <= 0) {
+            throw new IllegalArgumentException(
+                    "El identificador del formato no es válido."
+            );
+        }
+
+        // Reutiliza el método que ya existe en el repositorio.
+        return itemStockRepository.findByFormatoLibroId(formatoId);
+    }
+
+    /**
+     * Normaliza un texto opcional.
+     *
+     * Elimina espacios al principio y al final.
+     * Si el valor es nulo o queda vacío, devuelve null.
+     *
+     * @param valor texto que se desea normalizar.
+     * @return texto normalizado o null.
+     */
+    private String normalizarTextoOpcional(String valor) {
+
+        if (valor == null) {
+            return null;
+        }
+
+        String textoNormalizado = valor.trim();
+
+        return textoNormalizado.isEmpty()
+                ? null
+                : textoNormalizado;
     }
 
     /**
@@ -174,7 +347,7 @@ public class LibroService {
      * @throws IllegalArgumentException si algún dato es inválido.
      *
      */
-    private void validarFormularioRegistro(LibroFormularioDTO formulario) {
+    private void validarDatosFormulario(LibroFormularioDTO formulario) {
 
         // Comprueba que se haya recibido un formulario.
         if (formulario == null) {
@@ -329,6 +502,90 @@ public class LibroService {
     }
 
     /**
+     * Recupera una categoría y comprueba que esté activa.
+     *
+     * Se utiliza en las operaciones administrativas
+     * de registro y actualización de libros.
+     *
+     * @param categoriaId identificador de la categoría.
+     * @return categoría válida y activa.
+     * @throws IllegalArgumentException si no existe
+     *         o se encuentra desactivada.
+     */
+    private Categoria obtenerCategoriaActiva(Long categoriaId) {
+
+        // Recupera la categoría seleccionada.
+        Categoria categoria = categoriaRepository.findById(categoriaId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "La categoría seleccionada no existe."
+                ));
+
+        // Impide utilizar categorías desactivadas.
+        if (!categoria.isActivo()) {
+            throw new IllegalArgumentException(
+                    "La categoría seleccionada está desactivada."
+            );
+        }
+
+        return categoria;
+    }
+
+    /**
+     * Recupera la editorial seleccionada por el administrador.
+     *
+     * Permite reutilizar la comprobación de existencia
+     * durante el registro y la actualización de libros.
+     *
+     * @param editorialId identificador de la editorial.
+     * @return editorial encontrada.
+     * @throws IllegalArgumentException si no existe.
+     */
+    private Editorial obtenerEditorial(Long editorialId) {
+
+        // Consulta la editorial mediante su identificador.
+        return editorialRepository.findById(editorialId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "La editorial seleccionada no existe."
+                ));
+    }
+
+    /**
+     * Recupera los autores seleccionados y comprueba
+     * que todos existan en la base de datos.
+     *
+     * Se utilizará durante el registro y la
+     * actualización administrativa de libros.
+     *
+     * @param autoresIds identificadores de los autores.
+     * @return conjunto de autores encontrados.
+     * @throws IllegalArgumentException si la selección
+     *         es inválida o algún autor no existe.
+     */
+    private Set<Autor> obtenerAutores(Set<Long> autoresIds) {
+
+        // Impide realizar consultas con una selección vacía.
+        if (autoresIds == null || autoresIds.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Debes seleccionar al menos un autor."
+            );
+        }
+
+        // Recupera los autores seleccionados.
+        List<Autor> autoresEncontrados =
+                autorRepository.findAllById(autoresIds);
+
+        // Comprueba que todos los identificadores existan.
+        if (autoresEncontrados.size() != autoresIds.size()) {
+            throw new IllegalArgumentException(
+                    "Uno o más autores seleccionados no existen."
+            );
+        }
+
+        // Devuelve un conjunto para la relación ManyToMany.
+        return new HashSet<>(autoresEncontrados);
+    }
+
+    /**
      * Registra un libro y su presentación comercial.
      *
      * La operación será transaccional para garantizar que
@@ -343,7 +600,7 @@ public class LibroService {
     public Libro registrar(LibroFormularioDTO formulario) {
 
         // Comprueba los datos recibidos antes de persistir.
-        validarFormularioRegistro(formulario);
+        validarDatosFormulario(formulario);
 
         /*
          * Normaliza el ISBN y comprueba que no exista
@@ -360,51 +617,32 @@ public class LibroService {
             );
         }
 
-        // Recupera la categoría seleccionada.
-        Categoria categoria = categoriaRepository.findById(
-                formulario.getCategoriaId()
-        ).orElseThrow(() -> new IllegalArgumentException(
-                "La categoría seleccionada no existe."
-        ));
-
         /*
-         * Impide asignar a un libro nuevo una categoría
-         * que haya sido desactivada mediante baja lógica.
+         * Recupera la categoría seleccionada y verifica
+         * que exista y se encuentre activa.
          *
+         * Reutiliza las reglas de negocio centralizadas
+         * en obtenerCategoriaActiva().
          */
-        if (!categoria.isActivo()) {
-            throw new IllegalArgumentException(
-                    "La categoría seleccionada está desactivada."
-            );
-        }
-
-        // Recupera la editorial seleccionada.
-        Editorial editorial = editorialRepository.findById(
-                formulario.getEditorialId()
-        ).orElseThrow(() -> new IllegalArgumentException(
-                "La editorial seleccionada no existe."
-        ));
-
-        // Recupera los autores seleccionados.
-        List<Autor> autoresEncontrados = autorRepository.findAllById(
-                formulario.getAutoresIds()
+        Categoria categoria = obtenerCategoriaActiva(
+                formulario.getCategoriaId()
         );
 
         /*
-         * Verifica que todos los autores seleccionados
-         * existan realmente en la base de datos.
-         *
-         * El conjunto de identificadores no contiene duplicados,
-         * por lo que podemos comparar ambas cantidades.
+         * Recupera la editorial seleccionada y verifica
+         * que exista mediante el método reutilizable.
          */
-        if (autoresEncontrados.size() != formulario.getAutoresIds().size()) {
-            throw new IllegalArgumentException(
-                    "Uno o más autores seleccionados no existen."
-            );
-        }
+        Editorial editorial = obtenerEditorial(
+                formulario.getEditorialId()
+        );
 
-        // Convierte la lista en un conjunto para Libro.autores.
-        Set<Autor> autores = new HashSet<>(autoresEncontrados);
+        /*
+         * Recupera los autores seleccionados y comprueba
+         * que todos existan mediante el método reutilizable.
+         */
+        Set<Autor> autores = obtenerAutores(
+                formulario.getAutoresIds()
+        );
 
         /*
          * Construye la entidad Libro con sus datos bibliográficos
@@ -429,35 +667,16 @@ public class LibroService {
         /*
          * Normaliza los campos bibliográficos opcionales.
          *
-         * Elimina espacios exteriores y utiliza null cuando
-         * el administrador no proporciona información.
+         * El método auxiliar elimina espacios exteriores
+         * y convierte los textos vacíos en null.
          */
+        libro.setSinopsis(
+                normalizarTextoOpcional(formulario.getSinopsis())
+        );
 
-        // Normaliza la sinopsis.
-        String sinopsis = formulario.getSinopsis();
-
-        if (sinopsis != null) {
-            sinopsis = sinopsis.trim();
-
-            if (sinopsis.isEmpty()) {
-                sinopsis = null;
-            }
-        }
-
-        libro.setSinopsis(sinopsis);
-
-        // Normaliza la dirección de la portada.
-        String portadaUrl = formulario.getPortadaUrl();
-
-        if (portadaUrl != null) {
-            portadaUrl = portadaUrl.trim();
-
-            if (portadaUrl.isEmpty()) {
-                portadaUrl = null;
-            }
-        }
-
-        libro.setPortadaUrl(portadaUrl);
+        libro.setPortadaUrl(
+                normalizarTextoOpcional(formulario.getPortadaUrl())
+        );
 
         // Persiste el libro y obtiene su ID generado.
         Libro libroGuardado = libroRepository.save(libro);
@@ -524,4 +743,186 @@ public class LibroService {
         return libroGuardado;
 
     }
+
+    /**
+     * Actualiza los datos de un libro y una de sus
+     * presentaciones comerciales existentes.
+     *
+     * @param libroId identificador del libro.
+     * @param formatoId identificador de la presentación.
+     * @param formulario datos recibidos del administrador.
+     * @return libro actualizado.
+     */
+    @Transactional
+    public Libro actualizar(
+            Long libroId,
+            Long formatoId,
+            LibroFormularioDTO formulario) {
+
+        /*
+         * Primera etapa de la actualización:
+         *
+         * Recupera la presentación comercial y conserva
+         * el formato existente, sin depender del valor
+         * enviado por el navegador.
+         */
+
+        // Recupera la presentación y verifica su pertenencia.
+        FormatoLibro formatoExistente =
+                buscarFormatoDeLibro(libroId, formatoId);
+
+        // Comprueba que se hayan recibido datos.
+        if (formulario == null) {
+            throw new IllegalArgumentException(
+                    "Los datos del libro son obligatorios."
+            );
+        }
+
+        // El formato original prevalece sobre el formulario.
+        formulario.setFormato(formatoExistente.getFormato());
+
+        /*
+         * Valida los datos recibidos utilizando las mismas
+         * reglas de negocio del registro de libros.
+         */
+        validarDatosFormulario(formulario);
+
+        // Recupera el libro asociado a la presentación.
+        Libro libro = formatoExistente.getLibro();
+
+        /*
+         * Comprueba que el ISBN solicitado no pertenezca
+         * a otro libro.
+         *
+         * Si el ISBN no cambia, no es necesario consultar
+         * nuevamente el repositorio.
+         */
+        String isbnLimpio = formulario.getIsbn().trim();
+
+        if (!isbnLimpio.equals(libro.getIsbn())
+                && libroRepository.existsByIsbn(isbnLimpio)) {
+
+            throw new IllegalArgumentException(
+                    "Ya existe un libro registrado con ese ISBN."
+            );
+        }
+
+        /*
+         * Recupera la categoría seleccionada y comprueba
+         * que exista y se encuentre activa.
+         *
+         * Reutiliza la misma regla del registro de libros.
+         */
+        Categoria categoria = obtenerCategoriaActiva(
+                formulario.getCategoriaId()
+        );
+
+        /*
+         * Recupera la editorial seleccionada y comprueba
+         * que exista en la base de datos.
+         *
+         * Reutiliza el método empleado durante el registro.
+         */
+        Editorial editorial = obtenerEditorial(
+                formulario.getEditorialId()
+        );
+
+        /*
+         * Recupera los autores seleccionados y comprueba
+         * que todos existan en la base de datos.
+         *
+         * Reutiliza la misma validación utilizada durante
+         * el registro de libros.
+         */
+        Set<Autor> autores = obtenerAutores(
+                formulario.getAutoresIds()
+        );
+
+        /*
+         * Recupera y verifica el inventario antes de modificar
+         * los datos bibliográficos y comerciales.
+         *
+         * Los formatos digitales no requieren inventario físico.
+         */
+        ItemStock inventario = null;
+
+        if (formatoExistente.getFormato() != Formato.DIGITAL) {
+
+            inventario = itemStockRepository
+                    .findByFormatoLibroId(formatoId)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "La presentación física no tiene inventario registrado."
+                    ));
+        }
+
+        /*
+         * Actualiza las relaciones bibliográficas del libro.
+         *
+         * Las entidades relacionadas ya fueron recuperadas
+         * y validadas previamente.
+         *
+         * Se conserva el mismo objeto Libro y su identificador.
+         */
+        libro.setCategoria(categoria);
+        libro.setEditorial(editorial);
+        libro.setAutores(autores);
+
+        // Conserva o actualiza el ISBN del libro existente.
+        libro.setIsbn(isbnLimpio);
+
+        /*
+         * Actualiza los datos bibliográficos del libro existente.
+         *
+         * Se conserva la identidad de la entidad: no se crea
+         * un nuevo objeto Libro ni se modifica su ID.
+         */
+        libro.setTitulo(formulario.getTitulo().trim());
+
+        libro.setSinopsis(
+                normalizarTextoOpcional(formulario.getSinopsis())
+        );
+
+        libro.setPortadaUrl(
+                normalizarTextoOpcional(formulario.getPortadaUrl())
+        );
+
+        /*
+         * Actualiza el precio de la presentación comercial.
+         *
+         * El importe ya fue validado mediante
+         * validarDatosFormulario().
+         *
+         * Se conserva la misma entidad FormatoLibro
+         * y su identificador original.
+         */
+        BigDecimal precioNormalizado =
+                formulario.getPrecio().setScale(2);
+
+        formatoExistente.setPrecio(precioNormalizado);
+
+        /*
+         * Actualiza las existencias de la presentación física.
+         *
+         * El inventario fue recuperado y verificado previamente,
+         * antes de modificar las entidades.
+         *
+         * Los formatos digitales no utilizan ItemStock.
+         */
+        if (inventario != null) {
+
+            inventario.setCantidad(formulario.getCantidad());
+            inventario.setStockMinimo(formulario.getStockMinimo());
+        }
+
+        /*
+         * Devuelve el libro actualizado.
+         *
+         * Las modificaciones de las entidades administradas
+         * por JPA se confirmarán al finalizar correctamente
+         * la transacción.
+         */
+        return libro;
+
+    }
+
 }

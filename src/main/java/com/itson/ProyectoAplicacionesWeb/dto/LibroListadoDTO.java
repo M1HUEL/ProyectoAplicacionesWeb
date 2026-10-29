@@ -3,38 +3,22 @@ package com.itson.ProyectoAplicacionesWeb.dto;
 
 import java.math.BigDecimal;
 
+
 /**
- * DTO utilizado para mostrar la información de los libros
- * en el listado administrativo de Librería Raudskinna.
+ * Datos de una presentación comercial para
+ * el listado administrativo de libros.
  *
- * Cada objeto representa una presentación comercial
- * de un libro, incluyendo precio e inventario.
- *
- * No es una entidad JPA y no contiene reglas de negocio.
- *
+ * libroId identifica la obra bibliográfica.
+ * formatoId identifica su presentación comercial.
  */
 public record LibroListadoDTO(
-
-        /** Identificador del libro. */
         Long libroId,
-
-        /** Título del libro. */
+        Long formatoId,
         String titulo,
-
-        /** Nombres de los autores del libro. */
         String autores,
-
-        /** Presentación comercial del libro. */
         String formato,
-
-        /** Precio correspondiente a la presentación. */
         BigDecimal precio,
-
-        /** Existencias físicas; null para formato digital. */
         Integer stock,
-
-        /** Estado calculado por el servicio. */
         String estado
-
 ) {
 }

@@ -50,4 +50,5 @@ public interface ItemStockRepository
     @EntityGraph(attributePaths = "formatoLibro")
     @Query("SELECT i FROM ItemStock i")
     List<ItemStock> listarConFormatoLibro();
+
 }

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -674,6 +675,633 @@ class LibroServiceTest {
 
         verify(itemStockRepository, never())
                 .save(any(ItemStock.class));
+    }
+
+    /**
+     * Comprueba que se pueda recuperar un libro
+     * existente mediante su identificador.
+     *
+     * La consulta se simula con Mockito, sin acceder
+     * a la base de datos real.
+     */
+    @Test
+    void buscarPorId_conLibroExistente_debeRetornarLibro() {
+
+        // Prepara las entidades necesarias.
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial = new Editorial("Penguin Random House", null);
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        // Simula que el repositorio encuentra el libro.
+        when(libroRepository.findById(1L))
+                .thenReturn(Optional.of(libro));
+
+        // Ejecuta la operación.
+        Libro resultado = libroService.buscarPorId(1L);
+
+        // Comprueba que se recuperó el libro esperado.
+        assertSame(libro, resultado);
+        assertEquals("Drácula", resultado.getTitulo());
+
+        // Verifica que se consultó el repositorio.
+        verify(libroRepository).findById(1L);
+    }
+
+    /**
+     * Comprueba que el servicio rechace la búsqueda
+     * de un libro que no existe en la base de datos.
+     */
+    @Test
+    void buscarPorId_conLibroInexistente_debeLanzarExcepcion() {
+
+        // Simula que el repositorio no encuentra el libro.
+        when(libroRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        // Comprueba que el servicio rechace la búsqueda.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> libroService.buscarPorId(99L)
+        );
+
+        // Verifica el mensaje de negocio.
+        assertEquals(
+                "El libro solicitado no existe.",
+                excepcion.getMessage()
+        );
+
+        // Comprueba que se realizó la búsqueda.
+        verify(libroRepository).findById(99L);
+    }
+
+    /**
+     * Comprueba que se rechacen identificadores nulos,
+     * iguales a cero o negativos.
+     *
+     * La validación debe ocurrir antes de consultar
+     * el repositorio.
+     */
+    @Test
+    void buscarPorId_conIdentificadorInvalido_debeRechazarBusqueda() {
+
+        // Identificadores que no son válidos para buscar libros.
+        Long[] identificadoresInvalidos = {null, 0L, -1L};
+
+        for (Long id : identificadoresInvalidos) {
+
+            IllegalArgumentException excepcion = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> libroService.buscarPorId(id)
+            );
+
+            assertEquals(
+                    "El identificador del libro no es válido.",
+                    excepcion.getMessage()
+            );
+        }
+
+        // Ningún identificador inválido debe llegar a MySQL.
+        verifyNoInteractions(libroRepository);
+    }
+
+    /**
+     * Comprueba que los datos bibliográficos de un libro
+     * existente se transfieran correctamente al DTO
+     * utilizado por el formulario de edición.
+     */
+    @Test
+    void prepararFormularioEdicion_conLibroExistente_debeCompletarDTO() {
+
+        // Prepara las entidades relacionadas.
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial = new Editorial("Penguin Random House", null);
+        Autor autor = new Autor("Bram Stoker");
+
+        // Crea un libro con los datos que vamos a recuperar.
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        libro.setSinopsis("Novela de terror.");
+        libro.setPortadaUrl("https://ejemplo.com/dracula.jpg");
+        libro.setAutores(Set.of(autor));
+
+        // Simula la consulta del libro existente.
+        when(libroRepository.findById(1L))
+                .thenReturn(Optional.of(libro));
+
+        // Ejecuta la preparación del formulario.
+        LibroFormularioDTO formulario =
+                libroService.prepararFormularioEdicion(1L);
+
+        // Comprueba los datos bibliográficos recuperados.
+        assertEquals("Drácula", formulario.getTitulo());
+        assertEquals("9781234567897", formulario.getIsbn());
+        assertEquals("Novela de terror.", formulario.getSinopsis());
+        assertEquals(
+                "https://ejemplo.com/dracula.jpg",
+                formulario.getPortadaUrl()
+        );
+
+        // Verifica que se consultó el libro correcto.
+        verify(libroRepository).findById(1L);
+    }
+
+    /**
+     * Comprueba que se recuperen las presentaciones
+     * comerciales asociadas a un libro.
+     *
+     * La consulta se simula mediante Mockito,
+     * sin acceder a MySQL.
+     */
+    @Test
+    void listarFormatosPorLibro_conFormatosExistentes_debeRetornarLista() {
+
+        // Prepara un libro para asociar sus presentaciones.
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        // Prepara dos presentaciones comerciales.
+        FormatoLibro pastaDura = new FormatoLibro(
+                libro,
+                Formato.PASTA_DURA,
+                new BigDecimal("399.00")
+        );
+
+        FormatoLibro digital = new FormatoLibro(
+                libro,
+                Formato.DIGITAL,
+                new BigDecimal("149.00")
+        );
+
+        // Simula la consulta de formatos asociados al libro.
+        when(formatoLibroRepository.findByLibroId(1L))
+                .thenReturn(List.of(pastaDura, digital));
+
+        // Ejecuta la operación del servicio.
+        List<FormatoLibro> resultado =
+                libroService.listarFormatosPorLibro(1L);
+
+        // Comprueba que se recuperaron ambas presentaciones.
+        assertEquals(2, resultado.size());
+        assertSame(pastaDura, resultado.get(0));
+        assertSame(digital, resultado.get(1));
+
+        // Verifica que se consultó el repositorio correctamente.
+        verify(formatoLibroRepository).findByLibroId(1L);
+    }
+
+    /**
+     * Comprueba que la actualización conserve el formato
+     * comercial existente, aunque el formulario no lo envíe.
+     */
+    @Test
+    void actualizar_sinFormatoEnFormulario_debeConservarFormatoOriginal() {
+
+        // Prepara las entidades relacionadas.
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        /*
+         * Simula el identificador que MySQL/JPA habría
+         * generado al guardar el libro.
+         *
+         * Es necesario porque esta prueba usa Mockito
+         * y no persiste realmente las entidades.
+         */
+        ReflectionTestUtils.setField(libro, "id", 1L);
+
+        // Presentación comercial existente.
+        FormatoLibro formatoExistente = new FormatoLibro(
+                libro,
+                Formato.DIGITAL,
+                new BigDecimal("149.00")
+        );
+
+        /*
+         * Simula un formulario de edición válido.
+         *
+         * El formato permanece en null porque el select
+         * deshabilitado no se envía desde el navegador.
+         */
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+
+        formulario.setTitulo("Drácula - Edición revisada");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setSinopsis("Novela de terror clásico.");
+        formulario.setPortadaUrl(null);
+        formulario.setFormato(null);
+        formulario.setPrecio(new BigDecimal("199.00"));
+
+        // Simula la consulta de la presentación comercial.
+        when(formatoLibroRepository.findById(2L))
+                .thenReturn(Optional.of(formatoExistente));
+
+        /*
+         * Simula las entidades relacionadas que el servicio
+         * necesita recuperar durante la actualización.
+         */
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        Autor autor = new Autor("Bram Stoker");
+
+        when(autorRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(autor));
+
+        /*
+         * Comprueba que la actualización conserve el formato
+         * original recuperado de la presentación comercial.
+         */
+        Libro resultado = libroService.actualizar(1L, 2L, formulario);
+
+        assertSame(libro, resultado);
+        assertEquals(Formato.DIGITAL, formatoExistente.getFormato());
+        assertEquals(Formato.DIGITAL, formulario.getFormato());
+
+        /*
+         * Comprueba que los datos bibliográficos del
+         * libro existente hayan sido actualizados.
+         *
+         * No se crea una entidad nueva: se modifica
+         * el mismo objeto recuperado del repositorio.
+         */
+        assertEquals(
+                "Drácula - Edición revisada",
+                resultado.getTitulo()
+        );
+
+        assertEquals(
+                "Novela de terror clásico.",
+                resultado.getSinopsis()
+        );
+
+        assertNull(resultado.getPortadaUrl());
+
+        /*
+         * Comprueba que el ISBN original se conserve
+         * cuando el administrador no lo modifica.
+         *
+         * Además, verifica que no se consulte innecesariamente
+         * su existencia en la base de datos.
+         */
+        assertEquals("9781234567897", resultado.getIsbn());
+
+        /*
+         * Comprueba que las relaciones bibliográficas
+         * del libro correspondan a las entidades
+         * recuperadas durante la actualización.
+         */
+        assertSame(categoria, resultado.getCategoria());
+        assertSame(editorial, resultado.getEditorial());
+
+        /*
+         * Comprueba que el libro conserve los autores
+         * seleccionados durante la actualización.
+         *
+         * La relación es ManyToMany, por lo que
+         * utilizamos un conjunto de entidades.
+         */
+        assertEquals(1, resultado.getAutores().size());
+
+        assertTrue(resultado.getAutores().contains(autor));
+
+        /*
+         * Comprueba que se actualice el precio de la
+         * presentación comercial existente.
+         *
+         * Se verifica también que el importe quede
+         * normalizado a dos posiciones decimales.
+         */
+        assertEquals(
+                new BigDecimal("199.00"),
+                formatoExistente.getPrecio()
+        );
+
+        verify(libroRepository, never())
+                .existsByIsbn(anyString());
+
+        /*
+         * Comprueba que la actualización de una presentación
+         * digital no realice operaciones de inventario físico.
+         *
+         * Los formatos digitales no utilizan ItemStock.
+         */
+        verifyNoInteractions(itemStockRepository);
+
+    }
+
+    /**
+     * Comprueba que se permita modificar el ISBN
+     * de un libro cuando el nuevo valor está disponible.
+     */
+    @Test
+    void actualizar_conIsbnNuevoDisponible_debeActualizarIsbn() {
+
+        // Prepara un libro existente.
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        // Simula el identificador generado por JPA.
+        ReflectionTestUtils.setField(libro, "id", 1L);
+
+        FormatoLibro formatoExistente = new FormatoLibro(
+                libro,
+                Formato.DIGITAL,
+                new BigDecimal("149.00")
+        );
+
+        // Prepara el formulario con un ISBN diferente.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567898");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setPrecio(new BigDecimal("149.00"));
+
+        // El campo deshabilitado no llega desde el navegador.
+        formulario.setFormato(null);
+
+        // Simula las consultas.
+        when(formatoLibroRepository.findById(2L))
+                .thenReturn(Optional.of(formatoExistente));
+
+        /*
+         * Simula las relaciones bibliográficas necesarias
+         * para completar la actualización del libro.
+         */
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        Autor autor = new Autor("Bram Stoker");
+
+        when(autorRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(autor));
+
+        when(libroRepository.existsByIsbn("9781234567898"))
+                .thenReturn(false);
+
+        // Ejecuta la actualización.
+        Libro resultado = libroService.actualizar(1L, 2L, formulario);
+
+        // Comprueba que el ISBN haya cambiado.
+        assertEquals("9781234567898", resultado.getIsbn());
+
+        // Verifica que se consultó la disponibilidad del nuevo ISBN.
+        verify(libroRepository).existsByIsbn("9781234567898");
+    }
+
+    /**
+     * Comprueba que se rechace la actualización cuando
+     * el nuevo ISBN ya pertenece a otro libro.
+     */
+    @Test
+    void actualizar_conIsbnDuplicado_debeRechazarCambio() {
+
+        // Prepara un libro existente.
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        // Simula el identificador generado por JPA.
+        ReflectionTestUtils.setField(libro, "id", 1L);
+
+        FormatoLibro formatoExistente = new FormatoLibro(
+                libro,
+                Formato.DIGITAL,
+                new BigDecimal("149.00")
+        );
+
+        // Prepara el formulario con un ISBN que ya existe.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula - Edición revisada");
+        formulario.setIsbn("9781234567898");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setPrecio(new BigDecimal("149.00"));
+        formulario.setFormato(null);
+
+        // Simula las respuestas de los repositorios.
+        when(formatoLibroRepository.findById(2L))
+                .thenReturn(Optional.of(formatoExistente));
+
+        when(libroRepository.existsByIsbn("9781234567898"))
+                .thenReturn(true);
+
+        // Comprueba que se rechace el ISBN duplicado.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> libroService.actualizar(1L, 2L, formulario)
+        );
+
+        assertEquals(
+                "Ya existe un libro registrado con ese ISBN.",
+                excepcion.getMessage()
+        );
+
+        // El libro debe conservar su información original.
+        assertEquals("9781234567897", libro.getIsbn());
+        assertEquals("Drácula", libro.getTitulo());
+
+        // Se verificó la existencia del ISBN solicitado.
+        verify(libroRepository).existsByIsbn("9781234567898");
+    }
+
+    /**
+     * Comprueba que al editar una presentación física
+     * se actualicen sus existencias y stock mínimo.
+     */
+    @Test
+    void actualizar_formatoFisico_debeActualizarInventario() {
+
+        // Prepara las entidades relacionadas.
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+        Autor autor = new Autor("Bram Stoker");
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        ReflectionTestUtils.setField(libro, "id", 1L);
+
+        // Presentación física existente.
+        FormatoLibro formatoExistente = new FormatoLibro(
+                libro,
+                Formato.PASTA_DURA,
+                new BigDecimal("399.00")
+        );
+
+        // Inventario original: 12 unidades, mínimo 3.
+        ItemStock inventario = new ItemStock(
+                formatoExistente,
+                12,
+                3
+        );
+
+        // Formulario con nuevas existencias.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setFormato(null);
+        formulario.setPrecio(new BigDecimal("399.00"));
+        formulario.setCantidad(8);
+        formulario.setStockMinimo(2);
+
+        // Simula las consultas a los repositorios.
+        when(formatoLibroRepository.findById(2L))
+                .thenReturn(Optional.of(formatoExistente));
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        when(autorRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(autor));
+
+        when(itemStockRepository.findByFormatoLibroId(2L))
+                .thenReturn(Optional.of(inventario));
+
+        // Ejecuta la actualización.
+        Libro resultado = libroService.actualizar(1L, 2L, formulario);
+
+        // Verifica que se conserva el libro existente.
+        assertSame(libro, resultado);
+
+        // Comprueba las nuevas existencias.
+        assertEquals(8, inventario.getCantidad());
+        assertEquals(2, inventario.getStockMinimo());
+
+        // Comprueba que no se registra otro inventario.
+        verify(itemStockRepository, never()).save(any(ItemStock.class));
+    }
+
+    /**
+     * Comprueba que se rechace la actualización de una
+     * presentación física sin inventario registrado.
+     */
+    @Test
+    void actualizar_formatoFisicoSinInventario_debeLanzarExcepcion() {
+
+        Categoria categoria = new Categoria("Literatura clásica");
+        Editorial editorial =
+                new Editorial("Penguin Random House", null);
+        Autor autor = new Autor("Bram Stoker");
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        ReflectionTestUtils.setField(libro, "id", 1L);
+
+        FormatoLibro formatoExistente = new FormatoLibro(
+                libro,
+                Formato.PASTA_DURA,
+                new BigDecimal("399.00")
+        );
+
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+        formulario.setTitulo("Drácula");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(1L);
+        formulario.setFormato(null);
+        formulario.setPrecio(new BigDecimal("399.00"));
+        formulario.setCantidad(8);
+        formulario.setStockMinimo(2);
+
+        when(formatoLibroRepository.findById(2L))
+                .thenReturn(Optional.of(formatoExistente));
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        when(autorRepository.findAllById(Set.of(1L)))
+                .thenReturn(List.of(autor));
+
+        // Simula una inconsistencia: no existe ItemStock.
+        when(itemStockRepository.findByFormatoLibroId(2L))
+                .thenReturn(Optional.empty());
+
+        IllegalStateException excepcion = assertThrows(
+                IllegalStateException.class,
+                () -> libroService.actualizar(1L, 2L, formulario)
+        );
+
+        assertEquals(
+                "La presentación física no tiene inventario registrado.",
+                excepcion.getMessage()
+        );
+
+        // No debe crear automáticamente otro inventario.
+        verify(itemStockRepository, never()).save(any(ItemStock.class));
     }
 
 }

@@ -2,152 +2,286 @@
 
 Proyecto académico de **Aplicaciones Web**: plataforma de comercio electrónico de libros desarrollada con Spring Boot, Thymeleaf y MySQL.
 
-> **Estado al 25 de octubre de 2026:** desarrollo en curso. Este documento distingue funcionalidades probadas de las pendientes. La rama de trabajo es `feat-administracion`.
+> **Estado al 29 de octubre de 2026:** tercer avance en desarrollo y revisión. La implementación administrativa se encuentra publicada en la rama `feat-administracion`. Este documento distingue funcionalidades verificadas, limitaciones y tareas pendientes.
 
-## Tecnologías
+## 1. Tecnologías
 
-- Java 21 y Maven Wrapper (`bash ./mvnw ...`).
-- Spring Boot 4.1.2, Spring MVC, Spring Security 7, Spring Data JPA / Hibernate 7.
-- Thymeleaf para las vistas; Lombok para reducir código repetitivo.
+- Java 21 y Maven Wrapper.
+- Spring Boot 4.1.2, Spring MVC y Spring Security 7.
+- Spring Data JPA / Hibernate 7.
+- Thymeleaf para las vistas y Lombok en las entidades.
 - MySQL 8.4 para persistencia.
-- JUnit y Mockito para pruebas unitarias; Postman para peticiones HTTP.
+- JUnit 5 y Mockito para pruebas automatizadas.
+- Postman para pruebas HTTP.
 
-## Arquitectura
+## 2. Arquitectura
 
-Se mantiene separación de responsabilidades:
+El proyecto mantiene una separación de responsabilidades:
 
 ```text
-Navegador / Postman
-        |
-     Controller          rutas HTTP y respuestas / vistas
-        |
-      Service            reglas de negocio y validaciones
-        |
-     Repository          acceso a datos con Spring Data JPA
-        |
-       Model             entidades JPA, relaciones y atributos
-        |
-       MySQL
+Navegador / Cliente HTTP
+          |
+      Controller
+          |
+        Service
+          |
+      Repository
+          |
+         MySQL
+
+Model: entidades JPA utilizadas por las capas.
 ```
 
-**Criterio del curso:** las entidades `Model` no deben contener lógica de negocio. Las reglas y validaciones corresponden a `Service`. No usar `@Data` indiscriminadamente en entidades JPA.
+**Controller:** recibe solicitudes HTTP, prepara los datos de las vistas y controla las redirecciones.
 
-## Preparación local
+**Service:** contiene las reglas de negocio y validaciones.
 
-1. Tener Java 21 y MySQL disponibles.
-2. Crear previamente la base de datos de desarrollo `libreria_raudskinna` y un usuario MySQL con permisos apropiados; **no usar `root` como usuario habitual de la aplicación**.
-3. Configurar variables de entorno en IntelliJ (Run Configuration) o en la terminal:
+**Repository:** utiliza Spring Data JPA para consultar y almacenar información.
 
-   - `DB_USERNAME`: usuario MySQL.
-   - `DB_PASSWORD`: contraseña MySQL.
-   - `RAUDSKINNA_ADMIN_PASSWORD`: contraseña inicial del administrador de desarrollo.
+**Model:** representa las entidades, sus atributos y relaciones. No contiene lógica de negocio, conforme al criterio del curso.
 
-   **Nunca subir credenciales reales al repositorio.** `application.properties` utiliza `${DB_USERNAME}` y `${DB_PASSWORD}`.
+Los formularios administrativos siguen el patrón **POST/Redirect/GET**.
 
-4. En Bash, para solicitar contraseñas sin escribirlas en el historial:
+## 3. Preparación local
 
-   ```bash
-   export DB_USERNAME="raudskinna_app"  # Ajustar al usuario local
-   read -rsp "Clave MySQL: " DB_PASSWORD; echo; export DB_PASSWORD
-   read -rsp "Clave admin inicial: " RAUDSKINNA_ADMIN_PASSWORD; echo; export RAUDSKINNA_ADMIN_PASSWORD
-   ```
+1. Instalar y configurar Java 21 y MySQL.
+2. Crear la base de datos `libreria_raudskinna`.
+3. Crear un usuario MySQL con los permisos necesarios. Evitar utilizar `root` como usuario habitual de la aplicación.
+4. Configurar las variables de entorno requeridas por `application.properties`, incluyendo `DB_USERNAME`, `DB_PASSWORD` y `RAUDSKINNA_ADMIN_PASSWORD`. Revisar también la URL de conexión configurada.
+5. Ejecutar el proyecto desde IntelliJ IDEA o mediante Maven Wrapper.
 
-5. Ejecutar:
+Para ejecutar las pruebas desde Bash:
 
-   ```bash
-   bash ./mvnw clean test
-   bash ./mvnw spring-boot:run
-   ```
+```bash
+bash ./mvnw test
+```
 
-6. Abrir `http://localhost:8080/` o `http://localhost:8080/admin`.
+Para iniciar la aplicación:
 
-**Nota:** las variables definidas en IntelliJ no se exportan automáticamente a Bash. La prueba `contextLoads()` necesita poder iniciar el contexto y conectar con MySQL. Con las variables configuradas se comprobaron **8 pruebas aprobadas, 0 errores**.
+```bash
+bash ./mvnw spring-boot:run
+```
 
-**Datos:** `spring.jpa.hibernate.ddl-auto=update` se usa en desarrollo, no como sistema de migración para producción. Conviene respaldar la base antes de cambios estructurales.
+**Importante:** las variables configuradas en IntelliJ no se transfieren automáticamente a Git Bash. La prueba de carga del contexto necesita una configuración válida de MySQL.
 
-## Modelo JPA disponible
+No subir credenciales reales, tokens de sesión ni contraseñas al repositorio.
 
-| Entidad / tipo | Propósito |
+Se utiliza `spring.jpa.hibernate.ddl-auto=update` en desarrollo. No debe considerarse un mecanismo de migraciones para producción.
+
+## 4. Seguridad y autenticación
+
+La aplicación utiliza Spring Security para:
+
+- Validar credenciales contra los usuarios registrados.
+- Restringir `/admin` y `/admin/**` a usuarios con `ROLE_ADMIN`.
+- Permitir el acceso público a `/admin/login`.
+- Almacenar contraseñas utilizando BCrypt.
+- Mantener CSRF habilitado.
+- Invalidar la sesión HTTP al cerrar sesión.
+
+El acceso administrativo y el cierre de sesión fueron comprobados desde el navegador. También se verificó la inclusión del campo `_csrf` en formularios POST administrativos.
+
+## Acceso administrativo para pruebas
+
+El proyecto incluye la clase `DataInitializer`, encargada de crear automáticamente una cuenta administrativa inicial cuando arranca Spring Boot.
+
+**No es necesario insertar manualmente un administrador desde MySQL.**
+
+### Configuración
+
+1. Crear la base de datos `libreria_raudskinna` y configurar la conexión MySQL.
+2. Establecer la variable de entorno `RAUDSKINNA_ADMIN_PASSWORD` con una contraseña de prueba.
+3. Ejecutar Spring Boot.
+4. Si no existe el usuario `admin@raudskinna.com`, el sistema lo registra automáticamente con rol `ADMIN`.
+5. Acceder a `http://localhost:8080/admin/login` e iniciar sesión utilizando el correo administrativo y la contraseña configurada.
+
+**Credenciales:**
+
+- **Correo:** `admin@raudskinna.com`
+- **Contraseña:** valor de `RAUDSKINNA_ADMIN_PASSWORD`
+
+La contraseña se codifica mediante `PasswordEncoder` antes de almacenarse en MySQL. La contraseña original no se guarda en la tabla `usuarios`.
+
+**Consideraciones importantes:**
+
+- La variable de entorno debe estar configurada antes de iniciar la aplicación.
+- Si la cuenta administrativa ya existe, `DataInitializer` no modifica sus credenciales.
+- Cambiar `RAUDSKINNA_ADMIN_PASSWORD` después de crear la cuenta no actualiza automáticamente la contraseña existente.
+- No publicar contraseñas reales en GitHub.
+- Cada integrante puede utilizar una contraseña de prueba diferente en su propio entorno local.
+
+## 5. Funcionalidades administrativas
+
+### 5.1. Panel principal
+
+Ruta: `/admin`
+
+Muestra accesos a los módulos administrativos e indicadores consultados desde MySQL:
+
+- Cantidad de libros registrados.
+- Cantidad de órdenes pendientes.
+
+### 5.2. Libros e inventario
+
+Ruta principal: `/admin/libros`
+
+Funcionalidades implementadas:
+
+- Consultar libros y sus presentaciones.
+- Registrar libros.
+- Editar la información de libros y formatos.
+- Seleccionar autores, editorial y categoría.
+- Definir precio de la presentación.
+- Gestionar cantidad disponible y stock mínimo de formatos físicos.
+- Identificar estados de inventario.
+
+Los formatos comerciales disponibles son `PASTA_DURA`, `PASTA_BLANDA` y `DIGITAL`.
+
+Los formatos digitales no utilizan inventario físico.
+
+### 5.3. Catálogos auxiliares
+
+| Módulo | Listado | Registro |
+|---|---|---|
+| Autores | `/admin/autores` | `/admin/autores/nuevo` |
+| Editoriales | `/admin/editoriales` | `/admin/editoriales/nueva` |
+| Categorías | `/admin/categorias` | `/admin/categorias/nueva` |
+
+Desde el formulario de libros existen enlaces para registrar autores, editoriales y categorías.
+
+Los enlaces abren otra pestaña. Después del registro, es necesario **actualizar el formulario original** para visualizar las nuevas opciones.
+
+**Precaución:** actualizar el formulario puede eliminar información del libro que todavía no se haya guardado.
+
+Las categorías cuentan también con edición y desactivación lógica. Las categorías inactivas no aparecen entre las opciones disponibles al registrar libros.
+
+### 5.4. Órdenes de compra
+
+Ruta: `/admin/ordenes`
+
+El módulo permite consultar órdenes almacenadas en MySQL y cambiar su estado conforme a reglas de negocio definidas en `OrdenCompraService`.
+
+Transiciones permitidas:
+
+| Estado actual | Siguientes estados permitidos |
 |---|---|
-| `Usuario`, `Rol` | Acceso y roles de usuario |
-| `Categoria` | Clasificación de libros |
-| `Autor` | Autoría |
-| `Editorial` | Datos editoriales |
-| `Libro` | Datos bibliográficos y relaciones |
-| `Formato` | Enum: `PASTA_DURA`, `PASTA_BLANDA`, `DIGITAL` |
-| `FormatoLibro` | Formato y precio por libro |
-| `ItemStock` | Cantidad y stock mínimo por formato |
+| PENDIENTE | PROCESANDO, CANCELADO |
+| PROCESANDO | ENVIADO, CANCELADO |
+| ENVIADO | ENTREGADO |
+| ENTREGADO | Ninguno |
+| CANCELADO | Ninguno |
 
-Relaciones principales: `Libro` → `Categoria` y `Editorial` (`ManyToOne`); `Libro` ↔ `Autor` (`ManyToMany`); `FormatoLibro` → `Libro`; `ItemStock` → `FormatoLibro` (`OneToOne`). **La existencia de la entidad no significa que su administración web ya esté terminada.**
+Se utilizan formularios POST, redirecciones y mensajes de confirmación o error.
 
-## Estado funcional verificado
+**Limitación importante:** las órdenes empleadas para comprobar el módulo administrativo se insertaron como datos de prueba en MySQL. La administración de órdenes no debe confundirse con un proceso de checkout completo ya implementado.
 
-- Inicio y panel administrativo con plantillas Thymeleaf.
-- Seguridad: acceso a `/admin/**` restringido a `ROLE_ADMIN`, login y logout; protección CSRF habilitada.
-- Módulo de categorías: listar, registrar y editar desde formularios administrativos; validaciones de duplicados.
-- Endpoint HTTP PATCH para modificar el nombre de una categoría. Se obtuvo **200 OK con respuesta JSON** mediante Postman usando sesión ADMIN y token CSRF.
-- Siete pruebas unitarias de `CategoriaService` aprobadas; prueba de inicio de contexto aprobada cuando MySQL y variables están disponibles.
+## 6. Modelo de datos y relaciones
 
-### Rutas del módulo Categorías
+La estructura relacional actual contiene diez tablas principales:
 
-| Método | Ruta | Descripción | Estado |
-|---|---|---|---|
-| GET | `/admin/categorias` | Lista categorías | Probado en navegador |
-| GET | `/admin/categorias/nueva` | Formulario de registro | Probado |
-| POST | `/admin/categorias` | Registra categoría | Probado |
-| GET | `/admin/categorias/{id}/editar` | Formulario de edición | Probado |
-| POST | `/admin/categorias/{id}/editar` | Actualiza desde formulario | Probado |
-| PATCH | `/admin/categorias/{id}` | Actualiza el nombre mediante JSON | Probado con Postman |
-| DELETE / baja lógica | Por definir | Desactivación de categorías | **Pendiente** |
+`usuarios`, `ordenes_compra`, `detalles_orden`, `libros`, `formatos_libro`, `items_stock`, `categorias`, `editoriales`, `autores` y `libros_autores`.
 
-Ejemplo de petición PATCH autenticada:
+### Multiplicidades principales
 
-```http
-PATCH /admin/categorias/1 HTTP/1.1
-Content-Type: application/json
-X-CSRF-TOKEN: <token de la sesión>
-Cookie: JSESSIONID=<cookie de la sesión>
+| Relación | Multiplicidad |
+|---|---|
+| Usuario → OrdenCompra | 1:N |
+| OrdenCompra → DetalleOrden | 1:N |
+| FormatoLibro → DetalleOrden | 1:N |
+| Libro → FormatoLibro | 1:N |
+| FormatoLibro → ItemStock | 1:0..1 |
+| Categoria → Libro | 1:N |
+| Editorial → Libro | 1:N |
+| Libro ↔ Autor | N:M |
 
-{"nombre":"Fantasía y aventura"}
+La relación muchos a muchos entre libros y autores se implementa mediante la tabla intermedia `libros_autores`.
+
+La columna `items_stock.formato_libro_id` tiene una restricción `UNIQUE`, por lo que una presentación comercial puede tener como máximo un registro de inventario.
+
+Para el diagrama entidad–relación se recomienda revisar tanto las entidades JPA como las restricciones reales de MySQL: claves primarias, claves foráneas, nulabilidad e índices.
+
+El esquema EER fue generado mediante ingeniería inversa desde MySQL Workbench y exportado a PDF.
+
+## 7. Pruebas realizadas
+
+Última ejecución completa verificada: **29 de octubre de 2026**.
+
+| Clase | Pruebas |
+|---|---:|
+| ProyectoAplicacionesWebApplicationTests | 1 |
+| AutorServiceTest | 4 |
+| CategoriaServiceTest | 12 |
+| EditorialServiceTest | 5 |
+| LibroServiceTest | 23 |
+| OrdenCompraServiceTest | 9 |
+| **Total** | **54** |
+
+Resultado:
+
+```text
+Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
 ```
 
-**No incluir tokens o cookies reales en documentación ni capturas compartidas.** Un `200 OK` con HTML puede ser resultado de una redirección seguida automáticamente por Postman: validar que el resultado esperado sea JSON y, ante dudas, desactivar redirecciones automáticas.
+Posteriormente se realizaron ajustes en las plantillas HTML de los módulos administrativos. Se recomienda ejecutar nuevamente la batería completa antes de la entrega.
 
-## Pendientes prioritarios
+También se verificaron visualmente las páginas administrativas en una resolución móvil de 375 × 825 píxeles.
 
-1. Terminar módulo `Categoria`: pruebas negativas de PATCH (nombre duplicado, identificador inexistente, JSON inválido y campos no permitidos); revisar códigos HTTP (`400` vs `404`).
-2. Definir e implementar **soft delete** para categorías, su consulta/visibilidad y la protección de referencias desde libros. **Todavía no está implementado.**
-3. Definir cómo atender PUT y DELETE conforme a las indicaciones del tercer avance; no confundir métodos HTTP con operaciones de baja lógica.
-4. Completar repositorios, servicios, controladores y vistas de libros, formatos, autores, editoriales e inventario.
-5. Implementar carrito, checkout, órdenes y estados de compra según alcance del proyecto.
-6. Reforzar pruebas automatizadas y mensajes/estilos de validación en vistas.
+## 8. Limitaciones y puntos para revisión
 
-**Importante:** existen algunas plantillas administrativas de libros y órdenes como prototipos visuales; no asumir que sus acciones ya están conectadas al backend.
+- El proceso completo de compra y checkout debe distinguirse de la administración de órdenes ya implementada.
+- Los selectores de autores, editoriales y categorías no se actualizan automáticamente al registrar datos desde otra pestaña.
+- La desactivación de categorías se realiza mediante POST sin una pantalla adicional de confirmación.
+- Las pruebas unitarias con Mockito no sustituyen las pruebas integrales contra una base de datos real.
+- Conviene revisar el comportamiento de las pantallas en dispositivos y resoluciones adicionales.
 
-## Git y colaboración
+Si algún integrante detecta errores, problemas de validación, inconsistencias entre el código y los diagramas o aspectos que deban corregirse, comunicarlo al equipo antes de integrar cambios.
 
-- Rama de desarrollo usada: `feat-administracion`.
-- Punto de recuperación confirmado: `4952a40` — `feat: integrar dominio JPA y administracion de categorias`.
-- **PATCH se probó después de ese commit**; verificar que exista el commit posterior y que se haya subido antes de depender del endpoint en otra computadora.
+## 9. Git y colaboración
 
-Comandos habituales:
+Repositorio:
+
+https://github.com/M1HUEL/ProyectoAplicacionesWeb
+
+Rama del avance:
+
+`feat-administracion`
+
+Último commit confirmado:
+
+```text
+7bab5c9 style: unificar vistas administrativas de autores editoriales y categorias
+```
+
+Para consultar el avance:
 
 ```bash
 git branch --show-current
 git status
-git log -3 --oneline
-bash ./mvnw clean test
-git diff --check
+git log -5 --oneline
 ```
 
-Para publicar una rama propia por primera vez (si hay permiso de escritura al repositorio remoto):
+Se recomienda realizar nuevas modificaciones en ramas propias, revisarlas en equipo y no fusionarlas directamente a `main` sin coordinación.
 
-```bash
-git push -u origin feat-administracion
-```
+## 10. Preparación del video del tercer avance
 
-**No mezclar directamente a `main` sin revisión y coordinación del equipo.** Compartir con compañeros el enlace de la rama y, si procede, abrir un Pull Request.
+El entregable requiere un video de **5 a 10 minutos** que explique el avance y demuestre las funcionalidades desarrolladas.
 
-## Registro breve de avance
+Temas sugeridos:
 
-**25/oct/2026:** se integraron modelo JPA, autenticación, panel administrativo y operaciones de registro/consulta/edición de categorías; se comprobaron ocho pruebas. Se añadió y verificó con Postman el endpoint PATCH para categorías. Próxima sesión: validaciones de PATCH, eliminación lógica y siguientes módulos.
+1. Arquitectura y organización del proyecto.
+2. Inicio de sesión y protección del panel administrativo.
+3. Panel principal e indicadores reales.
+4. Administración de libros, formatos e inventario.
+5. Registro de autores, editoriales y categorías.
+6. Administración de órdenes y transiciones de estado.
+7. Modelo de datos y sus relaciones.
+8. Cierre de sesión y conclusiones.
+
+Cada integrante debe revisar previamente los controladores, servicios, repositorios y entidades relacionados con la parte que vaya a explicar.
+
+**Objetivo del equipo:** llegar a la grabación con el código revisado, el modelo de datos comprendido y las funcionalidades que se mostrarán previamente comprobadas.
+
+---
+
+**Registro del avance — 29/oct/2026:** módulos administrativos implementados y revisados, indicadores reales, pruebas automatizadas satisfactorias, diagrama EER generado y mejoras de navegación y responsividad publicadas en `feat-administracion`.

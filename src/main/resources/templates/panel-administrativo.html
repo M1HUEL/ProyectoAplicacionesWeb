@@ -1,46 +1,191 @@
+
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Panel administrativo · Librería Raudskinna</title>
-    <link rel="stylesheet" th:href="@{/styles/index.css}" />
-  </head>
-  <body>
-    <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel administrativo · Librería Raudskinna</title>
+  <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
 
-    <main class="contenedor">
-      <div class="encabezado-pagina">
-        <p class="sobretitulo">Panel administrativo</p>
-        <h1>Gestión de la librería</h1>
-        <p>Administra libros, existencias y órdenes desde un solo lugar.</p>
+<body class="admin-layout">
+
+<!-- Navegación reutilizable del área administrativa. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('panel')}"></th:block>
+
+<!-- Contenido principal del panel. -->
+<main class="admin-contenido">
+
+  <div class="encabezado-pagina">
+    <p class="sobretitulo">Panel administrativo</p>
+    <h1>Gestión de la librería</h1>
+    <p>Resumen del negocio y accesos a los módulos de administración.</p>
+  </div>
+
+  <!-- Periodo no válido. -->
+  <p th:if="${error}"
+     th:text="${error}"
+     class="mensaje-error"
+     role="alert">
+    El periodo indicado no es válido.
+  </p>
+
+  <!--
+    Indicadores consultados desde MySQL mediante DashboardService.
+    Los datos de "hoy", pendientes y stock bajo no dependen del periodo.
+  -->
+  <div class="admin-tarjetas">
+
+    <section class="panel admin-tarjeta">
+      <h2>Libros e inventario</h2>
+      <p class="admin-dato"
+         th:text="|${resumen.totalLibros} libros registrados|">
+        0 libros registrados
+      </p>
+      <p class="admin-dato"
+         th:text="|${#lists.size(resumen.stockBajo)} presentaciones con stock bajo|">
+        0 presentaciones con stock bajo
+      </p>
+      <p>Alta, edición, visibilidad y ajuste de existencias.</p>
+
+      <a class="boton boton-primario" th:href="@{/admin/libros}">
+        Gestionar
+      </a>
+    </section>
+
+    <section class="panel admin-tarjeta">
+      <h2>Órdenes</h2>
+      <p class="admin-dato"
+         th:text="|${resumen.ordenesHoy} órdenes hoy|">
+        0 órdenes hoy
+      </p>
+      <p class="admin-dato"
+         th:text="|${resumen.ordenesPendientes} órdenes pendientes|">
+        0 órdenes pendientes
+      </p>
+      <p>Revisa pedidos, filtra y actualiza su estado.</p>
+
+      <a class="boton boton-primario" th:href="@{/admin/ordenes}">
+        Gestionar
+      </a>
+    </section>
+
+    <section class="panel admin-tarjeta">
+      <h2>Ventas del periodo</h2>
+      <p class="admin-dato"
+         th:text="${'$' + #numbers.formatDecimal(resumen.ventasPeriodo, 1, 'COMMA', 2, 'POINT')}">
+        $0.00
+      </p>
+      <p th:text="|Del ${#temporals.format(resumen.desde, 'dd/MM/yyyy')} al ${#temporals.format(resumen.hasta, 'dd/MM/yyyy')}. No incluye órdenes canceladas.|">
+        Del 01/01/2026 al 31/01/2026.
+      </p>
+    </section>
+
+  </div>
+
+  <!-- Periodo para ventas y libros más vendidos. -->
+  <section class="panel">
+    <div class="encabezado-panel">
+      <h2>Periodo de ventas</h2>
+    </div>
+
+    <form th:action="@{/admin}" method="get" class="formulario formulario-admin">
+      <div class="fila-formulario">
+        <div class="grupo-formulario">
+          <label for="desde">Desde</label>
+          <input class="campo campo-formulario"
+                 id="desde"
+                 name="desde"
+                 type="date"
+                 th:value="${resumen.desde}" />
+        </div>
+        <div class="grupo-formulario">
+          <label for="hasta">Hasta</label>
+          <input class="campo campo-formulario"
+                 id="hasta"
+                 name="hasta"
+                 type="date"
+                 th:value="${resumen.hasta}" />
+        </div>
       </div>
-
-      <div class="admin-tarjetas">
-        <section class="panel admin-tarjeta">
-          <h2>Libros e inventario</h2>
-          <p class="admin-dato">24 libros · 3 con stock bajo</p>
-          <p>Alta, edición, consulta y existencias del catálogo.</p>
-          <a class="boton boton-primario" href="#">Gestionar</a>
-        </section>
-
-        <section class="panel admin-tarjeta">
-          <h2>Órdenes</h2>
-          <p class="admin-dato">5 nuevas</p>
-          <p>Revisa pedidos y actualiza su estado.</p>
-          <a class="boton boton-primario" href="#">Gestionar</a>
-        </section>
+      <div class="acciones-formulario">
+        <button type="submit" class="boton boton-primario">Aplicar</button>
+        <a th:href="@{/admin}" class="boton boton-claro">Mes actual</a>
       </div>
-    </main>
+    </form>
+  </section>
 
-    <footer class="pie">
-      <div class="contenedor">
-        <span>Librería Raudskinna · Administración</span>
-        <nav aria-label="Pie de página">
-          <a href="panel-admin.html">Panel</a> · <a href="#">Libros</a> ·
-          <a href="#">Órdenes</a> · <a href="#">Cerrar sesión</a>
-        </nav>
-      </div>
-    </footer>
-  </body>
+  <div class="separador-secciones"></div>
+
+  <!-- Libros más vendidos en el periodo. -->
+  <section class="panel">
+    <div class="encabezado-panel">
+      <h2>Libros más vendidos</h2>
+    </div>
+
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+        <tr>
+          <th>#</th>
+          <th>Libro</th>
+          <th>Unidades vendidas</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(resumen.masVendidos)}">
+          <td colspan="3">No hay ventas en el periodo seleccionado.</td>
+        </tr>
+        <tr th:each="p, fila : ${resumen.masVendidos}">
+          <td th:text="${fila.count}">1</td>
+          <td th:text="${p.titulo}">Título</td>
+          <td th:text="${p.unidades}">0</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="separador-secciones"></div>
+
+  <!-- Presentaciones físicas con existencias en el mínimo o por debajo. -->
+  <section class="panel">
+    <div class="encabezado-panel">
+      <h2>Productos con stock bajo</h2>
+    </div>
+
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+        <tr>
+          <th>Libro</th>
+          <th>Formato</th>
+          <th>Existencias</th>
+          <th>Stock mínimo</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(resumen.stockBajo)}">
+          <td colspan="5">Ningún libro visible está por debajo de su stock mínimo.</td>
+        </tr>
+        <tr th:each="s : ${resumen.stockBajo}">
+          <td th:text="${s.titulo}">Título</td>
+          <td th:text="${s.formato == 'PASTA_DURA' ? 'Pasta dura' : (s.formato == 'PASTA_BLANDA' ? 'Pasta blanda' : 'Digital')}">Formato</td>
+          <td th:text="${s.cantidad}">0</td>
+          <td th:text="${s.stockMinimo}">0</td>
+          <td class="acciones-tabla">
+            <a th:href="@{/admin/inventario/formatos/{formatoId}/ajuste(formatoId=${s.formatoId})}">
+              Ajustar inventario
+            </a>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+</body>
 </html>

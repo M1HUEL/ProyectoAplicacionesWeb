@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title th:text="'Orden #' + ${orden.id} + ' · Librería Raudskinna'">Orden · Librería Raudskinna</title>
+  <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+<body class="admin-layout">
+
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('ordenes')}"></th:block>
+
+<main class="admin-contenido">
+  <section class="panel pedido">
+    <div class="encabezado-panel">
+      <p class="sobretitulo">Administración / Órdenes</p>
+      <h1 th:text="'Orden #' + ${orden.id}">Orden #00000</h1>
+      <p class="pedido-fecha" th:text="${#temporals.format(orden.fecha, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</p>
+    </div>
+
+    <div style="margin: 1rem 0;">
+      <span class="estado-orden"
+            th:classappend="${' estado-orden-' + #strings.toLowerCase(orden.estado.name())}"
+            th:text="${orden.estado}">PENDIENTE</span>
+    </div>
+
+    <div class="confirmacion-detalle">
+      <div class="resumen-fila" th:each="detalle : ${orden.detalles}">
+        <span th:text="${detalle.formatoLibro.libro.titulo} + ' (' + ${detalle.formatoLibro.formato} + ') × ' + ${detalle.cantidad}">Producto × 1</span>
+        <span th:text="'$' + ${#numbers.formatDecimal(detalle.precioUnitario * detalle.cantidad, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
+      </div>
+      <div class="resumen-fila resumen-total">
+        <span>Total</span>
+        <span th:text="'$' + ${#numbers.formatDecimal(orden.total, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
+      </div>
+    </div>
+
+    <h2>Datos del cliente</h2>
+    <p class="pedido-datos">
+      <strong>Nombre:</strong> <span th:text="${orden.usuario.nombre}">Cliente</span><br/>
+      <strong>Correo:</strong> <span th:text="${orden.usuario.correo}">correo@ejemplo.com</span>
+    </p>
+
+    <div class="acciones">
+      <a class="boton boton-claro" th:href="@{/admin/ordenes}">Volver al listado</a>
+    </div>
+  </section>
+</main>
+</body>
+</html>

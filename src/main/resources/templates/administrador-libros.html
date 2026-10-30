@@ -1,61 +1,154 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Libros e inventario · Librería Raudskinna</title>
-    <link rel="stylesheet" th:href="@{/styles/index.css}" />
-  </head>
-  <body>
-    <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Libros e inventario · Librería Raudskinna</title>
+  <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+<body class="admin-layout">
+<!-- Navegación reutilizable del panel administrativo. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}"></th:block>
 
-    <main class="contenedor">
-      <div class="encabezado-pagina">
-        <p class="sobretitulo">Administración</p>
-        <h1>Libros e inventario</h1>
-        <p>Gestiona el catálogo, precios y existencias.</p>
-        <div class="acciones">
-          <a class="boton boton-primario" th:href="@{/administrador/libros/nuevo}">Agregar libro</a>
-        </div>
-      </div>
+<main class="admin-contenido">
+  <div class="encabezado-pagina">
+    <p class="sobretitulo">Administración</p>
+    <h1>Libros e inventario</h1>
+    <p>Gestiona el catálogo, precios y existencias.</p>
+    <div class="acciones">
+      <!-- Abre el formulario administrativo para registrar un libro. -->
+      <a class="boton boton-primario"
+         th:href="@{/admin/libros/nuevo}">
+        Agregar libro
+      </a>
+    </div>
+  </div>
 
-      <section class="panel">
-        <div class="tabla-contenedor">
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Autor</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Ejemplo</td>
-                <td>Autor</td>
-                <td>$299.00</td>
-                <td>12</td>
-                <td class="acciones-tabla">
-                  <a class="boton boton-claro" href="#">Editar</a>
-                  <a class="boton boton-claro" href="#">Eliminar</a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+  <!--
+      Muestra la confirmación del registro de un libro.
 
-    <footer class="pie">
-      <div class="contenedor">
-        <span>Librería Raudskinna · Administración</span>
-        <nav aria-label="Pie de página">
-          <a th:href="@{/}">Panel</a> · <a th:href="@{/administrador/libros}">Libros</a> ·
-          <a th:href="@{/administrador/ordenes}">Órdenes</a> · <a th:href="@{/logout}">Cerrar sesión</a>
-        </nav>
-      </div>
-    </footer>
-  </body>
+      El mensaje proviene de LibroController mediante
+      RedirectAttributes después de guardar correctamente.
+  -->
+  <p th:if="${mensaje}"
+     th:text="${mensaje}"
+     class="mensaje-exito"
+     role="status">
+    Libro registrado correctamente.
+  </p>
+
+  <!-- Mensaje cuando una operación es rechazada. -->
+  <p th:if="${error}"
+     th:text="${error}"
+     class="mensaje-error"
+     role="alert">
+    No fue posible completar la operación.
+  </p>
+
+
+  <section class="panel">
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+        <tr>
+          <th>Título</th>
+          <th>Autor(es)</th>
+          <th>Formato</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Estado</th>
+          <th>Visibilidad</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+
+        <!-- Mensaje cuando no existen presentaciones comerciales. -->
+        <tr th:if="${#lists.isEmpty(libros)}">
+          <td colspan="8">
+            No hay libros registrados con formatos comerciales.
+          </td>
+        </tr>
+
+        <!--
+            Genera una fila por cada presentación comercial
+            recuperada desde LibroService.
+
+            Los datos provienen de LibroListadoDTO.
+        -->
+        <tr th:each="libro : ${libros}">
+
+          <!-- Información bibliográfica. -->
+          <td th:text="${libro.titulo}">Título</td>
+          <td th:text="${libro.autores}">Autores</td>
+
+          <!-- Formato y precio de la presentación. -->
+          <td th:text="${libro.formato}">Formato</td>
+
+          <td th:text="${#numbers.formatDecimal(libro.precio, 1, 2)}">
+            0.00
+          </td>
+
+          <!-- El formato digital no maneja inventario físico. -->
+          <td th:text="${libro.stock != null ? libro.stock : '—'}">
+            —
+          </td>
+
+          <!-- Estado calculado previamente en LibroService. -->
+          <td th:text="${libro.estado}">Estado</td>
+
+          <!-- Visibilidad del libro en el catálogo. -->
+          <td>
+            <span th:if="${libro.activo}" class="etiqueta-disponible">Visible</span>
+            <span th:unless="${libro.activo}" class="etiqueta-agotado">Oculto</span>
+          </td>
+
+          <!--
+              Abre el formulario de edición correspondiente
+              a la presentación comercial seleccionada.
+
+              Se utilizan ambos identificadores:
+              - libroId: identifica el libro.
+              - formatoId: identifica su presentación comercial.
+          -->
+          <td class="acciones-tabla">
+            <a th:href="@{/admin/libros/{libroId}/formatos/{formatoId}/editar(
+            libroId=${libro.libroId},
+            formatoId=${libro.formatoId}
+        )}">
+              Editar
+            </a>
+
+            <!--
+                Ajuste de existencias con motivo.
+                Los formatos digitales no manejan inventario físico.
+            -->
+            <a th:if="${libro.formato != 'DIGITAL'}"
+               th:href="@{/admin/inventario/formatos/{formatoId}/ajuste(formatoId=${libro.formatoId})}">
+              Ajustar inventario
+            </a>
+
+            <!--
+                Muestra u oculta el libro (todos sus formatos).
+                POST con token CSRF incorporado por Thymeleaf.
+            -->
+            <form th:action="@{/admin/libros/{libroId}/activo(libroId=${libro.libroId})}"
+                  method="post">
+              <input type="hidden" name="activo" th:value="${!libro.activo}"/>
+              <button type="submit" class="boton boton-claro"
+                      th:text="${libro.activo ? 'Ocultar' : 'Mostrar'}">
+                Ocultar
+              </button>
+            </form>
+          </td>
+
+        </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
 </html>

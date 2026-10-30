@@ -1,44 +1,360 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Libro · Librería Raudskinna</title>
-    <link rel="stylesheet" th:href="@{/styles/index.css}" />
-  </head>
-  <body>
-    <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+    <link rel="stylesheet" th:href="@{/styles/index.css}"/>
+</head>
+<body class="admin-layout">
 
-    <main class="contenedor">
-      <section class="panel registro">
+<!-- Menú lateral reutilizable del área administrativa. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}"></th:block>
+
+<main class="admin-contenido">
+    <section class="panel registro">
         <h1>Agregar/Editar libro</h1>
-        <form class="formulario">
-          <label for="titulo">Título</label>
-          <input class="campo campo-formulario" id="titulo" type="text" required />
 
-          <label for="autor">Autor</label>
-          <input class="campo campo-formulario" id="autor" type="text" required />
+        <!--
+            Muestra los errores de validación enviados
+            desde LibroController mediante FlashAttributes.
 
-          <label for="precio">Precio</label>
-          <input class="campo campo-formulario" id="precio" type="number" step="0.01" required />
+            El administrador conserva los datos capturados
+            para poder corregirlos y volver a intentarlo.
+        -->
+        <p th:if="${error}"
+           th:text="${error}"
+           role="alert"
+           class="mensaje-error">
+            No fue posible guardar los datos del libro.
+        </p>
 
-          <label for="stock">Stock</label>
-          <input class="campo campo-formulario" id="stock" type="number" required />
+        <!--
+            Formulario de registro administrativo de libros.
 
-          <button class="boton boton-primario" type="submit">Guardar</button>
-          <a class="boton boton-claro" th:href="@{/administrador/libros}">Cancelar</a>
+            Envía los datos a LibroController mediante POST.
+            Thymeleaf vincula los campos con LibroFormularioDTO.
+
+            Spring Security mantiene la protección CSRF.
+        -->
+        <form class="formulario"
+              th:action="${libroId != null and formatoId != null}
+        ? @{/admin/libros/{libroId}/formatos/{formatoId}(
+                libroId=${libroId},
+                formatoId=${formatoId}
+            )}
+        : @{/admin/libros}"
+              th:object="${libroFormulario}"
+              method="post"
+              enctype="multipart/form-data">
+
+            <!--
+                  Datos bibliográficos del libro.
+                  Se vinculan con LibroFormularioDTO.
+              -->
+
+            <!-- Título obligatorio del libro. -->
+            <label for="titulo">Título</label>
+            <input class="campo campo-formulario"
+                   id="titulo"
+                   type="text"
+                   th:field="*{titulo}"
+                   maxlength="200"
+                   required/>
+
+            <!-- ISBN que identifica la edición del libro. -->
+            <label for="isbn">ISBN</label>
+            <input class="campo campo-formulario"
+                   id="isbn"
+                   type="text"
+                   th:field="*{isbn}"
+                   maxlength="20"
+                   required/>
+
+            <!--
+                Selección de autores registrados.
+                Permite seleccionar varios autores mediante Ctrl o Shift.
+
+                Los identificadores seleccionados se vinculan
+                con LibroFormularioDTO.autoresIds.
+            -->
+            <label for="autoresIds">Autor(es)</label>
+
+            <select class="campo campo-formulario"
+                    id="autoresIds"
+                    th:field="*{autoresIds}"
+                    multiple
+                    size="4"
+                    required>
+
+                <!-- Los autores provienen de AutorService. -->
+                <option th:each="autor : ${autores}"
+                        th:value="${autor.id}"
+                        th:text="${autor.nombre}">
+                    Nombre del autor
+                </option>
+
+            </select>
+
+            <small>
+                Mantén presionada la tecla Ctrl para seleccionar
+                varios autores.
+            </small>
+
+            <!--
+            Permite registrar un autor que todavía no existe
+            en el catálogo, sin modificar el selector múltiple.
+            -->
+            <a class="boton boton-claro"
+               th:href="@{/admin/autores/nuevo}"
+               target="_blank"
+               rel="noopener">
+                + Registrar nuevo autor
+            </a>
+
+            <!--
+                Selección de la editorial responsable del libro.
+
+                Las editoriales se recuperan mediante EditorialService
+                y sus identificadores se vinculan con LibroFormularioDTO.
+            -->
+            <label for="editorialId">Editorial</label>
+
+            <select class="campo campo-formulario"
+                    id="editorialId"
+                    th:field="*{editorialId}"
+                    required>
+
+                <!-- Opción inicial sin editorial seleccionada. -->
+                <option value="">Selecciona una editorial</option>
+
+                <!-- Editoriales recuperadas desde MySQL. -->
+                <option th:each="editorial : ${editoriales}"
+                        th:value="${editorial.id}"
+                        th:text="${editorial.nombre}">
+                    Nombre de la editorial
+                </option>
+
+            </select>
+
+            <!--
+            Permite registrar una editorial que todavía no existe
+            en el catálogo, conservando abierto el formulario del libro.
+            -->
+            <a class="boton boton-claro"
+               th:href="@{/admin/editoriales/nueva}"
+               target="_blank"
+               rel="noopener">
+                + Registrar nueva editorial
+            </a>
+
+            <!--
+                Selección de una categoría activa.
+
+                Las categorías se recuperan mediante CategoriaService.
+                No se muestran las categorías desactivadas.
+            -->
+            <label for="categoriaId">Categoría</label>
+
+            <select class="campo campo-formulario"
+                    id="categoriaId"
+                    th:field="*{categoriaId}"
+                    required>
+
+                <!-- Opción inicial sin categoría seleccionada. -->
+                <option value="">Selecciona una categoría</option>
+
+                <!-- Categorías activas recuperadas desde MySQL. -->
+                <option th:each="categoria : ${categorias}"
+                        th:value="${categoria.id}"
+                        th:text="${categoria.nombre}">
+                    Nombre de la categoría
+                </option>
+
+            </select>
+
+            <!--
+            Permite registrar una categoría nueva desde
+            el formulario administrativo de libros.
+            -->
+            <a class="boton boton-claro"
+               th:href="@{/admin/categorias/nueva}"
+               target="_blank"
+               rel="noopener">
+                + Registrar nueva categoría
+            </a>
+
+            <!--
+                Selección de la presentación comercial del libro.
+
+                Los valores provienen del enum Formato y se vinculan
+                con LibroFormularioDTO.formato.
+            -->
+            <label for="formato">Formato</label>
+
+            <select class="campo campo-formulario"
+                    id="formato"
+                    th:field="*{formato}"
+                    th:disabled="${formatoId != null}"
+                    required>
+
+                <!-- Opción inicial sin formato seleccionado. -->
+                <option value="">Selecciona un formato</option>
+
+                <!-- Presentaciones disponibles en nuestro dominio. -->
+                <option th:each="formato : ${formatos}"
+                        th:value="${formato}"
+                        th:text="${formato.name() == 'PASTA_DURA' ? 'Pasta dura' :
+                      (formato.name() == 'PASTA_BLANDA' ? 'Pasta blanda' : 'Digital')}">
+                    Formato
+                </option>
+
+            </select>
+
+            <!--
+                Precio de la presentación comercial seleccionada.
+
+                Se vincula con LibroFormularioDTO.precio,
+                cuyo tipo es BigDecimal.
+            -->
+            <label for="precio">Precio (MXN)</label>
+
+            <input class="campo campo-formulario"
+                   id="precio"
+                   type="number"
+                   th:field="*{precio}"
+                   min="0.01"
+                   step="0.01"
+                   placeholder="Ej. 299.00"
+                   required/>
+
+            <!--
+                Inventario inicial de la presentación comercial.
+
+                Los valores se vinculan con LibroFormularioDTO.
+                Se utilizarán únicamente para formatos físicos.
+            -->
+
+            <!--
+                Cantidad de unidades disponibles.
+
+                Al registrar un libro es la existencia inicial. Al editarlo
+                solo se muestra: para cambiarla se usa el ajuste de inventario,
+                que registra el motivo y queda en el historial.
+            -->
+            <label for="cantidad">Cantidad disponible</label>
+
+            <input class="campo campo-formulario"
+                   id="cantidad"
+                   type="number"
+                   th:field="*{cantidad}"
+                   th:readonly="${formatoId != null}"
+                   min="0"
+                   step="1"
+                   placeholder="Ej. 12"/>
+
+            <small th:if="${formatoId != null and libroFormulario.formato != null and libroFormulario.formato.name() != 'DIGITAL'}">
+                Para cambiar las existencias usa
+                <a th:href="@{/admin/inventario/formatos/{formatoId}/ajuste(formatoId=${formatoId})}">
+                    Ajustar inventario
+                </a>
+                y registra el motivo del cambio.
+            </small>
+
+            <!-- Umbral mínimo para identificar existencias bajas. -->
+            <label for="stockMinimo">Stock mínimo</label>
+
+            <input class="campo campo-formulario"
+                   id="stockMinimo"
+                   type="number"
+                   th:field="*{stockMinimo}"
+                   min="0"
+                   step="1"
+                   placeholder="Ej. 3"/>
+
+            <small>
+                Estos campos corresponden únicamente a libros físicos.
+                Para el formato digital no se utilizará inventario.
+            </small>
+
+            <!--
+                Sinopsis o descripción bibliográfica del libro.
+
+                Se vincula con LibroFormularioDTO.sinopsis.
+                Se almacenará en Libro.sinopsis.
+            -->
+            <label for="sinopsis">Sinopsis</label>
+
+            <textarea class="campo campo-formulario"
+                      id="sinopsis"
+                      th:field="*{sinopsis}"
+                      rows="5"
+                      placeholder="Escribe una breve descripción del libro...">
+          </textarea>
+
+            <!--
+                Dirección de la imagen de portada del libro.
+
+                Se vincula con LibroFormularioDTO.portadaUrl.
+                La URL se almacenará en Libro.portadaUrl.
+            -->
+            <!-- Vista previa de la portada actual, si existe. -->
+            <img th:if="${libroFormulario.portadaUrl != null and !#strings.isEmpty(libroFormulario.portadaUrl)}"
+                 th:src="@{${libroFormulario.portadaUrl}}"
+                 alt="Portada actual del libro"
+                 style="max-width: 140px; border-radius: 6px;"/>
+
+            <!--
+                Imagen de portada subida desde el equipo.
+                Se vincula con LibroFormularioDTO.portada y tiene
+                prioridad sobre la URL escrita a mano.
+            -->
+            <label for="portada">Subir portada (JPG, PNG o WEBP, máx. 2 MB)</label>
+
+            <input class="campo campo-formulario"
+                   id="portada"
+                   name="portada"
+                   type="file"
+                   accept="image/jpeg,image/png,image/webp"/>
+
+            <label for="portadaUrl">O bien, URL de la portada</label>
+
+            <input class="campo campo-formulario"
+                   id="portadaUrl"
+                   type="url"
+                   th:field="*{portadaUrl}"
+                   maxlength="500"
+                   placeholder="https://ejemplo.com/portada.jpg"/>
+
+            <small>
+                Si subes un archivo, se usará en lugar de la URL.
+                Ambos campos son opcionales.
+            </small>
+
+            <!--
+                Visibilidad del libro en el catálogo.
+                Un libro oculto se conserva, pero no se muestra a los clientes.
+            -->
+            <label for="activo">
+                <input id="activo"
+                       type="checkbox"
+                       th:field="*{activo}"/>
+                Visible en el catálogo
+            </label>
+
+            <small>
+                Desmárcalo para ocultar el libro sin eliminarlo.
+                Afecta a todos sus formatos.
+            </small>
+
+            <button class="boton boton-primario" type="submit">Guardar</button>
+            <!-- Regresa al listado administrativo sin guardar cambios. -->
+            <a class="boton boton-claro"
+               th:href="@{/admin/libros}">
+                Cancelar
+            </a>
         </form>
-      </section>
-    </main>
-
-    <footer class="pie">
-      <div class="contenedor">
-        <span>Librería Raudskinna · Administración</span>
-        <nav aria-label="Pie de página">
-          <a th:href="@{/}">Panel</a> · <a th:href="@{/administrador/libros}">Libros</a> ·
-          <a th:href="@{/administrador/ordenes}">Órdenes</a> · <a th:href="@{/logout}">Cerrar sesión</a>
-        </nav>
-      </div>
-    </footer>
-  </body>
+    </section>
+</main>
+</body>
 </html>

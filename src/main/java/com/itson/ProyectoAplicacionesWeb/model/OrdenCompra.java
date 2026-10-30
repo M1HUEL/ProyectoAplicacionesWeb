@@ -9,6 +9,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Representa una orden de compra realizada por un usuario
@@ -43,4 +45,7 @@ public class OrdenCompra {
     // Importe total registrado al momento de la compra.
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal total;
+
+    @OneToMany(mappedBy = "ordenCompra", fetch = FetchType.LAZY)
+    private List<DetalleOrden> detalles = new ArrayList<>();
 }

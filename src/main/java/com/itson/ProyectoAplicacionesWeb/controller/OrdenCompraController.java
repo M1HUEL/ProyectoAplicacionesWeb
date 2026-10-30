@@ -53,6 +53,12 @@ public class OrdenCompraController {
      * Utiliza POST/Redirect/GET para evitar el reenvío
      * del formulario al actualizar la página.
      */
+    @GetMapping("/{ordenId}/detalle")
+    public String verDetalle(@PathVariable Long ordenId, Model model) {
+        model.addAttribute("orden", ordenCompraService.buscarPorId(ordenId));
+        return "detalle-pedido";
+    }
+
     @PostMapping("/{ordenId}/estado")
     public String actualizarEstado(
             @PathVariable Long ordenId,

@@ -26,7 +26,7 @@ public class DataInitializer {
     CommandLineRunner init(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
-            @Value("${RAUDSKINNA_ADMIN_PASSWORD}") String adminPassword) {
+            @Value("${RAUDSKINNA_ADMIN_PASSWORD:Admin123!}") String adminPassword) {
 
         return args -> {
 

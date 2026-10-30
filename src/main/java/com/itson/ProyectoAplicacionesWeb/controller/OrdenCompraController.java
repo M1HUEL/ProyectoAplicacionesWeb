@@ -24,15 +24,25 @@ public class OrdenCompraController {
     }
 
     /**
-     * Muestra el listado administrativo de órdenes.
+     * Muestra el listado administrativo de órdenes con filtros.
      */
     @GetMapping
-    public String listarOrdenes(Model model) {
+    public String listarOrdenes(@RequestParam(required = false) EstadoOrden estado,
+                               @RequestParam(required = false) String fechaDesde,
+                               @RequestParam(required = false) String fechaHasta,
+                               @RequestParam(required = false) String cliente,
+                               Model model) {
 
         model.addAttribute(
                 "ordenes",
-                ordenCompraService.listarTodas()
+                ordenCompraService.filtrar(estado, fechaDesde, fechaHasta, cliente)
         );
+
+        model.addAttribute("estados", EstadoOrden.values());
+        model.addAttribute("estadoSeleccionado", estado);
+        model.addAttribute("fechaDesde", fechaDesde);
+        model.addAttribute("fechaHasta", fechaHasta);
+        model.addAttribute("clienteFiltro", cliente);
 
         return "administrador-ordenes";
     }

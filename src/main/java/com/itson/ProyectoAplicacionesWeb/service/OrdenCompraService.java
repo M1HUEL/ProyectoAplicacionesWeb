@@ -7,6 +7,8 @@ import com.itson.ProyectoAplicacionesWeb.repository.OrdenCompraRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -30,6 +32,23 @@ public class OrdenCompraService {
     @Transactional(readOnly = true)
     public List<OrdenCompra> listarTodas() {
         return ordenCompraRepository.listarConUsuarios();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrdenCompra> filtrar(EstadoOrden estado, String fechaDesde, String fechaHasta, String cliente) {
+        LocalDateTime desde = null;
+        LocalDateTime hasta = null;
+
+        if (fechaDesde != null && !fechaDesde.isBlank()) {
+            desde = LocalDate.parse(fechaDesde).atStartOfDay();
+        }
+        if (fechaHasta != null && !fechaHasta.isBlank()) {
+            hasta = LocalDate.parse(fechaHasta).atTime(23, 59, 59);
+        }
+
+        String clienteNormalizado = (cliente == null || cliente.isBlank()) ? null : cliente.trim();
+
+        return ordenCompraRepository.filtrar(estado, desde, hasta, clienteNormalizado);
     }
 
     /**

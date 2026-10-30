@@ -284,4 +284,94 @@ Cada integrante debe revisar previamente los controladores, servicios, repositor
 
 ---
 
-**Registro del avance — 29/oct/2026:** módulos administrativos implementados y revisados, indicadores reales, pruebas automatizadas satisfactorias, diagrama EER generado y mejoras de navegación y responsividad publicadas en `feat-administracion`.
+**Registro del avance — 29/oct/2026:** módulos administrativos implementados y revisados, indicadores reales, pruebas automatizadas satisfactorias, diagrama EER generado y mejoras de navegación y responsividad publicadas en `feat-administracion`.## 11. Scripts SQL para insertar registros (MySQL)
+
+Asegurate de tener la base de datos `libreria_raudskinna` creada. Ejecuta en orden, respetando claves foraneas.
+
+### 11.1. Catalogos base
+
+```sql
+-- Categorias
+INSERT INTO categorias (nombre, activo) VALUES
+('Novela', 1),
+('Ficcion', 1),
+('Misterio', 1);
+
+-- Editoriales
+INSERT INTO editoriales (nombre) VALUES
+('Editorial Planeta'),
+('Alfaguara'),
+('Anagrama');
+
+-- Autores
+INSERT INTO autores (nombre) VALUES
+('Gabriel Garcia Marquez'),
+('Isabel Allende'),
+('Julio Cortazar');
+```
+### 11.2. Libros
+
+Reemplaza `categoria_id` y `editorial_id` con los IDs generados.
+
+```sql
+-- Libro
+INSERT INTO libros (titulo, isbn, sinopsis, portada_url, numero_paginas, fecha_publicacion, categoria_id, editorial_id)
+VALUES
+('Cien anos de soledad', '9788437604947', 'Realismo magico clasico.', NULL, 471, '1967-05-30', 1, 1),
+('La casa de los espiritus', '9788401352836', 'Saga familiar chilena.', NULL, 448, '1982-01-01', 1, 2),
+('Rayuela', '9788432216060', 'Novela experimental.', NULL, 635, '1963-06-28', 1, 3);
+```
+
+### 11.3. Relacion libros_autores
+
+```sql
+-- libros_autores (libro_id, autor_id)
+INSERT INTO libros_autores (libro_id, autor_id) VALUES
+(1, 1),
+(2, 2),
+(3, 3);
+```
+
+### 11.4. Formatos y stock
+
+Los formatos permitidos: `PASTA_DURA`, `PASTA_BLANDA`, `DIGITAL`. Los formatos digitales no llevan stock fisico.
+
+```sql
+-- Formatos
+INSERT INTO formatos_libro (libro_id, formato, precio) VALUES
+(1, 'PASTA_DURA', 899.00),
+(1, 'PASTA_BLANDA', 599.00),
+(1, 'DIGITAL', 299.00),
+(2, 'PASTA_BLANDA', 549.00),
+(2, 'DIGITAL', 279.00),
+(3, 'PASTA_DURA', 749.00);
+
+-- Stock para formatos fisicos (items_stock con formato_libro_id unico)
+INSERT INTO items_stock (formato_libro_id, cantidad, stock_minimo) VALUES
+(1, 50, 10),
+(2, 80, 15),
+(4, 40, 10),
+(6, 25, 5);
+```
+
+### 11.5. Usuario administrador (opcional si ya existe via DataInitializer)
+
+`DataInitializer` crea `admin@raudskinna.com` con `RAUDSKINNA_ADMIN_PASSWORD`. Si prefieres crearlo manualmente, guarda el hash BCrypt.
+
+```sql
+-- Ejemplo (ajusta la contrasena hasheada)
+INSERT INTO usuarios (nombre, correo, contrasena, rol)
+VALUES ('Administrador', 'admin@raudskinna.com', '$2a$10$REEMPLAZAR_POR_HASH_BCRYPT', 'ADMIN');
+```
+
+### 11.6. Orden de prueba
+
+```sql
+-- Orden de compra (requiere usuario_id)
+INSERT INTO ordenes_compra (usuario_id, fecha, estado, total)
+VALUES (1, NOW(), 'PENDIENTE', 899.00);
+
+-- Detalle de orden
+INSERT INTO detalles_orden (orden_compra_id, formato_libro_id, cantidad, precio_unitario)
+VALUES (1, 1, 1, 899.00);
+```

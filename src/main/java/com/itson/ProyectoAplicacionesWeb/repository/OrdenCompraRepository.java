@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -61,5 +62,26 @@ public interface OrdenCompraRepository
      * @return cantidad de órdenes con ese estado.
      */
     long countByEstado(EstadoOrden estado);
+    /**
+     * Cuenta las órdenes registradas dentro de un rango de fechas.
+     */
+    long countByFechaBetween(LocalDateTime desde, LocalDateTime hasta);
+
+    /**
+     * Suma el total de las órdenes de un periodo, sin contar
+     * las que tengan el estado indicado (normalmente CANCELADO).
+     *
+     * @return suma de totales, o null si no hay órdenes en el periodo.
+     */
+    @Query("""
+            SELECT SUM(o.total)
+            FROM OrdenCompra o
+            WHERE o.fecha >= :desde
+              AND o.fecha <= :hasta
+              AND o.estado <> :excluido
+            """)
+    BigDecimal sumarVentas(@Param("desde") LocalDateTime desde,
+                           @Param("hasta") LocalDateTime hasta,
+                           @Param("excluido") EstadoOrden excluido);
 
 }

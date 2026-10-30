@@ -20,47 +20,20 @@ import com.itson.ProyectoAplicacionesWeb.service.AutenticacionService;
 @Controller
 public class AutenticacionController {
 
-    // Servicios utilizados por la autenticación y el panel administrativo.
+    // Servicio utilizado por la autenticación y el registro.
     private final AutenticacionService autenticacionService;
-    private final LibroService libroService;
-    private final OrdenCompraService ordenCompraService;
 
     /**
-     * Inyecta los servicios necesarios para gestionar
-     * la autenticación y consultar los indicadores administrativos.
+     * Inyecta el servicio necesario para gestionar
+     * la autenticación y el registro de clientes.
      *
-     * Lafardilla 2026.
+     * El panel administrativo (/admin) vive ahora
+     * en PanelAdministrativoController.
      */
     public AutenticacionController(
-            AutenticacionService autenticacionService,
-            LibroService libroService,
-            OrdenCompraService ordenCompraService) {
+            AutenticacionService autenticacionService) {
 
         this.autenticacionService = autenticacionService;
-        this.libroService = libroService;
-        this.ordenCompraService = ordenCompraService;
-    }
-
-    /**
-     * Muestra el panel administrativo con indicadores
-     * obtenidos desde la base de datos MySQL.
-     *
-     * La autorización se gestiona en SecurityConfig.
-     *
-     * Lafardilla 2026.
-     */
-    @GetMapping("/admin")
-    public String inicioAdmin(Model model) {
-
-        // Obtiene la cantidad real de libros registrados.
-        model.addAttribute("totalLibros",
-                libroService.contarLibros());
-
-        // Obtiene la cantidad de órdenes pendientes.
-        model.addAttribute("ordenesPendientes",
-                ordenCompraService.contarOrdenesPendientes());
-
-        return "panel-administrativo";
     }
 
     /**

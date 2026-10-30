@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Ajustar inventario · Librería Raudskinna</title>
+    <link rel="stylesheet" th:href="@{/styles/index.css}"/>
+</head>
+<body class="admin-layout">
+
+<!-- Menú lateral reutilizable del área administrativa. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}"></th:block>
+
+<main class="admin-contenido">
+
+    <div class="encabezado-pagina">
+        <p class="sobretitulo">Administración / Libros e inventario</p>
+        <h1>Ajustar inventario</h1>
+        <p th:text="${inventario.formatoLibro.libro.titulo}
+                    + ' · '
+                    + ${inventario.formatoLibro.formato.name() == 'PASTA_DURA' ? 'Pasta dura' :
+                       (inventario.formatoLibro.formato.name() == 'PASTA_BLANDA' ? 'Pasta blanda' : 'Digital')}">
+            Título · Formato
+        </p>
+    </div>
+
+    <!-- Confirmación de un ajuste registrado. -->
+    <p th:if="${mensaje}"
+       th:text="${mensaje}"
+       class="mensaje-exito"
+       role="status">
+        Ajuste de inventario registrado correctamente.
+    </p>
+
+    <!-- Motivo por el que se rechazó el ajuste. -->
+    <p th:if="${error}"
+       th:text="${error}"
+       class="mensaje-error"
+       role="alert">
+        No fue posible registrar el ajuste.
+    </p>
+
+    <section class="panel registro">
+        <h2>Existencias actuales</h2>
+
+        <p class="admin-dato"
+           th:text="|${inventario.cantidad} unidades (stock mínimo: ${inventario.stockMinimo})|">
+            0 unidades (stock mínimo: 0)
+        </p>
+
+        <!--
+            Formulario de ajuste.
+
+            diferencia > 0 suma unidades; diferencia < 0 las resta.
+            InventarioService valida el motivo y que el inventario
+            no quede en negativo. Thymeleaf incorpora el token CSRF.
+        -->
+        <form class="formulario"
+              th:action="@{/admin/inventario/formatos/{formatoId}/ajuste(formatoId=${formatoId})}"
+              th:object="${ajusteFormulario}"
+              method="post">
+
+            <label for="motivo">Motivo</label>
+            <select class="campo campo-formulario"
+                    id="motivo"
+                    th:field="*{motivo}"
+                    required>
+                <option value="">Selecciona un motivo</option>
+                <option th:each="m : ${motivos}"
+                        th:value="${m}"
+                        th:text="${m.etiqueta}">
+                    Motivo
+                </option>
+            </select>
+
+            <label for="diferencia">Diferencia de unidades</label>
+            <input class="campo campo-formulario"
+                   id="diferencia"
+                   type="number"
+                   th:field="*{diferencia}"
+                   step="1"
+                   placeholder="Ej. 10 para sumar, -2 para restar"
+                   required/>
+
+            <small>
+                Usa un número positivo para agregar unidades y uno negativo
+                para restarlas. Reposición solo suma; merma solo resta;
+                corrección admite ambos.
+            </small>
+
+            <label for="nota">Nota (opcional)</label>
+            <input class="campo campo-formulario"
+                   id="nota"
+                   type="text"
+                   th:field="*{nota}"
+                   maxlength="255"
+                   placeholder="Ej. Llegó el pedido de la editorial"/>
+
+            <button class="boton boton-primario" type="submit">
+                Registrar ajuste
+            </button>
+
+            <a class="boton boton-claro" th:href="@{/admin/libros}">
+                Volver a libros
+            </a>
+        </form>
+    </section>
+
+    <div class="separador-secciones"></div>
+
+    <!-- Historial de los últimos ajustes de esta presentación. -->
+    <section class="panel">
+        <div class="encabezado-panel">
+            <h2>Historial de ajustes</h2>
+        </div>
+
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Motivo</th>
+                    <th>Diferencia</th>
+                    <th>Antes</th>
+                    <th>Después</th>
+                    <th>Responsable</th>
+                    <th>Nota</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:if="${#lists.isEmpty(movimientos)}">
+                    <td colspan="7">Todavía no hay ajustes registrados.</td>
+                </tr>
+
+                <tr th:each="m : ${movimientos}">
+                    <td th:text="${#temporals.format(m.fecha, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</td>
+                    <td th:text="${m.motivo.etiqueta}">Motivo</td>
+                    <td th:text="${m.diferencia > 0 ? '+' + m.diferencia : m.diferencia}">+0</td>
+                    <td th:text="${m.cantidadAnterior}">0</td>
+                    <td th:text="${m.cantidadNueva}">0</td>
+                    <td th:text="${m.responsable}">admin@raudskinna.com</td>
+                    <td th:text="${m.nota != null ? m.nota : '—'}">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+</body>
+</html>

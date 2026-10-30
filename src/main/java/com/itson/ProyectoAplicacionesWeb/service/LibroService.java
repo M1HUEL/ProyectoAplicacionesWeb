@@ -147,6 +147,7 @@ public class LibroService {
         formulario.setEditorialId(libro.getEditorial().getId());
         formulario.setSinopsis(libro.getSinopsis());
         formulario.setPortadaUrl(libro.getPortadaUrl());
+        formulario.setActivo(libro.isActivo());
 
         // Recupera los identificadores de los autores asociados.
         Set<Long> autoresIds = libro.getAutores().stream()
@@ -296,7 +297,8 @@ public class LibroService {
                     formatoLibro.getFormato().name(),
                     formatoLibro.getPrecio(),
                     stock,
-                    estado
+                    estado,
+                    libro.isActivo()
             );
 
         }).toList();
@@ -689,7 +691,7 @@ public class LibroService {
         libro.setPortadaUrl(
                 normalizarTextoOpcional(formulario.getPortadaUrl())
         );
-
+        libro.setActivo(formulario.isActivo());
         // Persiste el libro y obtiene su ID generado.
         Libro libroGuardado = libroRepository.save(libro);
 
@@ -897,7 +899,7 @@ public class LibroService {
         libro.setPortadaUrl(
                 normalizarTextoOpcional(formulario.getPortadaUrl())
         );
-
+        libro.setActivo(formulario.isActivo());
         /*
          * Actualiza el precio de la presentación comercial.
          *
@@ -922,7 +924,8 @@ public class LibroService {
          */
         if (inventario != null) {
 
-            inventario.setCantidad(formulario.getCantidad());
+            // La cantidad no se edita aquí: los cambios de existencias
+            // se hacen con InventarioService para registrar su motivo
             inventario.setStockMinimo(formulario.getStockMinimo());
         }
 
@@ -936,5 +939,10 @@ public class LibroService {
         return libro;
 
     }
-
+    @Transactional
+    public Libro cambiarVisibilidad(Long libroId, boolean activo) {
+        Libro libro = buscarPorId(libroId);
+        libro.setActivo(activo);
+        return libro;
+    }
 }

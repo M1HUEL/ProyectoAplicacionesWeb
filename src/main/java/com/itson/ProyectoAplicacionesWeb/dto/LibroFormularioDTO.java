@@ -4,6 +4,8 @@ package com.itson.ProyectoAplicacionesWeb.dto;
 import com.itson.ProyectoAplicacionesWeb.model.Formato;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
+
 
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -44,6 +46,14 @@ public class LibroFormularioDTO {
 
     /** Dirección de la imagen de portada. */
     private String portadaUrl;
+    /**
+     * Imagen de portada subida desde el equipo del administrador.
+     * Si se envía, tiene prioridad sobre portadaUrl.
+     */
+    private MultipartFile portada;
+
+    /** Indica si el libro es visible en el catálogo. */
+    private boolean activo = true;
 
     /** Presentación comercial inicial del libro. */
     private Formato formato;

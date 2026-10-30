@@ -19,6 +19,7 @@ public record LibroListadoDTO(
         String formato,
         BigDecimal precio,
         Integer stock,
-        String estado
+        String estado,
+        boolean activo
 ) {
 }

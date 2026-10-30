@@ -1188,7 +1188,7 @@ class LibroServiceTest {
      * se actualicen sus existencias y stock mínimo.
      */
     @Test
-    void actualizar_formatoFisico_debeActualizarInventario() {
+    void actualizar_formatoFisico_debeActualizarStockMinimoSinTocarCantidad() {
 
         // Prepara las entidades relacionadas.
         Categoria categoria = new Categoria("Literatura clásica");
@@ -1254,7 +1254,9 @@ class LibroServiceTest {
         assertSame(libro, resultado);
 
         // Comprueba las nuevas existencias.
-        assertEquals(8, inventario.getCantidad());
+        assertEquals(12, inventario.getCantidad());
+
+        // El stock mínimo sí se actualiza.
         assertEquals(2, inventario.getStockMinimo());
 
         // Comprueba que no se registra otro inventario.

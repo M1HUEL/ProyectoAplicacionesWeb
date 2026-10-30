@@ -45,7 +45,8 @@
             )}
         : @{/admin/libros}"
               th:object="${libroFormulario}"
-              method="post">
+              method="post"
+              enctype="multipart/form-data">
 
             <!--
                   Datos bibliográficos del libro.
@@ -234,16 +235,31 @@
                 Se utilizarán únicamente para formatos físicos.
             -->
 
-            <!-- Cantidad de unidades disponibles. -->
+            <!--
+                Cantidad de unidades disponibles.
+
+                Al registrar un libro es la existencia inicial. Al editarlo
+                solo se muestra: para cambiarla se usa el ajuste de inventario,
+                que registra el motivo y queda en el historial.
+            -->
             <label for="cantidad">Cantidad disponible</label>
 
             <input class="campo campo-formulario"
                    id="cantidad"
                    type="number"
                    th:field="*{cantidad}"
+                   th:readonly="${formatoId != null}"
                    min="0"
                    step="1"
                    placeholder="Ej. 12"/>
+
+            <small th:if="${formatoId != null and libroFormulario.formato != null and libroFormulario.formato.name() != 'DIGITAL'}">
+                Para cambiar las existencias usa
+                <a th:href="@{/admin/inventario/formatos/{formatoId}/ajuste(formatoId=${formatoId})}">
+                    Ajustar inventario
+                </a>
+                y registra el motivo del cambio.
+            </small>
 
             <!-- Umbral mínimo para identificar existencias bajas. -->
             <label for="stockMinimo">Stock mínimo</label>
@@ -282,7 +298,26 @@
                 Se vincula con LibroFormularioDTO.portadaUrl.
                 La URL se almacenará en Libro.portadaUrl.
             -->
-            <label for="portadaUrl">URL de la portada</label>
+            <!-- Vista previa de la portada actual, si existe. -->
+            <img th:if="${libroFormulario.portadaUrl != null and !#strings.isEmpty(libroFormulario.portadaUrl)}"
+                 th:src="@{${libroFormulario.portadaUrl}}"
+                 alt="Portada actual del libro"
+                 style="max-width: 140px; border-radius: 6px;"/>
+
+            <!--
+                Imagen de portada subida desde el equipo.
+                Se vincula con LibroFormularioDTO.portada y tiene
+                prioridad sobre la URL escrita a mano.
+            -->
+            <label for="portada">Subir portada (JPG, PNG o WEBP, máx. 2 MB)</label>
+
+            <input class="campo campo-formulario"
+                   id="portada"
+                   name="portada"
+                   type="file"
+                   accept="image/jpeg,image/png,image/webp"/>
+
+            <label for="portadaUrl">O bien, URL de la portada</label>
 
             <input class="campo campo-formulario"
                    id="portadaUrl"
@@ -292,8 +327,24 @@
                    placeholder="https://ejemplo.com/portada.jpg"/>
 
             <small>
-                Introduce la dirección de una imagen de portada.
-                Este campo es opcional.
+                Si subes un archivo, se usará en lugar de la URL.
+                Ambos campos son opcionales.
+            </small>
+
+            <!--
+                Visibilidad del libro en el catálogo.
+                Un libro oculto se conserva, pero no se muestra a los clientes.
+            -->
+            <label for="activo">
+                <input id="activo"
+                       type="checkbox"
+                       th:field="*{activo}"/>
+                Visible en el catálogo
+            </label>
+
+            <small>
+                Desmárcalo para ocultar el libro sin eliminarlo.
+                Afecta a todos sus formatos.
             </small>
 
             <button class="boton boton-primario" type="submit">Guardar</button>

@@ -2,6 +2,8 @@
 package com.itson.ProyectoAplicacionesWeb.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -55,7 +57,17 @@ public class Libro {
 
     /** Fecha de publicación. */
     private LocalDate fechaPublicacion;
-
+    /**
+     * Indica si el libro está visible en el catálogo.
+     *
+     * Un libro oculto (activo = false) permanece almacenado con sus
+     * formatos, inventario e historial de órdenes, pero no debe
+     * mostrarse a los clientes. El valor por defecto en MySQL evita
+     * ocultar los libros que ya existían al agregar la columna.
+     */
+    @Column(nullable = false)
+    @ColumnDefault("1")
+    private boolean activo = true;
     /**
      * Categoría a la que pertenece el libro.
      * Una categoría puede contener varios libros.

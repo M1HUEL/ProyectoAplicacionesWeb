@@ -8,6 +8,8 @@ import com.itson.ProyectoAplicacionesWeb.service.AutorService;
 import com.itson.ProyectoAplicacionesWeb.service.CategoriaService;
 import com.itson.ProyectoAplicacionesWeb.service.EditorialService;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
+import com.itson.ProyectoAplicacionesWeb.service.PortadaService;
+import com.itson.ProyectoAplicacionesWeb.model.Libro;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import com.itson.ProyectoAplicacionesWeb.model.Formato;
@@ -38,6 +40,7 @@ public class LibroController {
 
     /** Servicio encargado de consultar las categorías. */
     private final CategoriaService categoriaService;
+    private final PortadaService portadaService;
 
     /**
      * Constructor con inyección de dependencias.
@@ -51,12 +54,15 @@ public class LibroController {
             LibroService libroService,
             AutorService autorService,
             EditorialService editorialService,
-            CategoriaService categoriaService) {
+            CategoriaService categoriaService,
+            PortadaService portadaService) {
 
         this.libroService = libroService;
         this.autorService = autorService;
         this.editorialService = editorialService;
         this.categoriaService = categoriaService;
+        this.portadaService = portadaService;
+
     }
 
     /**
@@ -147,8 +153,17 @@ public class LibroController {
     public String registrarLibro(
             @ModelAttribute("libroFormulario") LibroFormularioDTO formulario,
             RedirectAttributes redirectAttributes) {
-
+        // URL escrita a mano por el administrador (se restaura si falla el registro).
+        String urlOriginal = formulario.getPortadaUrl();
+        String portadaNueva = null;
         try {
+            // Si se subió una imagen, se guarda y sustituye a la URL escrita.
+            portadaNueva = portadaService.guardar(formulario.getPortada());
+
+            if (portadaNueva != null) {
+                formulario.setPortadaUrl(portadaNueva);
+            }
+
             // Delega el registro a la capa Service.
             libroService.registrar(formulario);
 
@@ -162,6 +177,11 @@ public class LibroController {
             return "redirect:/admin/libros";
 
         } catch (IllegalArgumentException excepcion) {
+
+            // Descarta la imagen guardada, porque el libro no se registró.
+            portadaService.eliminar(portadaNueva);
+            formulario.setPortadaUrl(urlOriginal);
+            formulario.setPortada(null);
 
             // Conserva los datos para que el usuario pueda corregirlos.
             redirectAttributes.addFlashAttribute(
@@ -293,9 +313,27 @@ public class LibroController {
             @ModelAttribute("libroFormulario") LibroFormularioDTO formulario,
             RedirectAttributes redirectAttributes) {
 
+        String urlOriginal = formulario.getPortadaUrl();
+        String portadaNueva = null;
+
         try {
+            // Portada vigente, para eliminarla si se reemplaza por otra subida.
+            String portadaAnterior = libroService.buscarPorId(libroId).getPortadaUrl();
+
+            // Si se subió una imagen, se guarda y sustituye a la URL escrita.
+            portadaNueva = portadaService.guardar(formulario.getPortada());
+
+            if (portadaNueva != null) {
+                formulario.setPortadaUrl(portadaNueva);
+            }
+
             // Delega las validaciones y modificaciones al servicio.
             libroService.actualizar(libroId, formatoId, formulario);
+
+            // La imagen anterior ya no se utiliza.
+            if (portadaNueva != null && !portadaNueva.equals(portadaAnterior)) {
+                portadaService.eliminar(portadaAnterior);
+            }
 
             // Confirma la operación al administrador.
             redirectAttributes.addFlashAttribute(
@@ -306,6 +344,11 @@ public class LibroController {
             return "redirect:/admin/libros";
 
         } catch (IllegalArgumentException e) {
+
+            // Descarta la imagen guardada, porque el libro no se actualizó.
+            portadaService.eliminar(portadaNueva);
+            formulario.setPortadaUrl(urlOriginal);
+            formulario.setPortada(null);
 
             // Conserva los datos capturados para corregirlos.
             redirectAttributes.addFlashAttribute(
@@ -324,6 +367,38 @@ public class LibroController {
                     + formatoId
                     + "/editar";
         }
+    }
+
+    /**
+     * Muestra u oculta un libro del catálogo sin eliminarlo.
+     *
+     * Utiliza POST/Redirect/GET. La regla de negocio
+     * se encuentra en LibroService.
+     *
+     * @param libroId identificador del libro.
+     * @param activo  true para mostrarlo, false para ocultarlo.
+     */
+    @PostMapping("/{libroId}/activo")
+    public String cambiarVisibilidad(
+            @PathVariable Long libroId,
+            @RequestParam boolean activo,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            Libro libro = libroService.cambiarVisibilidad(libroId, activo);
+
+            redirectAttributes.addFlashAttribute(
+                    "mensaje",
+                    activo
+                            ? "«" + libro.getTitulo() + "» ahora es visible en el catálogo."
+                            : "«" + libro.getTitulo() + "» fue ocultado del catálogo."
+            );
+
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/admin/libros";
     }
 
 }

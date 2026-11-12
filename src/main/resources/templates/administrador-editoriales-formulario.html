@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Registrar editorial · Librería Raudskinna</title>
+
+    <!-- Estilos generales del proyecto. -->
+    <link rel="stylesheet" th:href="@{/styles/index.css}">
+</head>
+
+<body class="admin-layout">
+
+<!--
+    Reutiliza el menú lateral del panel administrativo.
+    El registro de editoriales forma parte de la gestión del catálogo.
+-->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}">
+</th:block>
+
+<!-- Contenido principal del registro administrativo de editoriales. -->
+<main class="admin-contenido">
+
+    <section class="panel registro">
+
+        <h1>Registrar editorial</h1>
+
+        <p>
+            Ingresa los datos de la editorial que deseas
+            incorporar al catálogo.
+        </p>
+
+        <!--
+            Espacio para los mensajes de validación que
+            recibiremos posteriormente desde EditorialController.
+        -->
+        <p th:if="${error}"
+           th:text="${error}"
+           class="mensaje-error"
+           role="alert">
+            Mensaje de error.
+        </p>
+
+        <!--
+    Formulario administrativo para registrar editoriales.
+
+    Envía los datos mediante POST a EditorialController.
+    Las validaciones se realizan en la capa Service.
+    Spring Security mantiene habilitada la protección CSRF.
+-->
+        <form class="formulario"
+              th:action="@{/admin/editoriales}"
+              method="post">
+
+            <!-- Nombre obligatorio de la editorial. -->
+            <label for="nombre">Nombre de la editorial</label>
+
+            <input class="campo campo-formulario"
+                   id="nombre"
+                   name="nombre"
+                   type="text"
+                   th:value="${nombreAnterior}"
+                   maxlength="150"
+                   placeholder="Ej. Penguin Random House"
+                   required>
+
+            <!-- Dirección opcional de la editorial. -->
+            <label for="direccion">Dirección</label>
+
+            <input class="campo campo-formulario"
+                   id="direccion"
+                   name="direccion"
+                   type="text"
+                   th:value="${direccionAnterior}"
+                   maxlength="255"
+                   placeholder="Ej. Ciudad de México">
+
+            <small>
+                La dirección es opcional.
+            </small>
+
+            <!-- Acciones del formulario. -->
+            <button class="boton boton-primario"
+                    type="submit">
+                Guardar
+            </button>
+
+            <a class="boton boton-claro"
+               th:href="@{/admin/editoriales}">
+                Cancelar
+            </a>
+
+        </form>
+
+    </section>
+
+</main>
+
+</body>
+</html>

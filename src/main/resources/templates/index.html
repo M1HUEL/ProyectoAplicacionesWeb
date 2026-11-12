@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Librería Raudskinna</title>
+
+  <!-- Hoja de estilos compartida por las vistas de Raudskinna. -->
+  <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+
+<body>
+
+<!-- Reutilizamos la cabecera de clientes y marcamos Inicio como activo. -->
+<th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+
+<main class="contenedor">
+
+  <!-- Presentación principal de la librería. -->
+  <section class="hero">
+    <div>
+      <p class="hero-etiqueta">Librería Raudskinna</p>
+      <h1>Historias para todos los lectores</h1>
+      <p>Explora nuestro catálogo y encuentra tu próxima lectura.</p>
+
+      <a class="boton boton-claro" th:href="@{/catalogo}">
+        Explorar catálogo
+      </a>
+    </div>
+
+    <aside class="hero-tarjeta">
+      <h2>Selección editorial</h2>
+      <p>Ficción · Fantasía · Terror</p>
+    </aside>
+  </section>
+
+  <!-- Categorías de ejemplo del segundo avance. -->
+  <section class="seccion">
+    <h2>Categorías</h2>
+
+    <div class="categorias">
+      <a class="categoria" th:href="@{/catalogo}">
+        Ficción
+      </a>
+
+      <a class="categoria" th:href="@{/catalogo}">
+        Fantasía
+      </a>
+
+      <a class="categoria" th:href="@{/catalogo}">
+        Terror
+      </a>
+    </div>
+  </section>
+
+  <!--
+    Productos de demostración del segundo avance.
+    Posteriormente se recuperarán desde MySQL mediante LibroService.
+  -->
+  <section class="seccion">
+    <h2>Novedades y destacados</h2>
+
+    <ul class="libros">
+
+      <li class="libro">
+        <a th:href="@{/detalle-libro}" class="enlace-libro">
+          <div class="portada">PORTADA</div>
+          <h3>Dune</h3>
+        </a>
+
+        <p class="autor">Frank Herbert</p>
+        <p class="precio">$349.00</p>
+
+        <button class="boton boton-primario" type="button">
+          Agregar
+        </button>
+      </li>
+
+      <li class="libro">
+        <div class="portada">PORTADA</div>
+        <h3>El Hobbit</h3>
+
+        <p class="autor">J. R. R. Tolkien</p>
+        <p class="precio">$299.00</p>
+
+        <button class="boton boton-primario" type="button">
+          Agregar
+        </button>
+      </li>
+
+      <li class="libro libro-agotado">
+        <div class="portada">PORTADA</div>
+        <h3>1984</h3>
+
+        <p class="autor">George Orwell</p>
+        <p class="precio">$249.00</p>
+
+        <span class="etiqueta-agotado">Sin stock</span>
+      </li>
+
+      <li class="libro">
+        <div class="portada">PORTADA</div>
+        <h3>Drácula</h3>
+
+        <p class="autor">Bram Stoker</p>
+        <p class="precio">$279.00</p>
+
+        <button class="boton boton-primario" type="button">
+          Agregar
+        </button>
+      </li>
+
+    </ul>
+  </section>
+</main>
+
+<!-- Pie de página compartiendo las rutas de la aplicación. -->
+<footer class="pie">
+  <div class="contenedor">
+    <span>Librería Raudskinna</span>
+
+    <nav aria-label="Pie de página">
+      <a th:href="@{/}">Inicio</a> ·
+      <a th:href="@{/catalogo}">Catálogo</a> ·
+      <a th:href="@{/carrito}">Carrito</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

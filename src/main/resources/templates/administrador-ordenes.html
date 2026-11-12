@@ -1,57 +1,197 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Órdenes · Librería Raudskinna</title>
-    <link rel="stylesheet" th:href="@{/styles/index.css}" />
-  </head>
-  <body>
-    <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
+    <link rel="stylesheet" th:href="@{/styles/index.css}"/>
+</head>
 
-    <main class="contenedor">
-      <div class="encabezado-pagina">
+<body class="admin-layout">
+
+<!-- Navegación reutilizable del panel administrativo. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('ordenes')}"></th:block>
+
+<main class="admin-contenido">
+    <div class="encabezado-pagina">
         <p class="sobretitulo">Administración</p>
         <h1>Órdenes</h1>
         <p>Revisa y actualiza el estado de los pedidos.</p>
-      </div>
+    </div>
 
-      <section class="panel">
-        <div class="tabla-contenedor">
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Folio</th>
-                <th>Cliente</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>#001</td>
-                <td>Ejemplo</td>
-                <td>$599.00</td>
-                <td>Pendiente</td>
-                <td class="acciones-tabla">
-                  <a class="boton boton-claro" href="#">Marcar procesado</a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    <section class="panel">
+        <div class="encabezado-panel">
+            <h2>Filtros</h2>
         </div>
-      </section>
-    </main>
+        <form th:action="@{/admin/ordenes}" method="get" class="formulario formulario-admin">
+            <div class="fila-formulario">
+                <div class="grupo-formulario grupo-formulario-amplio">
+                    <label for="cliente">Cliente (nombre o correo)</label>
+                    <input class="campo campo-formulario" id="cliente" name="cliente" type="text" th:value="${clienteFiltro}" placeholder="Buscar cliente..." />
+                </div>
+                <div class="grupo-formulario">
+                    <label for="estado">Estado</label>
+                    <select class="campo campo-formulario" id="estado" name="estado">
+                        <option value="" th:selected="${estadoSeleccionado == null}">Todos</option>
+                        <option th:each="e : ${estados}" th:value="${e}" th:text="${e}" th:selected="${estadoSeleccionado == e}"></option>
+                    </select>
+                </div>
+                <div class="grupo-formulario">
+                    <label for="fechaDesde">Desde</label>
+                    <input class="campo campo-formulario" id="fechaDesde" name="fechaDesde" type="date" th:value="${fechaDesde}" />
+                </div>
+                <div class="grupo-formulario">
+                    <label for="fechaHasta">Hasta</label>
+                    <input class="campo campo-formulario" id="fechaHasta" name="fechaHasta" type="date" th:value="${fechaHasta}" />
+                </div>
+            </div>
+            <div class="acciones-formulario">
+                <button type="submit" class="boton boton-primario">Filtrar</button>
+                <a th:href="@{/admin/ordenes}" class="boton boton-claro">Limpiar</a>
+            </div>
+        </form>
+    </section>
 
-    <footer class="pie">
-      <div class="contenedor">
-        <span>Librería Raudskinna · Administración</span>
-        <nav aria-label="Pie de página">
-          <a th:href="@{/}">Panel</a> · <a th:href="@{/administrador/libros}">Libros</a> ·
-          <a th:href="@{/administrador/ordenes}">Órdenes</a> · <a th:href="@{/logout}">Cerrar sesión</a>
-        </nav>
-      </div>
-    </footer>
-  </body>
+    <div class="separador-secciones"></div>
+
+    <!-- Confirmación de una operación exitosa. -->
+    <p th:if="${mensaje}"
+       th:text="${mensaje}"
+       class="mensaje-exito"
+       role="status">
+        Estado de la orden actualizado correctamente.
+    </p>
+
+    <!-- Mensaje cuando una operación es rechazada. -->
+    <p th:if="${error}"
+       th:text="${error}"
+       class="mensaje-error"
+       role="alert">
+        No se pudo actualizar la orden.
+    </p>
+
+    <div class="separador-secciones" th:if="${mensaje != null or error != null}"></div>
+
+    <section class="panel">
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Cliente</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <!-- Mensaje cuando no existen órdenes registradas. -->
+                <tr th:if="${#lists.isEmpty(ordenes)}">
+                    <td colspan="5">
+                        No hay órdenes de compra registradas.
+                    </td>
+                </tr>
+
+                <!-- Muestra las órdenes recuperadas desde MySQL. -->
+                <tr th:each="orden : ${ordenes}">
+
+                    <td th:text="${'#' + orden.id}">#001</td>
+
+                    <td th:text="${orden.usuario.nombre}">
+                        Nombre del cliente
+                    </td>
+
+                    <td th:text="${'$' + #numbers.formatDecimal(orden.total, 1, 2)}">
+                        $0.00
+                    </td>
+
+                    <td>
+                        <!-- Estado de la orden con clase CSS según su valor. -->
+                        <span class="estado-orden"
+                              th:classappend="${' estado-orden-' + #strings.toLowerCase(orden.estado.name())}"
+                              th:text="${orden.estado}">PENDIENTE
+                        </span>
+                    </td>
+
+                    <td class="acciones-tabla">
+
+                        <a class="boton boton-primario" th:href="@{/admin/ordenes/{id}/detalle(id=${orden.id})}">Ver datos</a>
+
+                        <!--
+                            Una orden pendiente puede pasar a procesamiento.
+                        -->
+                        <form th:if="${orden.estado.name() == 'PENDIENTE'}"
+                              th:action="@{/admin/ordenes/{id}/estado(id=${orden.id})}"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="nuevoEstado"
+                                   value="PROCESANDO"/>
+
+                            <button type="submit" class="boton boton-claro">
+                                Procesar orden
+                            </button>
+
+                        </form>
+
+                        <!-- Una orden en procesamiento puede marcarse como enviada. -->
+                        <form th:if="${orden.estado.name() == 'PROCESANDO'}"
+                              th:action="@{/admin/ordenes/{id}/estado(id=${orden.id})}"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="nuevoEstado"
+                                   value="ENVIADO"/>
+
+                            <button type="submit" class="boton boton-claro">
+                                Marcar enviada
+                            </button>
+
+                        </form>
+
+                        <!--
+                            Permite cancelar órdenes pendientes o en procesamiento.
+                            La validación definitiva se realiza en OrdenCompraService.
+                        -->
+                        <form th:if="${orden.estado.name() == 'PENDIENTE'
+              or orden.estado.name() == 'PROCESANDO'}"
+                              th:action="@{/admin/ordenes/{id}/estado(id=${orden.id})}"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="nuevoEstado"
+                                   value="CANCELADO"/>
+
+                            <button type="submit" class="boton boton-claro">
+                                Cancelar orden
+                            </button>
+
+                        </form>
+
+                        <!--
+                            Una orden enviada puede pasar a ENTREGADO.
+                        -->
+                        <form th:if="${orden.estado.name() == 'ENVIADO'}"
+                              th:action="@{/admin/ordenes/{id}/estado(id=${orden.id})}"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="nuevoEstado"
+                                   value="ENTREGADO"/>
+
+                            <button type="submit" class="boton boton-claro">
+                                Marcar entregada
+                            </button>
+
+                        </form>
+
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
 </html>

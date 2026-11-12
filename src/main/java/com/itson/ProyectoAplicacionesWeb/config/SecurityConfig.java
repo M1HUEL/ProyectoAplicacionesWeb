@@ -2,8 +2,13 @@ package com.itson.ProyectoAplicacionesWeb.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,7 +24,60 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 @EnableWebSecurity
 public class SecurityConfig {
 
+
+    /**
+     * Seguridad exclusiva de la API REST.
+     *
+     * Utiliza JWT Bearer sin autenticación
+     * mediante sesiones HTTP.
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain apiSecurityFilterChain(
+            HttpSecurity http) throws Exception {
+
+        http
+                .securityMatcher("/api/**")
+
+                .authorizeHttpRequests(auth -> auth
+
+                        // Autenticación pública mediante JSON.
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/auth/login"
+                        ).permitAll()
+
+                        // Consultas públicas del catálogo.
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/libros",
+                                "/api/libros/*"
+                        ).permitAll()
+
+                        // Los demás endpoints requieren JWT.
+                        .anyRequest().authenticated()
+                )
+
+                // La API no utiliza autenticación mediante cookies.
+                .csrf(csrf -> csrf.disable())
+
+                // No mantener sesiones para autenticar la API.
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
+                // Validación de tokens Bearer JWT.
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> {})
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
 
@@ -104,4 +162,18 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    /**
+     * Expone el administrador de autenticación de Spring Security.
+     *
+     * Permite reutilizar el mecanismo existente de autenticación
+     * por correo y contraseña desde nuestra API REST.
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration configuration) throws Exception {
+
+        return configuration.getAuthenticationManager();
+    }
+
 }

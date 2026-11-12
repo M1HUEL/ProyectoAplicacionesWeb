@@ -1,0 +1,502 @@
+{
+  "info": {
+    "_postman_id": "b9413387-0926-4b74-8fb5-e36d04a12f66",
+    "name": "Librería Raudskinna - API Clientes",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "43567406",
+    "_collection_link": "https://go.postman.co/collection/43567406-b9413387-0926-4b74-8fb5-e36d04a12f66?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01 - Catálogo público",
+      "item": [
+        {
+          "name": "Listar libros activos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"GET /api/libros responde 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"La respuesta es un arreglo JSON\", function () {\r\n    const libros = pm.response.json();\r\n    pm.expect(libros).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"Los libros contienen los campos públicos\", function () {\r\n    const libros = pm.response.json();\r\n\r\n    libros.forEach(function (libro) {\r\n        pm.expect(libro).to.have.property(\"id\");\r\n        pm.expect(libro).to.have.property(\"titulo\");\r\n        pm.expect(libro).to.have.property(\"categoria\");\r\n        pm.expect(libro).to.have.property(\"editorial\");\r\n        pm.expect(libro.autores).to.be.an(\"array\");\r\n    });\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/libros",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "libros"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Listado de libros activos",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/api/libros",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "api",
+                    "libros"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "X-Content-Type-Options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "X-XSS-Protection",
+                  "value": "0"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "Pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "Expires",
+                  "value": "0"
+                },
+                {
+                  "key": "X-Frame-Options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "407"
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 12 Nov 2026 20:10:14 GMT"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": 1,\n    \"titulo\": \"Drácula\",\n    \"sinopsis\": \"Novela de terror publicada originalmente en 1897.\",\n    \"portadaUrl\": null,\n    \"categoria\": \"Literatura clásica\",\n    \"editorial\": \"Penguin Random House\",\n    \"autores\": [\n      \"Bram Stoker\"\n    ]\n  },\n  {\n    \"id\": 2,\n    \"titulo\": \"El misterio del mar\",\n    \"sinopsis\": \"Novela de misterio de Bram Stoker.\",\n    \"portadaUrl\": null,\n    \"categoria\": \"Literatura clásica\",\n    \"editorial\": \"Penguin Random House\",\n    \"autores\": [\n      \"Bram Stoker\"\n    ]\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Consultar detalle de libro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"GET /api/libros/1 responde 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"La respuesta es un objeto JSON\", function () {\r\n    const libro = pm.response.json();\r\n    pm.expect(libro).to.be.an(\"object\");\r\n    pm.expect(libro).to.not.be.an(\"array\");\r\n});\r\n\r\npm.test(\"El libro contiene los campos públicos\", function () {\r\n    const libro = pm.response.json();\r\n\r\n    const idSolicitado = Number(pm.environment.get(\"libroId\"));\r\n    pm.expect(libro).to.have.property(\"id\", idSolicitado);\r\n    pm.expect(libro).to.have.property(\"titulo\");\r\n    pm.expect(libro).to.have.property(\"sinopsis\");\r\n    pm.expect(libro).to.have.property(\"portadaUrl\");\r\n    pm.expect(libro).to.have.property(\"categoria\");\r\n    pm.expect(libro).to.have.property(\"editorial\");\r\n    pm.expect(libro.autores).to.be.an(\"array\");\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/libros/{{libroId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "libros",
+                "{{libroId}}"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Consultar detalle de libro",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/libros/{{libroId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "libros",
+                    "{{libroId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "X-Content-Type-Options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "X-XSS-Protection",
+                  "value": "0"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "Pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "Expires",
+                  "value": "0"
+                },
+                {
+                  "key": "X-Frame-Options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "204"
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 12 Nov 2026 22:34:51 GMT"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"titulo\": \"Drácula\",\n  \"sinopsis\": \"Novela de terror publicada originalmente en 1897.\",\n  \"portadaUrl\": null,\n  \"categoria\": \"Literatura clásica\",\n  \"editorial\": \"Penguin Random House\",\n  \"autores\": [\n    \"Bram Stoker\"\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Libro inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"Libro inexistente responde 404 Not Found\", function () {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"La respuesta contiene un error JSON estructurado\", function () {\r\n    const error = pm.response.json();\r\n\r\n    pm.expect(error).to.have.property(\"estado\", 404);\r\n    pm.expect(error).to.have.property(\"error\", \"Not Found\");\r\n    pm.expect(error).to.have.property(\r\n        \"mensaje\",\r\n        \"El libro solicitado no está disponible.\"\r\n    );\r\n    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/99999\");\r\n    pm.expect(error).to.have.property(\"fechaHora\");\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/libros/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "libros",
+                "99999"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Libro inexistente (404)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/libros/99999",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "libros",
+                    "99999"
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "X-Content-Type-Options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "X-XSS-Protection",
+                  "value": "0"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "Pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "Expires",
+                  "value": "0"
+                },
+                {
+                  "key": "X-Frame-Options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 12 Nov 2026 22:34:19 GMT"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"fechaHora\": \"2026-11-12T15:34:19.7401253\",\n  \"estado\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"El libro solicitado no está disponible.\",\n  \"ruta\": \"/api/libros/99999\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Identificador inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"Identificador cero responde 400 Bad Request\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"El error 400 contiene un JSON estructurado\", function () {\r\n    const error = pm.response.json();\r\n\r\n    pm.expect(error).to.have.property(\"estado\", 400);\r\n    pm.expect(error).to.have.property(\"error\", \"Bad Request\");\r\n    pm.expect(error).to.have.property(\r\n        \"mensaje\",\r\n        \"El identificador del libro no es válido.\"\r\n    );\r\n    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/0\");\r\n    pm.expect(error).to.have.property(\"fechaHora\");\r\n});\r\n\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/libros/0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "libros",
+                "0"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Identificador inválido (400)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/libros/0",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "libros",
+                    "0"
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "X-Content-Type-Options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "X-XSS-Protection",
+                  "value": "0"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "Pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "Expires",
+                  "value": "0"
+                },
+                {
+                  "key": "X-Frame-Options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 12 Nov 2026 22:34:12 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "close"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"fechaHora\": \"2026-11-12T15:34:12.6486662\",\n  \"estado\": 400,\n  \"error\": \"Bad Request\",\n  \"mensaje\": \"El identificador del libro no es válido.\",\n  \"ruta\": \"/api/libros/0\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Identificador no numérico (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"Identificador no numérico responde 400 Bad Request\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"El error de conversión contiene un JSON estructurado\", function () {\r\n    const error = pm.response.json();\r\n\r\n    pm.expect(error).to.have.property(\"estado\", 400);\r\n    pm.expect(error).to.have.property(\"error\", \"Bad Request\");\r\n    pm.expect(error).to.have.property(\r\n        \"mensaje\",\r\n        \"El parámetro 'id' tiene un valor no válido.\"\r\n    );\r\n    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/abc\");\r\n    pm.expect(error).to.have.property(\"fechaHora\");\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/libros/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "libros",
+                "abc"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Identificador no numérico (400)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/libros/abc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "libros",
+                    "abc"
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "X-Content-Type-Options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "X-XSS-Protection",
+                  "value": "0"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "Pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "Expires",
+                  "value": "0"
+                },
+                {
+                  "key": "X-Frame-Options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 12 Nov 2026 22:33:45 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "close"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"fechaHora\": \"2026-11-12T15:33:45.4698694\",\n  \"estado\": 400,\n  \"error\": \"Bad Request\",\n  \"mensaje\": \"El parámetro 'id' tiene un valor no válido.\",\n  \"ruta\": \"/api/libros/abc\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

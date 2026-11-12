@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LibroRepository extends JpaRepository<Libro, Long> {
@@ -32,5 +33,14 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
      */
     List<Libro> findByActivoTrue();
 
-
+    /**
+     * Busca un libro visible en el catálogo público.
+     *
+     * Evita recuperar libros inactivos, aunque se
+     * conozca su identificador.
+     *
+     * @param id identificador del libro.
+     * @return libro activo, si existe.
+     */
+    Optional<Libro> findByIdAndActivoTrue(Long id);
 }

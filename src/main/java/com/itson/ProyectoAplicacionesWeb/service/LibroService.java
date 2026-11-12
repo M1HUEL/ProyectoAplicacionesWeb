@@ -110,6 +110,44 @@ public class LibroService {
     }
 
     /**
+     * Consulta el detalle público de un libro activo.
+     *
+     * Los libros inexistentes o inactivos no deben
+     * mostrarse a los clientes.
+     *
+     * @param id identificador del libro.
+     * @return información bibliográfica pública.
+     */
+    @Transactional(readOnly = true)
+    public LibroPublicoDTO consultarLibroPublico(Long id) {
+
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException(
+                    "El identificador del libro no es válido."
+            );
+        }
+
+        Libro libro = libroRepository.findByIdAndActivoTrue(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "El libro solicitado no está disponible."
+                ));
+
+        return new LibroPublicoDTO(
+                libro.getId(),
+                libro.getTitulo(),
+                libro.getSinopsis(),
+                libro.getPortadaUrl(),
+                libro.getCategoria().getNombre(),
+                libro.getEditorial().getNombre(),
+                libro.getAutores().stream()
+                        .map(Autor::getNombre)
+                        .sorted()
+                        .toList()
+        );
+    }
+
+    /**
      * Obtiene la cantidad total de libros registrados.
      *
      * Utiliza el conteo proporcionado por Spring Data JPA,

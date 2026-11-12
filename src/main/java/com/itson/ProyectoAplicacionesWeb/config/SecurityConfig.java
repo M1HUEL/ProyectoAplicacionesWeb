@@ -39,6 +39,12 @@ public class SecurityConfig {
                                 "/js/**"
                         ).permitAll()
 
+                        // Consulta pública del catálogo mediante API REST.
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET,
+                                "/api/libros"
+                        ).permitAll()
+
                         // Solo los administradores pueden acceder al panel.
                         .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
 

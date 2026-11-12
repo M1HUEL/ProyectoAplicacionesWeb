@@ -4,6 +4,8 @@ import com.itson.ProyectoAplicacionesWeb.model.Libro;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface LibroRepository extends JpaRepository<Libro, Long> {
 
@@ -19,6 +21,16 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
      *
      */
     boolean existsByIsbn(String isbn);
+
+    /**
+     * Recupera los libros visibles para el catálogo público.
+     *
+     * Spring Data JPA construye la consulta a partir
+     * del nombre del método.
+     *
+     * @return libros que tienen activo = true.
+     */
+    List<Libro> findByActivoTrue();
 
 
 }

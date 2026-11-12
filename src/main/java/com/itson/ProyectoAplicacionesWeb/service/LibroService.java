@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.springframework.stereotype.Service;
@@ -78,6 +79,34 @@ public class LibroService {
     @Transactional(readOnly = true)
     public List<Libro> listarTodos() {
         return libroRepository.findAll();
+    }
+
+    /**
+     * Recupera los libros visibles para el catálogo público.
+     *
+     * Transforma las entidades JPA en DTO para evitar
+     * exponer directamente el modelo de persistencia.
+     *
+     * @return listado de libros activos.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroPublicoDTO> listarLibrosPublicos() {
+
+        return libroRepository.findByActivoTrue()
+                .stream()
+                .map(libro -> new LibroPublicoDTO(
+                        libro.getId(),
+                        libro.getTitulo(),
+                        libro.getSinopsis(),
+                        libro.getPortadaUrl(),
+                        libro.getCategoria().getNombre(),
+                        libro.getEditorial().getNombre(),
+                        libro.getAutores().stream()
+                                .map(autor -> autor.getNombre())
+                                .sorted()
+                                .toList()
+                ))
+                .toList();
     }
 
     /**

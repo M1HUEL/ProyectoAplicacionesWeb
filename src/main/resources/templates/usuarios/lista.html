@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Usuarios · Administración Raudskinna</title>
+    <link rel="stylesheet" th:href="@{/styles/index.css}"/>
+</head>
+
+<body class="admin-layout">
+
+<!-- Navegación administrativa reutilizable. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('panel')}"></th:block>
+
+<main class="admin-contenido">
+
+    <div class="encabezado-pagina">
+        <p class="sobretitulo">Administración de la cuenta</p>
+        <h1>Usuarios</h1>
+        <p>Consulta las cuentas registradas en Librería Raudskinna.</p>
+    </div>
+
+    <section class="panel">
+        <h2>Listado de usuarios</h2>
+
+        <!-- Mensaje cuando no hay registros en MySQL. -->
+        <p th:if="${#lists.isEmpty(usuarios)}">
+            No hay usuarios registrados.
+        </p>
+
+        <!-- Tabla de usuarios registrados. -->
+        <div class="tabla-contenedor"
+             th:unless="${#lists.isEmpty(usuarios)}">
+
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Correo</th>
+                    <th scope="col">Rol</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="usuario : ${usuarios}">
+                    <td th:text="${usuario.id}">1</td>
+                    <td th:text="${usuario.nombre}">Nombre</td>
+                    <td th:text="${usuario.correo}">correo@ejemplo.com</td>
+                    <td th:text="${usuario.rol}">USER</td>
+                    <td>
+                        <a th:href="@{/usuarios/{id}(id=${usuario.id})}">
+                            Ver detalle
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <a class="boton boton-claro"
+           th:href="@{/admin}">
+            Volver al panel
+        </a>
+    </section>
+
+</main>
+
+</body>
+</html>

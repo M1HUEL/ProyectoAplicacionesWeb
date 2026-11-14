@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Detalle de usuario · Administración Raudskinna</title>
+    <link rel="stylesheet" th:href="@{/styles/index.css}"/>
+</head>
+
+<body class="admin-layout">
+
+<!-- Navegación administrativa reutilizable. -->
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('panel')}"></th:block>
+
+<main class="admin-contenido">
+
+    <div class="encabezado-pagina">
+        <p class="sobretitulo">Administración de la cuenta</p>
+        <h1>Detalle del usuario</h1>
+        <p>Información de la cuenta seleccionada.</p>
+    </div>
+
+    <section class="panel">
+        <h2 th:text="|${usuario.nombre}|">Nombre del usuario</h2>
+
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <tbody>
+                <tr>
+                    <th scope="row">ID</th>
+                    <td th:text="${usuario.id}">1</td>
+                </tr>
+                <tr>
+                    <th scope="row">Nombre</th>
+                    <td th:text="${usuario.nombre}">Nombre</td>
+                </tr>
+                <tr>
+                    <th scope="row">Correo</th>
+                    <td th:text="${usuario.correo}">correo@ejemplo.com</td>
+                </tr>
+                <tr>
+                    <th scope="row">Rol</th>
+                    <td th:text="${usuario.rol}">USER</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <a class="boton boton-claro"
+           th:href="@{/usuarios}">
+            Volver al listado
+        </a>
+    </section>
+
+</main>
+
+</body>
+</html>

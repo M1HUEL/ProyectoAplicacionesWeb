@@ -375,3 +375,112 @@ VALUES (1, NOW(), 'PENDIENTE', 899.00);
 INSERT INTO detalles_orden (orden_compra_id, formato_libro_id, cantidad, precio_unitario)
 VALUES (1, 1, 1, 899.00);
 ```
+
+## 12. Endpoints expuestos
+
+Esta sección documenta las rutas HTTP disponibles. La aplicación tiene dos mecanismos de seguridad:
+
+- **API REST (`/api/**`):** autenticación con **JWT Bearer**. CSRF deshabilitado.
+- **Vistas y administración (resto de rutas):** autenticación con **sesión HTTP**. CSRF habilitado en formularios y en `PATCH`/`DELETE`.
+
+### 12.1. API REST pública
+
+| Método | Ruta | Autenticación | Body / parámetros | Descripción | Respuestas |
+|---|---|---|---|---|---|
+| `POST` | `/api/auth/registro` | Pública | JSON: `nombre`, `correo`, `contrasena` | Registra un cliente con rol `USER`. | `201`, `400`, `409` |
+| `POST` | `/api/auth/login` | Pública | JSON: `correo`, `contrasena` | Autentica y devuelve un JWT. | `200`, `401` |
+| `GET` | `/api/libros` | Pública | — | Lista los libros activos del catálogo. | `200` |
+| `GET` | `/api/libros/{id}` | Pública | `id` en la ruta | Consulta el detalle de un libro activo. | `200`, `404` |
+
+### 12.2. API REST autenticada (JWT)
+
+Todas requieren el encabezado `Authorization: Bearer <token>`.
+
+| Método | Ruta | Body / parámetros | Descripción | Respuestas |
+|---|---|---|---|---|
+| `GET` | `/api/carrito` | — | Consulta el carrito del cliente autenticado. | `200`, `401` |
+| `POST` | `/api/carrito/items` | JSON: `formatoLibroId`, `cantidad` | Agrega una presentación al carrito. | `200`, `400`, `401` |
+| `PUT` | `/api/carrito/items/{formatoLibroId}` | JSON: `cantidad` | Modifica la cantidad de un ítem. | `200`, `400`, `401` |
+| `DELETE` | `/api/carrito/items/{formatoLibroId}` | — | Elimina un ítem del carrito. | `200`, `401` |
+| `POST` | `/api/checkout` | — | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401` |
+| `GET` | `/api/ordenes` | — | Consulta el historial de órdenes del cliente autenticado. | `200`, `401` |
+
+### 12.3. Vistas públicas y autenticación por sesión
+
+| Método | Ruta | Autenticación | Body / parámetros | Descripción | Respuestas |
+|---|---|---|---|---|---|
+| `GET` | `/` | Pública | — | Página principal de la librería. | `200` |
+| `GET` | `/registro` | Pública | — | Formulario HTML de registro de clientes. | `200` |
+| `POST` | `/registro` | Pública | Form: `nombre`, `correo`, `contrasena`, `_csrf` | Registra un cliente y redirige al login. | `302` |
+| `GET` | `/iniciar-sesion` | Pública | — | Formulario de inicio de sesión de clientes. | `200` |
+| `POST` | `/iniciar-sesion` | Pública | Form: `correo`, `contrasena`, `_csrf` | Autentica la sesión; redirige a `/admin` si es ADMIN o a `/` si es USER. | `302` |
+| `GET` | `/admin/login` | Pública | — | Entrada al inicio de sesión administrativo. | `200` |
+| `POST` | `/logout` | Autenticado | Form: `_csrf` | Cierra la sesión HTTP. | `302` |
+
+### 12.4. Administración (rol `ADMIN`, sesión)
+
+Sin sesión redirigen al login (`302`); con sesión pero sin rol `ADMIN` responden `403`.
+
+| Método | Ruta | Body / parámetros | Descripción | Respuestas |
+|---|---|---|---|---|
+| `GET` | `/admin` | Opcionales: `desde`, `hasta` (`yyyy-MM-dd`) | Panel con indicadores y ventas del periodo. | `200` |
+| `GET` | `/admin/libros` | — | Listado de libros, formatos e inventario. | `200` |
+| `GET` | `/admin/libros/nuevo` | — | Formulario de registro de libro. | `200` |
+| `POST` | `/admin/libros` | Formulario multipart: `titulo`, `isbn`, `autoresIds`, `editorialId`, `categoriaId`, `sinopsis`, `portadaUrl`, `portada`, `activo`, `formato`, `precio`, `cantidad`, `stockMinimo`, `_csrf` | Registra un libro y su presentación comercial. | `302` |
+| `GET` | `/admin/libros/{libroId}/formatos/{formatoId}/editar` | — | Formulario de edición de libro y formato. | `200` |
+| `POST` | `/admin/libros/{libroId}/formatos/{formatoId}` | Mismos campos del registro, `_csrf` | Actualiza el libro y su presentación. | `302` |
+| `POST` | `/admin/libros/{libroId}/activo` | `activo` (`true`/`false`), `_csrf` | Muestra u oculta el libro del catálogo. | `302` |
+| `GET` | `/admin/inventario/formatos/{formatoId}/ajuste` | — | Formulario de ajuste e historial de movimientos. | `200` |
+| `POST` | `/admin/inventario/formatos/{formatoId}/ajuste` | `diferencia`, `motivo`, `nota`, `_csrf` | Ajusta existencias. `motivo`: `CORRECCION`, `MERMA`, `REPOSICION`, `VENTA`. | `302` |
+| `GET` | `/admin/autores` | — | Listado de autores. | `200` |
+| `GET` | `/admin/autores/nuevo` | — | Formulario de registro de autor. | `200` |
+| `POST` | `/admin/autores` | `nombre`, `_csrf` | Registra un autor. | `302` |
+| `GET` | `/admin/editoriales` | — | Listado de editoriales. | `200` |
+| `GET` | `/admin/editoriales/nueva` | — | Formulario de registro de editorial. | `200` |
+| `POST` | `/admin/editoriales` | `nombre`, `direccion` (opcional), `_csrf` | Registra una editorial. | `302` |
+| `GET` | `/admin/categorias` | — | Listado de categorías. | `200` |
+| `GET` | `/admin/categorias/nueva` | — | Formulario de registro de categoría. | `200` |
+| `POST` | `/admin/categorias` | `nombre`, `_csrf` | Registra una categoría. | `302` |
+| `GET` | `/admin/categorias/{id}/editar` | — | Formulario de edición de categoría. | `200` |
+| `POST` | `/admin/categorias/{id}/editar` | `nombre`, `_csrf` | Actualiza una categoría. | `302` |
+| `PATCH` | `/admin/categorias/{id}` | JSON: `{"nombre": "..."}` + `X-CSRF-TOKEN` | Actualiza parcialmente una categoría. | `200`, `400` |
+| `DELETE` | `/admin/categorias/{id}` | `X-CSRF-TOKEN` | Desactiva lógicamente una categoría. | `200`, `400` |
+| `POST` | `/admin/categorias/{id}/desactivar` | `_csrf` | Desactiva una categoría desde el formulario. | `302` |
+| `GET` | `/admin/ordenes` | Opcionales: `estado`, `fechaDesde`, `fechaHasta`, `cliente` | Listado y filtrado de órdenes. | `200` |
+| `GET` | `/admin/ordenes/{ordenId}/detalle` | — | Detalle de una orden. | `200` |
+| `POST` | `/admin/ordenes/{ordenId}/estado` | `nuevoEstado`, `_csrf` | Cambia el estado de la orden. `nuevoEstado`: `PENDIENTE`, `PROCESANDO`, `ENVIADO`, `ENTREGADO`, `CANCELADO`. | `302` |
+
+### 12.5. Consulta de usuarios (rol `ADMIN`, sesión, respuesta JSON)
+
+Estas rutas están fuera de `/api`, pero responden JSON en lugar de vistas HTML.
+
+| Método | Ruta | Body / parámetros | Descripción | Respuestas |
+|---|---|---|---|---|
+| `GET` | `/usuarios` | — | Lista las cuentas registradas (`id`, `nombre`, `correo`, `rol`). | `200`, `302`, `403` |
+| `GET` | `/usuarios/{id}` | `id` en la ruta | Consulta una cuenta por identificador. | `200`, `302`, `403`, `404` |
+
+### 12.6. Códigos de respuesta
+
+| Código | Significado |
+|---|---|
+| `200` | Operación exitosa. |
+| `201` | Recurso creado correctamente. |
+| `302` | Redirección (POST/Redirect/GET o falta de sesión). |
+| `400` | Datos inválidos o regla de negocio incumplida. |
+| `401` | Falta el JWT o es inválido. |
+| `403` | Autenticado sin el rol requerido, o CSRF inválido. |
+| `404` | Recurso no encontrado. |
+| `409` | Conflicto, por ejemplo un correo ya registrado. |
+
+### 12.7. Ejemplo rápido de uso de la API
+
+```bash
+# 1. Obtener el token
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"correo":"cliente@ejemplo.com","contrasena":"Password123!"}'
+
+# 2. Usar el token en un endpoint protegido
+curl http://localhost:8080/api/carrito \
+  -H "Authorization: Bearer <token>"
+```

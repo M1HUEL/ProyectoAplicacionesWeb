@@ -20,6 +20,24 @@ import java.math.BigDecimal;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DetalleOrden {
 
+    /**
+     * Constructor para registrar un artículo
+     * dentro de una orden de compra.
+     *
+     * Las validaciones corresponden a la capa Service.
+     */
+    public DetalleOrden(
+            OrdenCompra ordenCompra,
+            FormatoLibro formatoLibro,
+            Integer cantidad,
+            BigDecimal precioUnitario) {
+
+        this.ordenCompra = ordenCompra;
+        this.formatoLibro = formatoLibro;
+        this.cantidad = cantidad;
+        this.precioUnitario = precioUnitario;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Setter(AccessLevel.NONE)

@@ -5,6 +5,7 @@ import com.itson.ProyectoAplicacionesWeb.dto.ErrorRespuestaDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,6 +13,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 /**
  * Maneja de forma centralizada los errores
@@ -39,16 +41,17 @@ public class ApiExceptionHandler {
     }
 
     /**
-     * Maneja los argumentos inválidos recibidos por la API.
-     *
-     * Devuelve HTTP 400 Bad Request.
+     * Maneja argumentos inválidos y conflictos
+     * por correos electrónicos duplicados.
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorRespuestaDTO> manejarArgumentoInvalido(
             IllegalArgumentException ex,
             HttpServletRequest request) {
 
-        HttpStatus estado = HttpStatus.BAD_REQUEST;
+        HttpStatus estado = "El correo ya está registrado".equals(ex.getMessage())
+                ? HttpStatus.CONFLICT
+                : HttpStatus.BAD_REQUEST;
 
         ErrorRespuestaDTO respuesta = new ErrorRespuestaDTO(
                 LocalDateTime.now(),
@@ -79,6 +82,36 @@ public class ApiExceptionHandler {
                 estado.getReasonPhrase(),
                 "El parámetro '" + ex.getName()
                         + "' tiene un valor no válido.",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(estado).body(respuesta);
+    }
+
+    /**
+     * Maneja los errores de validación de los DTO.
+     *
+     * Por ejemplo, campos vacíos, correos inválidos
+     * y contraseñas demasiado cortas.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorRespuestaDTO> manejarValidacion(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
+        HttpStatus estado = HttpStatus.BAD_REQUEST;
+
+        String mensaje = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .collect(Collectors.joining(" "));
+
+        ErrorRespuestaDTO respuesta = new ErrorRespuestaDTO(
+                LocalDateTime.now(),
+                estado.value(),
+                estado.getReasonPhrase(),
+                mensaje,
                 request.getRequestURI()
         );
 

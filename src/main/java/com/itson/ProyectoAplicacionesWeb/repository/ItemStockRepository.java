@@ -2,8 +2,10 @@
 package com.itson.ProyectoAplicacionesWeb.repository;
 
 import com.itson.ProyectoAplicacionesWeb.model.ItemStock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -83,5 +85,22 @@ public interface ItemStockRepository
             ORDER BY i.cantidad ASC, l.titulo ASC
             """)
     List<ItemStock> listarConStockBajo();
+
+    /**
+     * Recupera el inventario de una presentación física
+     * aplicando un bloqueo de escritura.
+     *
+     * Debe utilizarse dentro de una transacción activa
+     * durante la confirmación de una compra.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT i
+        FROM ItemStock i
+        WHERE i.formatoLibro.id = :formatoId
+        """)
+    Optional<ItemStock> buscarParaCompraConBloqueo(
+            @Param("formatoId") Long formatoId
+    );
 
 }

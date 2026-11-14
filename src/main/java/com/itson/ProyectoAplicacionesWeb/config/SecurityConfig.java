@@ -47,6 +47,10 @@ public class SecurityConfig {
                                 "/api/auth/login"
                         ).permitAll()
 
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/auth/registro")
+                        .permitAll()
+
                         // Consultas públicas del catálogo.
                         .requestMatchers(
                                 HttpMethod.GET,

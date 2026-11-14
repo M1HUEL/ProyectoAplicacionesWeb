@@ -23,6 +23,19 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrdenCompra {
 
+    /**
+     * Crea una nueva orden de compra para un cliente.
+     *
+     * La fecha y el estado inicial son establecidos
+     * por el sistema.
+     */
+    public OrdenCompra(Usuario usuario, BigDecimal total) {
+        this.usuario = usuario;
+        this.fecha = LocalDateTime.now();
+        this.estado = EstadoOrden.PENDIENTE;
+        this.total = total;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Setter(AccessLevel.NONE)

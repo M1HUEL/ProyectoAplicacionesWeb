@@ -11,6 +11,7 @@ import com.itson.ProyectoAplicacionesWeb.repository.ItemStockRepository;
 import com.itson.ProyectoAplicacionesWeb.repository.MovimientoInventarioRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -215,6 +216,67 @@ public class InventarioService {
         return new IllegalArgumentException(
                 "La presentación física no tiene inventario registrado."
         );
+    }
+
+    /**
+     * Descuenta existencias físicas por una venta.
+     *
+     * Debe ejecutarse dentro de la transacción del checkout.
+     * Registra también el movimiento de inventario.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void descontarPorVenta(
+            Long formatoId,
+            int cantidad,
+            String correoCliente) {
+
+        validarIdentificador(formatoId);
+
+        if (cantidad <= 0) {
+            throw new IllegalArgumentException(
+                    "La cantidad vendida debe ser mayor que cero."
+            );
+        }
+
+        if (correoCliente == null || correoCliente.isBlank()) {
+            throw new IllegalArgumentException(
+                    "No se pudo identificar al cliente."
+            );
+        }
+
+        // Bloquear el inventario durante la compra.
+        ItemStock inventario = itemStockRepository
+                .buscarParaCompraConBloqueo(formatoId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "La presentación no tiene inventario físico."
+                ));
+
+        int cantidadAnterior = inventario.getCantidad();
+
+        // Impedir ventas superiores a las existencias.
+        if (cantidad > cantidadAnterior) {
+            throw new IllegalArgumentException(
+                    "Existencias insuficientes. Disponibles: "
+                            + cantidadAnterior
+            );
+        }
+
+        int cantidadNueva = cantidadAnterior - cantidad;
+
+        inventario.setCantidad(cantidadNueva);
+
+        // Registrar la salida por venta.
+        MovimientoInventario movimiento = new MovimientoInventario(
+                inventario,
+                MotivoAjuste.VENTA,
+                -cantidad,
+                cantidadAnterior,
+                cantidadNueva,
+                "Salida de inventario por compra",
+                correoCliente.trim()
+        );
+
+        movimientoRepository.save(movimiento);
     }
 
 }

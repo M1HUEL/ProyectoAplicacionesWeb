@@ -3,8 +3,13 @@ package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.LoginRequestDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LoginResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.RegistroRequestDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.RegistroResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.model.Usuario;
+import com.itson.ProyectoAplicacionesWeb.service.AutenticacionService;
 import com.itson.ProyectoAplicacionesWeb.service.JwtService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,13 +22,16 @@ public class AuthRestController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final AutenticacionService autenticacionService;
 
     public AuthRestController(
             AuthenticationManager authenticationManager,
-            JwtService jwtService) {
+            JwtService jwtService,
+            AutenticacionService autenticacionService) {
 
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.autenticacionService = autenticacionService;
     }
 
     /**
@@ -51,5 +59,34 @@ public class AuthRestController {
         );
 
         return ResponseEntity.ok(respuesta);
+    }
+
+    /**
+     * Registra una nueva cuenta de cliente.
+     *
+     * POST /api/auth/registro
+     */
+    @PostMapping("/registro")
+    public ResponseEntity<RegistroResponseDTO> registrar(
+            @Valid @RequestBody RegistroRequestDTO solicitud) {
+
+        Usuario usuario = new Usuario();
+        usuario.setNombre(solicitud.nombre());
+        usuario.setCorreo(solicitud.correo());
+        usuario.setContrasena(solicitud.contrasena());
+
+        // Reutilizamos la lógica existente de registro.
+        autenticacionService.registrar(usuario);
+
+        RegistroResponseDTO respuesta = new RegistroResponseDTO(
+                usuario.getId(),
+                usuario.getNombre(),
+                usuario.getCorreo(),
+                usuario.getRol().name()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(respuesta);
     }
 }

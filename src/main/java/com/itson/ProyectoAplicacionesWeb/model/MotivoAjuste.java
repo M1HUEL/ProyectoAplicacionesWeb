@@ -7,7 +7,10 @@ public enum MotivoAjuste {
     MERMA("Merma"),
 
 
-    CORRECCION("Corrección de inventario");
+    CORRECCION("Corrección de inventario"),
+
+
+    VENTA("Salida por venta");
 
     private final String etiqueta;
 

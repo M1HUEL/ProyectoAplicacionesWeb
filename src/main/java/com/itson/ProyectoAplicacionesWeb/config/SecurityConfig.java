@@ -15,6 +15,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
+import com.itson.ProyectoAplicacionesWeb.dto.ErrorRespuestaDTO;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import tools.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+
 /**
  * Configuración de seguridad de Librería Raudskinna.
  *
@@ -36,7 +47,8 @@ public class SecurityConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http,
+            ObjectMapper objectMapper) throws Exception {
 
         http
                 .securityMatcher("/api/**")
@@ -77,9 +89,63 @@ public class SecurityConfig {
                 // Validación de tokens Bearer JWT.
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> {})
+
+                        // Sin token o con token inválido: 401 en JSON.
+                        .authenticationEntryPoint((request, response, ex) ->
+                                escribirErrorJson(
+                                        objectMapper,
+                                        request,
+                                        response,
+                                        HttpStatus.UNAUTHORIZED,
+                                        "Se requiere un token JWT válido "
+                                                + "para acceder a este recurso."
+                                )
+                        )
+
+                        // Autenticado pero sin permisos: 403 en JSON.
+                        .accessDeniedHandler((request, response, ex) ->
+                                escribirErrorJson(
+                                        objectMapper,
+                                        request,
+                                        response,
+                                        HttpStatus.FORBIDDEN,
+                                        "No tienes permisos para acceder "
+                                                + "a este recurso."
+                                )
+                        )
                 );
 
         return http.build();
+    }
+
+    /**
+     * Escribe una respuesta de error con el mismo formato JSON que usa la API
+     * ({@link ErrorRespuestaDTO}).
+     *
+     * Se utiliza desde los manejadores de seguridad, que se ejecutan antes de
+     * que la petición llegue a los controladores y, por lo tanto, no pasan por
+     * {@code ApiExceptionHandler}.
+     */
+    private void escribirErrorJson(
+            ObjectMapper objectMapper,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            HttpStatus estado,
+            String mensaje) throws IOException {
+
+        response.setStatus(estado.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        ErrorRespuestaDTO error = new ErrorRespuestaDTO(
+                LocalDateTime.now(),
+                estado.value(),
+                estado.getReasonPhrase(),
+                mensaje,
+                request.getRequestURI()
+        );
+
+        objectMapper.writeValue(response.getWriter(), error);
     }
 
     @Bean

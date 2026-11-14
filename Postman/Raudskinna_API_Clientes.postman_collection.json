@@ -1,14 +1,115 @@
 {
   "info": {
     "_postman_id": "b9413387-0926-4b74-8fb5-e36d04a12f66",
-    "name": "Librería Raudskinna - API Clientes",
+    "name": "Librería Raudskinna - API y Vistas",
+    "description": "# Librería Raudskinna - API y vistas\n\nColección para probar los endpoints funcionales y de API de la aplicación.\n\nNo incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. La colección se centra en los endpoints de cliente y de API; las vistas administrativas siguen disponibles en la aplicación.\n\n## Requisitos\n\n1. Importa **solo este archivo**: cada petición ya trae sus valores escritos directamente (URL, IDs, correos y contraseñas).\n2. No necesitas environment ni configurar variables. Las únicas variables que existen son `jwtToken` y `csrfToken`, que Postman rellena automáticamente al iniciar sesión.\n3. La colección apunta a `http://localhost:8080`. Si usas otro puerto o host, edita la URL de cada petición.\n4. En la petición **Iniciar sesión como administrador** reemplaza el texto `CAMBIAR_ESTA_CLAVE` por la contraseña real del administrador (variable de entorno `RAUDSKINNA_ADMIN_PASSWORD`). Solo se usa para consultar `/usuarios`.\n5. No desactives el almacenamiento de cookies de Postman: las rutas con sesión dependen de `JSESSIONID`.\n\n## Orden recomendado\n\nEjecuta las carpetas en orden: `00` → `06`. También puedes ejecutar peticiones sueltas.\n\n| Carpeta | Contenido |\n|---|---|\n| 00 - Preparación | Comprobación de la app y obtención de tokens CSRF |\n| 01 - Catálogo público (API) | `/api/libros` y errores 400/404 |\n| 02 - Autenticación API (JWT) | Registro, login y captura de `jwtToken` |\n| 03 - Carrito (JWT) | Consultar, agregar, modificar y eliminar ítems |\n| 04 - Checkout y órdenes (JWT) | Confirmar compra e historial |\n| 05 - Vistas públicas y sesión | Registro HTML, login y autorización por rol |\n| 06 - Usuarios (JSON, ADMIN) | `/usuarios` y `/usuarios/{id}` |\n\n## CSRF\n\nLas rutas con sesión tienen CSRF habilitado. Antes de un `POST`, `PATCH` o `DELETE` ejecuta la petición **Obtener token CSRF** correspondiente. El token se guarda en `csrfToken`.\n\n## Datos de prueba\n\nLas peticiones de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores 409. El resto de los datos son literales.\n\n## Nota\n\nLa aplicación debe estar en ejecución. La colección no prueba el panel administrativo ni el logout.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "43567406",
-    "_collection_link": "https://go.postman.co/collection/43567406-b9413387-0926-4b74-8fb5-e36d04a12f66?source=collection_link"
+    "_exporter_id": "43567406"
   },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "jwtToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
   "item": [
     {
-      "name": "01 - Catálogo público",
+      "name": "00 - Preparación",
+      "description": "Comprueba la aplicación y obtiene tokens CSRF.",
+      "item": [
+        {
+          "name": "Comprobar que la aplicación responde",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET / responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta es HTML\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/html\");",
+                  "});",
+                  "",
+                  "pm.test(\"La página pertenece a Raudskinna\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Raudskinna\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": []
+            },
+            "description": "Verifica que la aplicación esté levantada en http://localhost:8080."
+          }
+        },
+        {
+          "name": "Obtener token CSRF (público)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /iniciar-sesion responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const html = pm.response.text();",
+                  "const match = html.match(/name=\"_csrf\"[^>]*value=\"([^\"]+)\"/);",
+                  "",
+                  "pm.test(\"La página incluye el token CSRF\", function () {",
+                  "    pm.expect(match, \"No se encontró el campo _csrf en el HTML\").to.not.be.null;",
+                  "});",
+                  "",
+                  "if (match) {",
+                  "    pm.collectionVariables.set(\"csrfToken\", match[1]);",
+                  "    try { pm.environment.set(\"csrfToken\", match[1]); } catch (e) {}",
+                  "    console.log(\"Token CSRF actualizado.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/iniciar-sesion",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "iniciar-sesion"
+              ]
+            },
+            "description": "Guarda en {{csrfToken}} el token del formulario de inicio de sesión. Debe ejecutarse antes de los POST con sesión."
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Catálogo público (API)",
+      "description": "Endpoints públicos del catálogo y sus errores controlados.",
       "item": [
         {
           "name": "Listar libros activos",
@@ -18,7 +119,26 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\r\npm.test(\"GET /api/libros responde 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"La respuesta es un arreglo JSON\", function () {\r\n    const libros = pm.response.json();\r\n    pm.expect(libros).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"Los libros contienen los campos públicos\", function () {\r\n    const libros = pm.response.json();\r\n\r\n    libros.forEach(function (libro) {\r\n        pm.expect(libro).to.have.property(\"id\");\r\n        pm.expect(libro).to.have.property(\"titulo\");\r\n        pm.expect(libro).to.have.property(\"categoria\");\r\n        pm.expect(libro).to.have.property(\"editorial\");\r\n        pm.expect(libro.autores).to.be.an(\"array\");\r\n    });\r\n});\r\n"
+                  "pm.test(\"GET /api/libros responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta es un arreglo JSON\", function () {",
+                  "    const libros = pm.response.json();",
+                  "    pm.expect(libros).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "pm.test(\"Los libros contienen los campos públicos\", function () {",
+                  "    const libros = pm.response.json();",
+                  "",
+                  "    libros.forEach(function (libro) {",
+                  "        pm.expect(libro).to.have.property(\"id\");",
+                  "        pm.expect(libro).to.have.property(\"titulo\");",
+                  "        pm.expect(libro).to.have.property(\"categoria\");",
+                  "        pm.expect(libro).to.have.property(\"editorial\");",
+                  "        pm.expect(libro.autores).to.be.an(\"array\");",
+                  "    });",
+                  "});"
                 ]
               }
             }
@@ -27,88 +147,16 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/libros",
+              "raw": "http://localhost:8080/api/libros",
               "host": [
-                "{{baseUrl}}"
+                "http://localhost:8080"
               ],
               "path": [
                 "api",
                 "libros"
               ]
             }
-          },
-          "response": [
-            {
-              "name": "200 OK - Listado de libros activos",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8080/api/libros",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "api",
-                    "libros"
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "X-Content-Type-Options",
-                  "value": "nosniff"
-                },
-                {
-                  "key": "X-XSS-Protection",
-                  "value": "0"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-cache, no-store, max-age=0, must-revalidate"
-                },
-                {
-                  "key": "Pragma",
-                  "value": "no-cache"
-                },
-                {
-                  "key": "Expires",
-                  "value": "0"
-                },
-                {
-                  "key": "X-Frame-Options",
-                  "value": "DENY"
-                },
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Content-Length",
-                  "value": "407"
-                },
-                {
-                  "key": "Date",
-                  "value": "Thu, 12 Nov 2026 20:10:14 GMT"
-                },
-                {
-                  "key": "Keep-Alive",
-                  "value": "timeout=60"
-                },
-                {
-                  "key": "Connection",
-                  "value": "keep-alive"
-                }
-              ],
-              "cookie": [],
-              "body": "[\n  {\n    \"id\": 1,\n    \"titulo\": \"Drácula\",\n    \"sinopsis\": \"Novela de terror publicada originalmente en 1897.\",\n    \"portadaUrl\": null,\n    \"categoria\": \"Literatura clásica\",\n    \"editorial\": \"Penguin Random House\",\n    \"autores\": [\n      \"Bram Stoker\"\n    ]\n  },\n  {\n    \"id\": 2,\n    \"titulo\": \"El misterio del mar\",\n    \"sinopsis\": \"Novela de misterio de Bram Stoker.\",\n    \"portadaUrl\": null,\n    \"categoria\": \"Literatura clásica\",\n    \"editorial\": \"Penguin Random House\",\n    \"autores\": [\n      \"Bram Stoker\"\n    ]\n  }\n]"
-            }
-          ]
+          }
         },
         {
           "name": "Consultar detalle de libro",
@@ -118,7 +166,26 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\r\npm.test(\"GET /api/libros/1 responde 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"La respuesta es un objeto JSON\", function () {\r\n    const libro = pm.response.json();\r\n    pm.expect(libro).to.be.an(\"object\");\r\n    pm.expect(libro).to.not.be.an(\"array\");\r\n});\r\n\r\npm.test(\"El libro contiene los campos públicos\", function () {\r\n    const libro = pm.response.json();\r\n\r\n    const idSolicitado = Number(pm.environment.get(\"libroId\"));\r\n    pm.expect(libro).to.have.property(\"id\", idSolicitado);\r\n    pm.expect(libro).to.have.property(\"titulo\");\r\n    pm.expect(libro).to.have.property(\"sinopsis\");\r\n    pm.expect(libro).to.have.property(\"portadaUrl\");\r\n    pm.expect(libro).to.have.property(\"categoria\");\r\n    pm.expect(libro).to.have.property(\"editorial\");\r\n    pm.expect(libro.autores).to.be.an(\"array\");\r\n});\r\n"
+                  "pm.test(\"GET /api/libros/1 responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta es un objeto JSON\", function () {",
+                  "    const libro = pm.response.json();",
+                  "    pm.expect(libro).to.be.an(\"object\");",
+                  "    pm.expect(libro).to.not.be.an(\"array\");",
+                  "});",
+                  "",
+                  "pm.test(\"El libro contiene los campos públicos\", function () {",
+                  "    const libro = pm.response.json();",
+                  "    pm.expect(libro).to.have.property(\"id\", 1);",
+                  "    pm.expect(libro).to.have.property(\"titulo\");",
+                  "    pm.expect(libro).to.have.property(\"sinopsis\");",
+                  "    pm.expect(libro).to.have.property(\"portadaUrl\");",
+                  "    pm.expect(libro).to.have.property(\"categoria\");",
+                  "    pm.expect(libro).to.have.property(\"editorial\");",
+                  "    pm.expect(libro.autores).to.be.an(\"array\");",
+                  "});"
                 ]
               }
             }
@@ -127,88 +194,17 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/libros/{{libroId}}",
+              "raw": "http://localhost:8080/api/libros/1",
               "host": [
-                "{{baseUrl}}"
+                "http://localhost:8080"
               ],
               "path": [
                 "api",
                 "libros",
-                "{{libroId}}"
+                "1"
               ]
             }
-          },
-          "response": [
-            {
-              "name": "200 OK - Consultar detalle de libro",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/libros/{{libroId}}",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "libros",
-                    "{{libroId}}"
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "X-Content-Type-Options",
-                  "value": "nosniff"
-                },
-                {
-                  "key": "X-XSS-Protection",
-                  "value": "0"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-cache, no-store, max-age=0, must-revalidate"
-                },
-                {
-                  "key": "Pragma",
-                  "value": "no-cache"
-                },
-                {
-                  "key": "Expires",
-                  "value": "0"
-                },
-                {
-                  "key": "X-Frame-Options",
-                  "value": "DENY"
-                },
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Content-Length",
-                  "value": "204"
-                },
-                {
-                  "key": "Date",
-                  "value": "Thu, 12 Nov 2026 22:34:51 GMT"
-                },
-                {
-                  "key": "Keep-Alive",
-                  "value": "timeout=60"
-                },
-                {
-                  "key": "Connection",
-                  "value": "keep-alive"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n  \"id\": 1,\n  \"titulo\": \"Drácula\",\n  \"sinopsis\": \"Novela de terror publicada originalmente en 1897.\",\n  \"portadaUrl\": null,\n  \"categoria\": \"Literatura clásica\",\n  \"editorial\": \"Penguin Random House\",\n  \"autores\": [\n    \"Bram Stoker\"\n  ]\n}"
-            }
-          ]
+          }
         },
         {
           "name": "Libro inexistente (404)",
@@ -218,7 +214,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\r\npm.test(\"Libro inexistente responde 404 Not Found\", function () {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"La respuesta contiene un error JSON estructurado\", function () {\r\n    const error = pm.response.json();\r\n\r\n    pm.expect(error).to.have.property(\"estado\", 404);\r\n    pm.expect(error).to.have.property(\"error\", \"Not Found\");\r\n    pm.expect(error).to.have.property(\r\n        \"mensaje\",\r\n        \"El libro solicitado no está disponible.\"\r\n    );\r\n    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/99999\");\r\n    pm.expect(error).to.have.property(\"fechaHora\");\r\n});\r\n"
+                  "pm.test(\"Libro inexistente responde 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta contiene un error JSON estructurado\", function () {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error).to.have.property(\"estado\", 404);",
+                  "    pm.expect(error).to.have.property(\"error\", \"Not Found\");",
+                  "    pm.expect(error).to.have.property(\"mensaje\", \"El libro solicitado no está disponible.\");",
+                  "    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/99999\");",
+                  "    pm.expect(error).to.have.property(\"fechaHora\");",
+                  "});"
                 ]
               }
             }
@@ -227,9 +234,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/libros/99999",
+              "raw": "http://localhost:8080/api/libros/99999",
               "host": [
-                "{{baseUrl}}"
+                "http://localhost:8080"
               ],
               "path": [
                 "api",
@@ -237,76 +244,7 @@
                 "99999"
               ]
             }
-          },
-          "response": [
-            {
-              "name": "Libro inexistente (404)",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/libros/99999",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "libros",
-                    "99999"
-                  ]
-                }
-              },
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "X-Content-Type-Options",
-                  "value": "nosniff"
-                },
-                {
-                  "key": "X-XSS-Protection",
-                  "value": "0"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-cache, no-store, max-age=0, must-revalidate"
-                },
-                {
-                  "key": "Pragma",
-                  "value": "no-cache"
-                },
-                {
-                  "key": "Expires",
-                  "value": "0"
-                },
-                {
-                  "key": "X-Frame-Options",
-                  "value": "DENY"
-                },
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Transfer-Encoding",
-                  "value": "chunked"
-                },
-                {
-                  "key": "Date",
-                  "value": "Thu, 12 Nov 2026 22:34:19 GMT"
-                },
-                {
-                  "key": "Keep-Alive",
-                  "value": "timeout=60"
-                },
-                {
-                  "key": "Connection",
-                  "value": "keep-alive"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n  \"fechaHora\": \"2026-11-12T15:34:19.7401253\",\n  \"estado\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"El libro solicitado no está disponible.\",\n  \"ruta\": \"/api/libros/99999\"\n}"
-            }
-          ]
+          }
         },
         {
           "name": "Identificador inválido (400)",
@@ -316,7 +254,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\r\npm.test(\"Identificador cero responde 400 Bad Request\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"El error 400 contiene un JSON estructurado\", function () {\r\n    const error = pm.response.json();\r\n\r\n    pm.expect(error).to.have.property(\"estado\", 400);\r\n    pm.expect(error).to.have.property(\"error\", \"Bad Request\");\r\n    pm.expect(error).to.have.property(\r\n        \"mensaje\",\r\n        \"El identificador del libro no es válido.\"\r\n    );\r\n    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/0\");\r\n    pm.expect(error).to.have.property(\"fechaHora\");\r\n});\r\n\r\n"
+                  "pm.test(\"Identificador cero responde 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"El error 400 contiene un JSON estructurado\", function () {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error).to.have.property(\"estado\", 400);",
+                  "    pm.expect(error).to.have.property(\"error\", \"Bad Request\");",
+                  "    pm.expect(error).to.have.property(\"mensaje\", \"El identificador del libro no es válido.\");",
+                  "    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/0\");",
+                  "    pm.expect(error).to.have.property(\"fechaHora\");",
+                  "});"
                 ]
               }
             }
@@ -325,9 +274,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/libros/0",
+              "raw": "http://localhost:8080/api/libros/0",
               "host": [
-                "{{baseUrl}}"
+                "http://localhost:8080"
               ],
               "path": [
                 "api",
@@ -335,72 +284,7 @@
                 "0"
               ]
             }
-          },
-          "response": [
-            {
-              "name": "Identificador inválido (400)",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/libros/0",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "libros",
-                    "0"
-                  ]
-                }
-              },
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "X-Content-Type-Options",
-                  "value": "nosniff"
-                },
-                {
-                  "key": "X-XSS-Protection",
-                  "value": "0"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-cache, no-store, max-age=0, must-revalidate"
-                },
-                {
-                  "key": "Pragma",
-                  "value": "no-cache"
-                },
-                {
-                  "key": "Expires",
-                  "value": "0"
-                },
-                {
-                  "key": "X-Frame-Options",
-                  "value": "DENY"
-                },
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Transfer-Encoding",
-                  "value": "chunked"
-                },
-                {
-                  "key": "Date",
-                  "value": "Thu, 12 Nov 2026 22:34:12 GMT"
-                },
-                {
-                  "key": "Connection",
-                  "value": "close"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n  \"fechaHora\": \"2026-11-12T15:34:12.6486662\",\n  \"estado\": 400,\n  \"error\": \"Bad Request\",\n  \"mensaje\": \"El identificador del libro no es válido.\",\n  \"ruta\": \"/api/libros/0\"\n}"
-            }
-          ]
+          }
         },
         {
           "name": "Identificador no numérico (400)",
@@ -410,7 +294,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\r\npm.test(\"Identificador no numérico responde 400 Bad Request\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"El error de conversión contiene un JSON estructurado\", function () {\r\n    const error = pm.response.json();\r\n\r\n    pm.expect(error).to.have.property(\"estado\", 400);\r\n    pm.expect(error).to.have.property(\"error\", \"Bad Request\");\r\n    pm.expect(error).to.have.property(\r\n        \"mensaje\",\r\n        \"El parámetro 'id' tiene un valor no válido.\"\r\n    );\r\n    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/abc\");\r\n    pm.expect(error).to.have.property(\"fechaHora\");\r\n});\r\n"
+                  "pm.test(\"Identificador no numérico responde 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"El error de conversión contiene un JSON estructurado\", function () {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error).to.have.property(\"estado\", 400);",
+                  "    pm.expect(error).to.have.property(\"error\", \"Bad Request\");",
+                  "    pm.expect(error).to.have.property(\"mensaje\", \"El parámetro 'id' tiene un valor no válido.\");",
+                  "    pm.expect(error).to.have.property(\"ruta\", \"/api/libros/abc\");",
+                  "    pm.expect(error).to.have.property(\"fechaHora\");",
+                  "});"
                 ]
               }
             }
@@ -419,9 +314,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/libros/abc",
+              "raw": "http://localhost:8080/api/libros/abc",
               "host": [
-                "{{baseUrl}}"
+                "http://localhost:8080"
               ],
               "path": [
                 "api",
@@ -429,72 +324,1170 @@
                 "abc"
               ]
             }
-          },
-          "response": [
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Autenticación API (JWT)",
+      "description": "Registro y login. La petición de login guarda el JWT en `jwtToken`.",
+      "item": [
+        {
+          "name": "Registrar cliente (201)",
+          "event": [
             {
-              "name": "Identificador no numérico (400)",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/libros/abc",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "libros",
-                    "abc"
-                  ]
-                }
-              },
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "X-Content-Type-Options",
-                  "value": "nosniff"
-                },
-                {
-                  "key": "X-XSS-Protection",
-                  "value": "0"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-cache, no-store, max-age=0, must-revalidate"
-                },
-                {
-                  "key": "Pragma",
-                  "value": "no-cache"
-                },
-                {
-                  "key": "Expires",
-                  "value": "0"
-                },
-                {
-                  "key": "X-Frame-Options",
-                  "value": "DENY"
-                },
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Transfer-Encoding",
-                  "value": "chunked"
-                },
-                {
-                  "key": "Date",
-                  "value": "Thu, 12 Nov 2026 22:33:45 GMT"
-                },
-                {
-                  "key": "Connection",
-                  "value": "close"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n  \"fechaHora\": \"2026-11-12T15:33:45.4698694\",\n  \"estado\": 400,\n  \"error\": \"Bad Request\",\n  \"mensaje\": \"El parámetro 'id' tiene un valor no válido.\",\n  \"ruta\": \"/api/libros/abc\"\n}"
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/auth/registro responde 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"El cliente se crea con rol USER y sin contraseña\", function () {",
+                  "    const cliente = pm.response.json();",
+                  "    pm.expect(cliente).to.have.property(\"id\");",
+                  "    pm.expect(cliente).to.have.property(\"nombre\");",
+                  "    pm.expect(cliente).to.have.property(\"correo\");",
+                  "    pm.expect(cliente).to.have.property(\"rol\", \"USER\");",
+                  "    pm.expect(cliente).to.not.have.property(\"contrasena\");",
+                  "});"
+                ]
+              }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/registro",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "description": "Crea un cliente nuevo con un correo único por ejecución.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente Postman\",\n  \"correo\": \"cliente.postman.{{$timestamp}}@test.com\",\n  \"contrasena\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registro con correo duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Un correo ya registrado responde 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/registro",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente Postman\",\n  \"correo\": \"prueba.endpoints@test.com\",\n  \"contrasena\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registro con datos inválidos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Datos inválidos responden 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/registro",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"correo\": \"no-es-un-correo\",\n  \"contrasena\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Iniciar sesión y guardar JWT (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/auth/login responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta incluye un token Bearer\", function () {",
+                  "    const respuesta = pm.response.json();",
+                  "    pm.expect(respuesta).to.have.property(\"accessToken\").that.is.a(\"string\");",
+                  "    pm.expect(respuesta.accessToken).to.not.be.empty;",
+                  "    pm.expect(respuesta).to.have.property(\"tokenType\", \"Bearer\");",
+                  "    pm.expect(respuesta).to.have.property(\"expiresIn\");",
+                  "",
+                  "    pm.collectionVariables.set(\"jwtToken\", respuesta.accessToken);",
+                  "    try { pm.environment.set(\"jwtToken\", respuesta.accessToken); } catch (e) {}",
+                  "    console.log(\"JWT guardado en jwtToken.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/login",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Guarda el token JWT en {{jwtToken}} para las carpetas de carrito, checkout y órdenes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"prueba.endpoints@test.com\",\n  \"contrasena\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login con contraseña incorrecta (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Credenciales inválidas responden 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/login",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"prueba.endpoints@test.com\",\n  \"contrasena\": \"ClaveIncorrecta123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Carrito (JWT)",
+      "description": "Operaciones del carrito autenticadas con JWT.",
+      "item": [
+        {
+          "name": "Consultar carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/carrito responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El carrito contiene sus campos esperados\", function () {",
+                  "    const carrito = pm.response.json();",
+                  "    pm.expect(carrito).to.have.property(\"carritoId\");",
+                  "    pm.expect(carrito.items).to.be.an(\"array\");",
+                  "    pm.expect(carrito).to.have.property(\"total\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/carrito",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "carrito"
+              ]
+            },
+            "description": "Requiere {{jwtToken}}. Ejecuta antes 'Iniciar sesión y guardar JWT'."
+          }
+        },
+        {
+          "name": "Agregar presentación al carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/carrito/items responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El carrito contiene la presentación agregada\", function () {",
+                  "    const carrito = pm.response.json();",
+                  "    const item = (carrito.items || []).find(function (elemento) {",
+                  "        return elemento.formatoLibroId === 1;",
+                  "    });",
+                  "    pm.expect(item, \"No se encontró el ítem agregado\").to.not.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/carrito/items",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formatoLibroId\": 1,\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Modificar cantidad del carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"PUT /api/carrito/items/1 responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La cantidad del ítem se actualiza a 2\", function () {",
+                  "    const carrito = pm.response.json();",
+                  "    const item = (carrito.items || []).find(function (elemento) {",
+                  "        return elemento.formatoLibroId === 1;",
+                  "    });",
+                  "    pm.expect(item).to.not.be.undefined;",
+                  "    pm.expect(item.cantidad).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/carrito/items/1",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "items",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar presentación del carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"DELETE /api/carrito/items/1 responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La presentación ya no está en el carrito\", function () {",
+                  "    const carrito = pm.response.json();",
+                  "    const item = (carrito.items || []).find(function (elemento) {",
+                  "        return elemento.formatoLibroId === 1;",
+                  "    });",
+                  "    pm.expect(item).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/carrito/items/1",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "items",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Carrito sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Sin token responde 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/carrito",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "carrito"
+              ]
+            },
+            "description": "Comprueba que la API rechace solicitudes sin JWT.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwtToken}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "04 - Checkout y órdenes (JWT)",
+      "description": "Confirmación de compra e historial autenticados con JWT.",
+      "item": [
+        {
+          "name": "Preparar carrito para el checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"El artículo se agrega al carrito\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/carrito/items",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "items"
+              ]
+            },
+            "description": "Agrega una unidad de la presentación para que el checkout tenga contenido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formatoLibroId\": 1,\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Confirmar compra (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/checkout responde 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"La orden generada contiene sus datos\", function () {",
+                  "    const orden = pm.response.json();",
+                  "    pm.expect(orden).to.have.property(\"ordenId\").that.is.a(\"number\");",
+                  "    pm.expect(orden).to.have.property(\"fecha\");",
+                  "    pm.expect(orden).to.have.property(\"estado\");",
+                  "    pm.expect(orden).to.have.property(\"total\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/checkout",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "checkout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Consultar historial de órdenes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/ordenes responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El historial es un arreglo de órdenes\", function () {",
+                  "    const ordenes = pm.response.json();",
+                  "    pm.expect(ordenes).to.be.an(\"array\");",
+                  "",
+                  "    if (ordenes.length > 0) {",
+                  "        pm.expect(ordenes[0]).to.have.property(\"ordenId\");",
+                  "        pm.expect(ordenes[0]).to.have.property(\"fecha\");",
+                  "        pm.expect(ordenes[0]).to.have.property(\"estado\");",
+                  "        pm.expect(ordenes[0]).to.have.property(\"total\");",
+                  "        pm.expect(ordenes[0].detalles).to.be.an(\"array\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/ordenes",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "ordenes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Órdenes sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Sin token responde 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/ordenes",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "api",
+                "ordenes"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwtToken}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "05 - Vistas públicas y sesión",
+      "description": "Formularios HTML, login por sesión y autorización por rol.",
+      "item": [
+        {
+          "name": "Página principal (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET / responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": []
+            }
+          }
+        },
+        {
+          "name": "Obtener token CSRF (registro)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /registro responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const html = pm.response.text();",
+                  "const match = html.match(/name=\"_csrf\"[^>]*value=\"([^\"]+)\"/);",
+                  "",
+                  "pm.test(\"La página incluye el token CSRF\", function () {",
+                  "    pm.expect(match, \"No se encontró el campo _csrf en el HTML\").to.not.be.null;",
+                  "});",
+                  "",
+                  "if (match) {",
+                  "    pm.collectionVariables.set(\"csrfToken\", match[1]);",
+                  "    try { pm.environment.set(\"csrfToken\", match[1]); } catch (e) {}",
+                  "    console.log(\"Token CSRF actualizado.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/registro",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "Obtiene el token CSRF necesario para el POST /registro."
+          }
+        },
+        {
+          "name": "Registrar cliente desde formulario (302)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /registro responde 302\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "",
+                  "pm.test(\"Redirige al inicio de sesión\", function () {",
+                  "    const location = pm.response.headers.get(\"Location\") || \"\";",
+                  "    pm.expect(location).to.include(\"iniciar-sesion\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/registro",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "Envía el formulario HTML de registro con un correo único.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Cliente Formulario",
+                  "type": "text"
+                },
+                {
+                  "key": "correo",
+                  "value": "formulario.{{$timestamp}}@test.com",
+                  "type": "text"
+                },
+                {
+                  "key": "contrasena",
+                  "value": "Password123!",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrfToken}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        },
+        {
+          "name": "Obtener token CSRF (login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /iniciar-sesion responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const html = pm.response.text();",
+                  "const match = html.match(/name=\"_csrf\"[^>]*value=\"([^\"]+)\"/);",
+                  "",
+                  "pm.test(\"La página incluye el token CSRF\", function () {",
+                  "    pm.expect(match, \"No se encontró el campo _csrf en el HTML\").to.not.be.null;",
+                  "});",
+                  "",
+                  "if (match) {",
+                  "    pm.collectionVariables.set(\"csrfToken\", match[1]);",
+                  "    try { pm.environment.set(\"csrfToken\", match[1]); } catch (e) {}",
+                  "    console.log(\"Token CSRF actualizado.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/iniciar-sesion",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "iniciar-sesion"
+              ]
+            },
+            "description": "Renueva {{csrfToken}} antes de autenticar la sesión."
+          }
+        },
+        {
+          "name": "Iniciar sesión como cliente (302)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /iniciar-sesion responde 302\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "",
+                  "pm.test(\"El cliente inicia sesión y vuelve al inicio\", function () {",
+                  "    const location = pm.response.headers.get(\"Location\") || \"\";",
+                  "    pm.expect(location).to.not.include(\"error\");",
+                  "    pm.expect(location).to.match(/\\/$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/iniciar-sesion",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "iniciar-sesion"
+              ]
+            },
+            "description": "Autentica la sesión HTTP con el cliente de prueba. Postman conserva la cookie JSESSIONID.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "correo",
+                  "value": "prueba.endpoints@test.com",
+                  "type": "text"
+                },
+                {
+                  "key": "contrasena",
+                  "value": "Password123!",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrfToken}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        },
+        {
+          "name": "Consulta de usuarios con rol USER (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"El rol USER recibe 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/usuarios",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener token CSRF para login ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /iniciar-sesion responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const html = pm.response.text();",
+                  "const match = html.match(/name=\"_csrf\"[^>]*value=\"([^\"]+)\"/);",
+                  "",
+                  "pm.test(\"La página incluye el token CSRF\", function () {",
+                  "    pm.expect(match, \"No se encontró el campo _csrf en el HTML\").to.not.be.null;",
+                  "});",
+                  "",
+                  "if (match) {",
+                  "    pm.collectionVariables.set(\"csrfToken\", match[1]);",
+                  "    try { pm.environment.set(\"csrfToken\", match[1]); } catch (e) {}",
+                  "    console.log(\"Token CSRF actualizado.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/iniciar-sesion",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "iniciar-sesion"
+              ]
+            },
+            "description": "La sesión cambió al iniciar como cliente; se obtiene un token nuevo antes del login administrativo."
+          }
+        },
+        {
+          "name": "Iniciar sesión como administrador (302)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /iniciar-sesion responde 302\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "",
+                  "pm.test(\"El administrador entra al panel\", function () {",
+                  "    const location = pm.response.headers.get(\"Location\") || \"\";",
+                  "    pm.expect(location).to.include(\"/admin\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/iniciar-sesion",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "iniciar-sesion"
+              ]
+            },
+            "description": "Requiere reemplazar CAMBIAR_ESTA_CLAVE por la contraseña real del administrador.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "correo",
+                  "value": "admin@raudskinna.com",
+                  "type": "text"
+                },
+                {
+                  "key": "contrasena",
+                  "value": "CAMBIAR_ESTA_CLAVE",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrfToken}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Usuarios (JSON, ADMIN)",
+      "description": "Consulta de usuarios con sesión ADMIN. Responde JSON.",
+      "item": [
+        {
+          "name": "Listar usuarios (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /usuarios responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta es un arreglo de usuarios sin contraseña\", function () {",
+                  "    const usuarios = pm.response.json();",
+                  "    pm.expect(usuarios).to.be.an(\"array\");",
+                  "",
+                  "    if (usuarios.length > 0) {",
+                  "        pm.expect(usuarios[0]).to.have.property(\"id\");",
+                  "        pm.expect(usuarios[0]).to.have.property(\"nombre\");",
+                  "        pm.expect(usuarios[0]).to.have.property(\"correo\");",
+                  "        pm.expect(usuarios[0]).to.have.property(\"rol\");",
+                  "        pm.expect(usuarios[0]).to.not.have.property(\"contrasena\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/usuarios",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Responde JSON aunque no esté bajo /api. Requiere sesión ADMIN."
+          }
+        },
+        {
+          "name": "Consultar usuario por id (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /usuarios/1 responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El usuario contiene los campos esperados\", function () {",
+                  "    const usuario = pm.response.json();",
+                  "    pm.expect(usuario).to.have.property(\"id\", 1);",
+                  "    pm.expect(usuario).to.have.property(\"nombre\");",
+                  "    pm.expect(usuario).to.have.property(\"correo\");",
+                  "    pm.expect(usuario).to.have.property(\"rol\");",
+                  "    pm.expect(usuario).to.not.have.property(\"contrasena\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/usuarios/1",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "usuarios",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Usuario inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Un usuario inexistente responde 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/usuarios/9999",
+              "host": [
+                "http://localhost:8080"
+              ],
+              "path": [
+                "usuarios",
+                "9999"
+              ]
+            }
+          }
         }
       ]
     }

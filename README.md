@@ -378,12 +378,11 @@ VALUES (1, 1, 1, 899.00);
 
 ## 12. Endpoints expuestos
 
-Esta sección documenta los endpoints del lado del cliente. La aplicación tiene dos mecanismos de seguridad:
+Esta sección documenta los endpoints REST del lado del cliente.
 
 - **API REST (`/api/**`):** autenticación con **JWT Bearer**. CSRF deshabilitado.
-- **Vistas y sesión de cliente (resto de rutas):** autenticación con **sesión HTTP**. CSRF habilitado en formularios y en `PATCH`/`DELETE`.
 
-Las rutas administrativas (`/admin/**`) y las páginas que solo muestran formularios se omiten de esta documentación.
+Las rutas administrativas (`/admin/**`), las vistas y las páginas que solo muestran formularios se omiten de esta documentación.
 
 ### 12.1. API REST pública
 
@@ -407,16 +406,7 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 | `POST` | `/api/checkout` | — | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401` |
 | `GET` | `/api/ordenes` | — | Consulta el historial de órdenes del cliente autenticado. | `200`, `401` |
 
-### 12.3. Vistas públicas y sesión de cliente
-
-| Método | Ruta | Autenticación | Body / parámetros | Descripción | Respuestas |
-|---|---|---|---|---|---|
-| `GET` | `/` | Pública | — | Página principal de la librería. | `200` |
-| `POST` | `/registro` | Pública | Form: `nombre`, `correo`, `contrasena`, `_csrf` | Registra un cliente y redirige al login. | `302` |
-| `POST` | `/iniciar-sesion` | Pública | Form: `correo`, `contrasena`, `_csrf` | Autentica la sesión; redirige al panel si es ADMIN o al inicio si es USER. | `302` |
-| `POST` | `/logout` | Autenticado | Form: `_csrf` | Cierra la sesión HTTP. | `302` |
-
-### 12.4. Códigos de respuesta
+### 12.3. Códigos de respuesta
 
 | Código | Significado |
 |---|---|
@@ -428,57 +418,4 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 | `403` | Autenticado sin el rol requerido, o CSRF inválido. |
 | `404` | Recurso no encontrado. |
 | `409` | Conflicto, por ejemplo un correo ya registrado. |
-
-### 12.5. Ejemplo rápido de uso de la API
-
-```bash
-# 1. Obtener el token
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"correo":"cliente@ejemplo.com","contrasena":"Password123!"}'
-
-# 2. Usar el token en un endpoint protegido
-curl http://localhost:8080/api/carrito \
-  -H "Authorization: Bearer <token>"
-```
-
-### 12.6. Colección de Postman
-
-La carpeta `Postman/` contiene un archivo:
-
-| Archivo | Contenido |
-|---|---|
-| `Raudskinna_API_Clientes.postman_collection.json` | 32 peticiones con pruebas automáticas para los endpoints de cliente y de API. **Basta con importar este archivo.** |
-
-La colección no incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. Se centra en los endpoints de cliente y de API: catálogo, autenticación JWT, carrito, checkout, órdenes y consulta de usuarios. Esas vistas siguen disponibles en la aplicación.
-
-Cada petición lleva sus valores escritos directamente (URL, IDs, correos y contraseñas), así que no hace falta environment ni configurar variables. Las únicas variables son `jwtToken` y `csrfToken`, que Postman rellena solo al iniciar sesión.
-
-**Importación:**
-
-1. En Postman, usa **Import** y selecciona la colección.
-2. La colección apunta a `http://localhost:8080`. Si usas otro puerto o host, edita la URL de cada petición.
-3. En la petición **Iniciar sesión como administrador**, reemplaza `CAMBIAR_ESTA_CLAVE` por la contraseña del administrador (`RAUDSKINNA_ADMIN_PASSWORD`).
-4. Mantén habilitado el almacenamiento de cookies de Postman.
-
-**Carpetas de la colección:**
-
-| Carpeta | Endpoints |
-|---|---|
-| `00 - Preparación` | Comprobación de la aplicación y token CSRF público. |
-| `01 - Catálogo público (API)` | `/api/libros` y errores `400`/`404`. |
-| `02 - Autenticación API (JWT)` | Registro, login y captura de `jwtToken`. |
-| `03 - Carrito (JWT)` | `GET`, `POST`, `PUT` y `DELETE` del carrito. |
-| `04 - Checkout y órdenes (JWT)` | Confirmación de compra e historial. |
-| `05 - Vistas públicas y sesión` | Formularios HTML, login, autorización por rol y token CSRF. |
-| `06 - Usuarios (JSON, ADMIN)` | `/usuarios` y `/usuarios/{id}`. |
-
-**Orden de ejecución:** ejecuta las carpetas de `00` a `06` o usa el Collection Runner. Las peticiones que necesitan CSRF obtienen el token automáticamente mediante las peticiones `Obtener token CSRF`.
-
-**Notas:**
-
-- Las peticiones de login guardan el JWT en `jwtToken` y los formularios guardan el token CSRF en `csrfToken`.
-- Las peticiones que esperan un `302` tienen deshabilitado el seguimiento automático de redirecciones para poder comprobar la cabecera `Location`.
-- Las pruebas de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores `409`.
-- La colección no prueba el logout ni el panel administrativo; para eso usa las peticiones de administración desde la aplicación o agrégalas manualmente en Postman.
 

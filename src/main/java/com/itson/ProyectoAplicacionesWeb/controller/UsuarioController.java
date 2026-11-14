@@ -1,5 +1,6 @@
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,7 @@ import com.itson.ProyectoAplicacionesWeb.service.UsuarioService;
 
 @Controller
 @RequestMapping("/usuarios")
+@PreAuthorize("hasRole('ADMIN')")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;

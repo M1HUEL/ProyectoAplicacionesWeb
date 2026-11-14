@@ -10,6 +10,7 @@ import com.itson.ProyectoAplicacionesWeb.service.EditorialService;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 import com.itson.ProyectoAplicacionesWeb.service.PortadaService;
 import com.itson.ProyectoAplicacionesWeb.model.Libro;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import com.itson.ProyectoAplicacionesWeb.model.Formato;
@@ -26,6 +27,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  */
 @Controller
 @RequestMapping("/admin/libros")
+@PreAuthorize("hasRole('ADMIN')")
 public class LibroController {
 
 

@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,10 +22,12 @@ public class UsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<Usuario> listarTodos() {
         return usuarioRepository.findAll();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public Optional<Usuario> buscarPorId(Long id) {
         return usuarioRepository.findById(id);
     }
@@ -33,6 +36,7 @@ public class UsuarioService {
         return usuarioRepository.findByCorreo(correo);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public Usuario guardarUsuario(Usuario usuario) {
         if (usuario.getId() == null) {
             if (usuario.getCorreo() != null && usuarioRepository.existsByCorreo(usuario.getCorreo())) {
@@ -73,6 +77,7 @@ public class UsuarioService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void eliminarUsuario(Long id) {
         usuarioRepository.deleteById(id);
     }

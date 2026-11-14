@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.controller;
 import com.itson.ProyectoAplicacionesWeb.dto.AjusteInventarioDTO;
 import com.itson.ProyectoAplicacionesWeb.model.MotivoAjuste;
 import com.itson.ProyectoAplicacionesWeb.service.InventarioService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/inventario")
+@PreAuthorize("hasRole('ADMIN')")
 public class InventarioController {
     private final InventarioService inventarioService;
 

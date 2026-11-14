@@ -6,6 +6,7 @@ import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -172,6 +173,7 @@ public class LibroService {
      *         es inválido o el libro no existe.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public Libro buscarPorId(Long id) {
 
         // Comprueba que el identificador sea válido.
@@ -200,6 +202,7 @@ public class LibroService {
      * @return DTO con los datos actuales del libro.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public LibroFormularioDTO prepararFormularioEdicion(Long id) {
 
         // Recupera el libro utilizando la validación existente.
@@ -237,6 +240,7 @@ public class LibroService {
      * @throws IllegalArgumentException si el ID es inválido.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public List<FormatoLibro> listarFormatosPorLibro(Long libroId) {
 
         // Comprueba que el identificador sea válido.
@@ -261,6 +265,7 @@ public class LibroService {
      *         o no pertenece al libro indicado.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public FormatoLibro buscarFormatoDeLibro(
             Long libroId,
             Long formatoId) {
@@ -301,6 +306,7 @@ public class LibroService {
      * @return lista de presentaciones para administración.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public List<LibroListadoDTO> listarParaAdministracion() {
 
         // Recupera los formatos junto con sus libros y autores.
@@ -382,6 +388,7 @@ public class LibroService {
      * @throws IllegalArgumentException si el ID es inválido.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public Optional<ItemStock> buscarStockPorFormato(Long formatoId) {
 
         // Valida el identificador recibido.
@@ -678,6 +685,7 @@ public class LibroService {
      *
      */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Libro registrar(LibroFormularioDTO formulario) {
 
         // Comprueba los datos recibidos antes de persistir.
@@ -835,6 +843,7 @@ public class LibroService {
      * @return libro actualizado.
      */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Libro actualizar(
             Long libroId,
             Long formatoId,
@@ -1007,6 +1016,7 @@ public class LibroService {
 
     }
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Libro cambiarVisibilidad(Long libroId, boolean activo) {
         Libro libro = buscarPorId(libroId);
         libro.setActivo(activo);

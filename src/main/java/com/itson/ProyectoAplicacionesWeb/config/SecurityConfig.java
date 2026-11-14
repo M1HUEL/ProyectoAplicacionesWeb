@@ -6,6 +6,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -22,6 +23,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
 
@@ -107,6 +109,14 @@ public class SecurityConfig {
                                 "/api/libros",
                                 "/api/libros/*"
                         ).permitAll()
+
+                        // La gestión de usuarios es exclusiva de administradores.
+                        // Estas rutas no forman parte de /admin, por lo que
+                        // necesitan una regla explícita.
+                        .requestMatchers(
+                                "/usuarios",
+                                "/usuarios/**"
+                        ).hasRole("ADMIN")
 
                         // Solo los administradores pueden acceder al panel.
                         .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")

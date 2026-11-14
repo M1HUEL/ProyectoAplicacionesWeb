@@ -10,6 +10,7 @@ import com.itson.ProyectoAplicacionesWeb.repository.FormatoLibroRepository;
 import com.itson.ProyectoAplicacionesWeb.repository.ItemStockRepository;
 import com.itson.ProyectoAplicacionesWeb.repository.MovimientoInventarioRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,7 @@ public class InventarioService {
      *                                  es digital o no tiene inventario.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public ItemStock buscarInventarioConLibro(Long formatoId) {
         validarIdentificador(formatoId);
 
@@ -59,6 +61,7 @@ public class InventarioService {
      * Lista los últimos ajustes de una presentación.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public List<MovimientoInventario> listarMovimientos(Long formatoId) {
         validarIdentificador(formatoId);
 
@@ -83,6 +86,7 @@ public class InventarioService {
      * @return movimiento registrado.
      */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public MovimientoInventario ajustar(Long formatoId,
                                         AjusteInventarioDTO ajuste,
                                         String responsable) {

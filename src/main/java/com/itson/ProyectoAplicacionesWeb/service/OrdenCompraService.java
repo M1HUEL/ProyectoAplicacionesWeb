@@ -8,6 +8,7 @@ import com.itson.ProyectoAplicacionesWeb.model.EstadoOrden;
 import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
 import com.itson.ProyectoAplicacionesWeb.model.OrdenCompra;
 import com.itson.ProyectoAplicacionesWeb.repository.OrdenCompraRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,11 +37,13 @@ public class OrdenCompraService {
      * ordenadas desde la más reciente.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public List<OrdenCompra> listarTodas() {
         return ordenCompraRepository.listarConUsuarios();
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public List<OrdenCompra> filtrar(EstadoOrden estado, String fechaDesde, String fechaHasta, String cliente) {
         LocalDateTime desde = null;
         LocalDateTime hasta = null;
@@ -133,6 +136,7 @@ public class OrdenCompraService {
      * @return cantidad de órdenes pendientes.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public long contarOrdenesPendientes() {
         return ordenCompraRepository.countByEstado(EstadoOrden.PENDIENTE);
     }
@@ -144,6 +148,7 @@ public class OrdenCompraService {
      * @return orden encontrada.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public OrdenCompra buscarPorId(Long id) {
 
         if (id == null || id <= 0) {
@@ -163,6 +168,7 @@ public class OrdenCompraService {
      * las transiciones permitidas.
      */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public OrdenCompra actualizarEstado(Long ordenId, EstadoOrden nuevoEstado) {
 
         // Recupera la orden existente.

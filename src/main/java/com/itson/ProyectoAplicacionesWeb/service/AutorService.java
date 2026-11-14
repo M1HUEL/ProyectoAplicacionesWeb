@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.model.Autor;
 import com.itson.ProyectoAplicacionesWeb.repository.AutorRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.List;
  *
  */
 @Service
+@PreAuthorize("hasRole('ADMIN')")
 public class AutorService {
 
     /** Repositorio utilizado para consultar autores. */

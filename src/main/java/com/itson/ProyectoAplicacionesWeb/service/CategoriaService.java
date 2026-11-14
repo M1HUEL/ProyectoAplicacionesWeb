@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.model.Categoria;
 import com.itson.ProyectoAplicacionesWeb.repository.CategoriaRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.util.List;
  * La persistencia se delega a CategoriaRepository.
  */
 @Service
+@PreAuthorize("hasRole('ADMIN')")
 public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;

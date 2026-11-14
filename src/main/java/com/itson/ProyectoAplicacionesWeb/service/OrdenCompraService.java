@@ -1,14 +1,20 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.dto.DetalleOrdenResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.OrdenCompraResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.model.DetalleOrden;
 import com.itson.ProyectoAplicacionesWeb.model.EstadoOrden;
+import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
 import com.itson.ProyectoAplicacionesWeb.model.OrdenCompra;
 import com.itson.ProyectoAplicacionesWeb.repository.OrdenCompraRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -49,6 +55,73 @@ public class OrdenCompraService {
         String clienteNormalizado = (cliente == null || cliente.isBlank()) ? null : cliente.trim();
 
         return ordenCompraRepository.filtrar(estado, desde, hasta, clienteNormalizado);
+    }
+
+    /**
+     * Recupera el historial de compras del cliente autenticado.
+     *
+     * La identidad se obtiene del correo incluido en el JWT validado,
+     * por lo que la consulta solo devuelve las órdenes del cliente.
+     *
+     * @param correo correo del cliente autenticado.
+     * @return órdenes del cliente, desde la más reciente.
+     */
+    @Transactional(readOnly = true)
+    public List<OrdenCompraResponseDTO> consultarHistorial(String correo) {
+
+        if (correo == null || correo.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El correo del cliente autenticado no es válido."
+            );
+        }
+
+        return ordenCompraRepository
+                .listarPorCorreoUsuario(correo.trim())
+                .stream()
+                .map(this::convertirARespuesta)
+                .toList();
+    }
+
+    /**
+     * Convierte una orden y sus detalles en el DTO
+     * utilizado por el historial de compras.
+     */
+    private OrdenCompraResponseDTO convertirARespuesta(OrdenCompra orden) {
+
+        List<DetalleOrdenResponseDTO> detalles = orden.getDetalles()
+                .stream()
+                .sorted(Comparator.comparing(
+                        DetalleOrden::getId,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
+                .map(detalle -> {
+
+                    FormatoLibro formato = detalle.getFormatoLibro();
+
+                    BigDecimal precioUnitario = detalle.getPrecioUnitario();
+
+                    BigDecimal subtotal = precioUnitario.multiply(
+                            BigDecimal.valueOf(detalle.getCantidad())
+                    );
+
+                    return new DetalleOrdenResponseDTO(
+                            formato.getId(),
+                            formato.getLibro().getTitulo(),
+                            formato.getFormato().name(),
+                            detalle.getCantidad(),
+                            precioUnitario,
+                            subtotal
+                    );
+                })
+                .toList();
+
+        return new OrdenCompraResponseDTO(
+                orden.getId(),
+                orden.getFecha(),
+                orden.getEstado().name(),
+                orden.getTotal(),
+                detalles
+        );
     }
 
     /**

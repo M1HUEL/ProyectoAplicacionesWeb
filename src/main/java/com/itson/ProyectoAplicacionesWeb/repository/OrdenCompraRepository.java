@@ -32,6 +32,29 @@ public interface OrdenCompraRepository
     List<OrdenCompra> listarConUsuarios();
 
     /**
+     * Recupera el historial de compras de un cliente mediante
+     * su correo electrónico.
+     *
+     * Se recuperan también los detalles, formatos y libros en una
+     * sola consulta para evitar el problema de N+1 al construir
+     * la respuesta de la API.
+     *
+     * @param correo correo del cliente autenticado.
+     * @return órdenes del cliente, desde la más reciente.
+     */
+    @Query("""
+       SELECT DISTINCT o
+       FROM OrdenCompra o
+       JOIN FETCH o.usuario u
+       LEFT JOIN FETCH o.detalles d
+       LEFT JOIN FETCH d.formatoLibro f
+       LEFT JOIN FETCH f.libro l
+       WHERE u.correo = :correo
+       ORDER BY o.fecha DESC
+       """)
+    List<OrdenCompra> listarPorCorreoUsuario(@Param("correo") String correo);
+
+    /**
      * Filtra las órdenes por estado, rango de fechas y cliente
      * (nombre o correo electrónico).
      */

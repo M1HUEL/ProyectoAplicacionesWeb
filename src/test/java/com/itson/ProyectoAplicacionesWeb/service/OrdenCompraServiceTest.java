@@ -1,7 +1,12 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.dto.OrdenCompraResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.model.DetalleOrden;
 import com.itson.ProyectoAplicacionesWeb.model.EstadoOrden;
+import com.itson.ProyectoAplicacionesWeb.model.Formato;
+import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
+import com.itson.ProyectoAplicacionesWeb.model.Libro;
 import com.itson.ProyectoAplicacionesWeb.model.OrdenCompra;
 import com.itson.ProyectoAplicacionesWeb.repository.OrdenCompraRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +17,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.MockitoAnnotations;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -93,6 +100,103 @@ class OrdenCompraServiceTest {
 
         // Verifica que se recuperaron ambas órdenes.
         assertEquals(2, resultado.size());
+    }
+
+    /**
+     * Comprueba que un cliente sin compras recibe
+     * un historial vacío.
+     */
+    @Test
+    void consultarHistorial_sinOrdenes_retornaListaVacia() {
+
+        String correo = "cliente@raudskinna.com";
+
+        when(ordenCompraRepository.listarPorCorreoUsuario(correo))
+                .thenReturn(List.of());
+
+        List<OrdenCompraResponseDTO> resultado =
+                ordenCompraService.consultarHistorial(correo);
+
+        assertTrue(resultado.isEmpty());
+
+        verify(ordenCompraRepository).listarPorCorreoUsuario(correo);
+    }
+
+    /**
+     * Comprueba que el historial incluye los datos de la orden
+     * y de sus presentaciones compradas.
+     */
+    @Test
+    void consultarHistorial_conOrdenes_retornaDetallesDeCompra() {
+
+        String correo = "cliente@raudskinna.com";
+
+        Libro libro = mock(Libro.class);
+        when(libro.getTitulo()).thenReturn("Drácula");
+
+        FormatoLibro formato = mock(FormatoLibro.class);
+        when(formato.getId()).thenReturn(10L);
+        when(formato.getLibro()).thenReturn(libro);
+        when(formato.getFormato()).thenReturn(Formato.PASTA_DURA);
+
+        DetalleOrden detalle = mock(DetalleOrden.class);
+        when(detalle.getId()).thenReturn(100L);
+        when(detalle.getFormatoLibro()).thenReturn(formato);
+        when(detalle.getCantidad()).thenReturn(2);
+        when(detalle.getPrecioUnitario())
+                .thenReturn(new BigDecimal("899.00"));
+
+        OrdenCompra orden = mock(OrdenCompra.class);
+        when(orden.getId()).thenReturn(5L);
+        when(orden.getFecha())
+                .thenReturn(LocalDateTime.of(2026, 11, 13, 10, 0));
+        when(orden.getEstado()).thenReturn(EstadoOrden.PENDIENTE);
+        when(orden.getTotal()).thenReturn(new BigDecimal("1798.00"));
+        when(orden.getDetalles()).thenReturn(List.of(detalle));
+
+        when(ordenCompraRepository.listarPorCorreoUsuario(correo))
+                .thenReturn(List.of(orden));
+
+        List<OrdenCompraResponseDTO> resultado =
+                ordenCompraService.consultarHistorial(correo);
+
+        assertEquals(1, resultado.size());
+
+        OrdenCompraResponseDTO respuesta = resultado.get(0);
+
+        assertEquals(5L, respuesta.ordenId());
+        assertEquals("PENDIENTE", respuesta.estado());
+        assertEquals(new BigDecimal("1798.00"), respuesta.total());
+        assertEquals(1, respuesta.detalles().size());
+
+        var detalleRespuesta = respuesta.detalles().get(0);
+
+        assertEquals(10L, detalleRespuesta.formatoLibroId());
+        assertEquals("Drácula", detalleRespuesta.titulo());
+        assertEquals("PASTA_DURA", detalleRespuesta.formato());
+        assertEquals(2, detalleRespuesta.cantidad());
+        assertEquals(new BigDecimal("899.00"), detalleRespuesta.precioUnitario());
+        assertEquals(new BigDecimal("1798.00"), detalleRespuesta.subtotal());
+    }
+
+    /**
+     * Comprueba que no se consulta el repositorio
+     * cuando el correo del cliente no es válido.
+     */
+    @Test
+    void consultarHistorial_correoVacio_lanzaExcepcion() {
+
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> ordenCompraService.consultarHistorial("  ")
+        );
+
+        assertEquals(
+                "El correo del cliente autenticado no es válido.",
+                excepcion.getMessage()
+        );
+
+        verifyNoInteractions(ordenCompraRepository);
     }
 
     /**

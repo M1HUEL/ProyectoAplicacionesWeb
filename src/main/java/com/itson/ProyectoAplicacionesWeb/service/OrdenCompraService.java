@@ -1,0 +1,214 @@
+
+package com.itson.ProyectoAplicacionesWeb.service;
+
+import com.itson.ProyectoAplicacionesWeb.dto.DetalleOrdenResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.OrdenCompraResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.model.DetalleOrden;
+import com.itson.ProyectoAplicacionesWeb.model.EstadoOrden;
+import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
+import com.itson.ProyectoAplicacionesWeb.model.OrdenCompra;
+import com.itson.ProyectoAplicacionesWeb.repository.OrdenCompraRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * Servicio encargado de gestionar las órdenes de compra
+ * de Librería Raudskinna.
+ */
+@Service
+public class OrdenCompraService {
+
+    private final OrdenCompraRepository ordenCompraRepository;
+
+    // Inyección de dependencias mediante constructor.
+    public OrdenCompraService(OrdenCompraRepository ordenCompraRepository) {
+        this.ordenCompraRepository = ordenCompraRepository;
+    }
+
+    /**
+     * Recupera las órdenes junto con sus usuarios,
+     * ordenadas desde la más reciente.
+     */
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<OrdenCompra> listarTodas() {
+        return ordenCompraRepository.listarConUsuarios();
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<OrdenCompra> filtrar(EstadoOrden estado, String fechaDesde, String fechaHasta, String cliente) {
+        LocalDateTime desde = null;
+        LocalDateTime hasta = null;
+
+        if (fechaDesde != null && !fechaDesde.isBlank()) {
+            desde = LocalDate.parse(fechaDesde).atStartOfDay();
+        }
+        if (fechaHasta != null && !fechaHasta.isBlank()) {
+            hasta = LocalDate.parse(fechaHasta).atTime(23, 59, 59);
+        }
+
+        String clienteNormalizado = (cliente == null || cliente.isBlank()) ? null : cliente.trim();
+
+        return ordenCompraRepository.filtrar(estado, desde, hasta, clienteNormalizado);
+    }
+
+    /**
+     * Recupera el historial de compras del cliente autenticado.
+     *
+     * La identidad se obtiene del correo incluido en el JWT validado,
+     * por lo que la consulta solo devuelve las órdenes del cliente.
+     *
+     * @param correo correo del cliente autenticado.
+     * @return órdenes del cliente, desde la más reciente.
+     */
+    @Transactional(readOnly = true)
+    public List<OrdenCompraResponseDTO> consultarHistorial(String correo) {
+
+        if (correo == null || correo.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El correo del cliente autenticado no es válido."
+            );
+        }
+
+        return ordenCompraRepository
+                .listarPorCorreoUsuario(correo.trim())
+                .stream()
+                .map(this::convertirARespuesta)
+                .toList();
+    }
+
+    /**
+     * Convierte una orden y sus detalles en el DTO
+     * utilizado por el historial de compras.
+     */
+    private OrdenCompraResponseDTO convertirARespuesta(OrdenCompra orden) {
+
+        List<DetalleOrdenResponseDTO> detalles = orden.getDetalles()
+                .stream()
+                .sorted(Comparator.comparing(
+                        DetalleOrden::getId,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
+                .map(detalle -> {
+
+                    FormatoLibro formato = detalle.getFormatoLibro();
+
+                    BigDecimal precioUnitario = detalle.getPrecioUnitario();
+
+                    BigDecimal subtotal = precioUnitario.multiply(
+                            BigDecimal.valueOf(detalle.getCantidad())
+                    );
+
+                    return new DetalleOrdenResponseDTO(
+                            formato.getId(),
+                            formato.getLibro().getTitulo(),
+                            formato.getFormato().name(),
+                            detalle.getCantidad(),
+                            precioUnitario,
+                            subtotal
+                    );
+                })
+                .toList();
+
+        return new OrdenCompraResponseDTO(
+                orden.getId(),
+                orden.getFecha(),
+                orden.getEstado().name(),
+                orden.getTotal(),
+                detalles
+        );
+    }
+
+    /**
+     * Obtiene la cantidad de órdenes pendientes.
+     *
+     * Consulta únicamente las órdenes cuyo estado
+     * corresponde a PENDIENTE.
+     *
+     * @return cantidad de órdenes pendientes.
+     */
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public long contarOrdenesPendientes() {
+        return ordenCompraRepository.countByEstado(EstadoOrden.PENDIENTE);
+    }
+
+    /**
+     * Busca una orden de compra mediante su identificador.
+     *
+     * @param id identificador de la orden.
+     * @return orden encontrada.
+     */
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public OrdenCompra buscarPorId(Long id) {
+
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException(
+                    "El identificador de la orden no es válido."
+            );
+        }
+
+        return ordenCompraRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No existe una orden con el identificador indicado."
+                ));
+    }
+
+    /**
+     * Actualiza el estado de una orden respetando
+     * las transiciones permitidas.
+     */
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public OrdenCompra actualizarEstado(Long ordenId, EstadoOrden nuevoEstado) {
+
+        // Recupera la orden existente.
+        OrdenCompra orden = buscarPorId(ordenId);
+
+        if (nuevoEstado == null) {
+            throw new IllegalArgumentException(
+                    "El nuevo estado de la orden es obligatorio."
+            );
+        }
+
+        EstadoOrden estadoActual = orden.getEstado();
+
+        boolean transicionValida = switch (estadoActual) {
+
+            case PENDIENTE ->
+                    nuevoEstado == EstadoOrden.PROCESANDO
+                            || nuevoEstado == EstadoOrden.CANCELADO;
+
+            case PROCESANDO ->
+                    nuevoEstado == EstadoOrden.ENVIADO
+                            || nuevoEstado == EstadoOrden.CANCELADO;
+
+            case ENVIADO ->
+                    nuevoEstado == EstadoOrden.ENTREGADO;
+
+            case ENTREGADO, CANCELADO -> false;
+        };
+
+        if (!transicionValida) {
+            throw new IllegalArgumentException(
+                    "No se permite cambiar la orden de "
+                            + estadoActual + " a " + nuevoEstado + "."
+            );
+        }
+
+        // La entidad está administrada por JPA durante la transacción.
+        orden.setEstado(nuevoEstado);
+
+        return orden;
+    }
+
+}

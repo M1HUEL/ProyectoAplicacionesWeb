@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Menú lateral reutilizable del área administrativa.
+
+  activePage identifica la sección actual para resaltar
+  visualmente el enlace correspondiente.
+
+  El control de acceso se realiza en SecurityConfig,
+  no en este fragmento HTML.
+-->
+<aside th:fragment="sidebar(activePage)"
+       class="admin-sidebar"
+       aria-label="Navegación administrativa">
+
+    <!-- Identidad del área de administración. -->
+    <div class="admin-sidebar-encabezado">
+        <a class="admin-sidebar-marca" th:href="@{/admin}">
+            <span class="admin-sidebar-icono" aria-hidden="true">▣</span>
+            <span>Raudskinna</span>
+        </a>
+
+        <p class="admin-sidebar-subtitulo">
+            Panel administrativo
+        </p>
+    </div>
+
+    <!-- Navegación principal del administrador. -->
+    <nav class="admin-sidebar-nav" aria-label="Módulos administrativos">
+
+        <a th:href="@{/admin}"
+           class="admin-sidebar-enlace"
+           th:classappend="${activePage == 'panel'} ? ' admin-sidebar-activo' : ''"
+           th:attr="aria-current=${activePage == 'panel'} ? 'page' : null">
+            <span aria-hidden="true">▦</span>
+            <span>Panel principal</span>
+        </a>
+
+        <a th:href="@{/admin/libros}"
+           class="admin-sidebar-enlace"
+           th:classappend="${activePage == 'libros'} ? ' admin-sidebar-activo' : ''"
+           th:attr="aria-current=${activePage == 'libros'} ? 'page' : null">
+            <span aria-hidden="true">▤</span>
+            <span>Libros e inventario</span>
+        </a>
+
+        <a th:href="@{/admin/ordenes}"
+           class="admin-sidebar-enlace"
+           th:classappend="${activePage == 'ordenes'} ? ' admin-sidebar-activo' : ''"
+           th:attr="aria-current=${activePage == 'ordenes'} ? 'page' : null">
+            <span aria-hidden="true">▧</span>
+            <span>Órdenes</span>
+        </a>
+
+    </nav>
+
+    <!-- Acciones de la cuenta administrativa. -->
+    <div class="admin-sidebar-pie">
+
+        <a class="admin-sidebar-enlace"
+           th:href="@{/}">
+            <span aria-hidden="true">⌂</span>
+            <span>Ir a la tienda</span>
+        </a>
+
+        <!--
+          Logout mediante POST.
+          Thymeleaf incorpora el token CSRF al formulario.
+        -->
+        <form th:action="@{/logout}"
+              method="post"
+              class="admin-sidebar-logout">
+
+            <button type="submit" class="admin-sidebar-enlace">
+                <span aria-hidden="true">⇥</span>
+                <span>Cerrar sesión</span>
+            </button>
+
+        </form>
+    </div>
+
+</aside>
+
+</body>
+</html>

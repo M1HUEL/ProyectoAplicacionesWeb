@@ -2,10 +2,9 @@
 
 Proyecto académico de **Aplicaciones Web**: plataforma de comercio electrónico de libros desarrollada con Spring Boot, Thymeleaf y MySQL.
 
-> **Estado al 29 de octubre de 2026:** tercer avance en desarrollo y revisión. La implementación administrativa se encuentra publicada en la rama `feat-administracion`. Este documento distingue funcionalidades verificadas, limitaciones y tareas pendientes.
+> **Estado al 15 de noviembre de 2026 — Avance 4.1:** API REST de clientes integrada en la rama `main`, con autenticación JWT, registro de usuarios, consulta del catálogo, carrito de compras persistente, checkout transaccional e historial de órdenes. La aplicación conserva los módulos administrativos desarrollados en avances anteriores. Se ejecutaron satisfactoriamente 91 pruebas automatizadas, sin fallos ni errores.
 
 ## 1. Tecnologías
-
 - Java 21 y Maven Wrapper.
 - Spring Boot 4.1.2, Spring MVC y Spring Security 7.
 - Spring Data JPA / Hibernate 7.
@@ -42,31 +41,253 @@ Model: entidades JPA utilizadas por las capas.
 
 Los formularios administrativos siguen el patrón **POST/Redirect/GET**.
 
-## 3. Preparación local
+## 3. Preparación y ejecución local
 
-1. Instalar y configurar Java 21 y MySQL.
-2. Crear la base de datos `libreria_raudskinna`.
-3. Crear un usuario MySQL con los permisos necesarios. Evitar utilizar `root` como usuario habitual de la aplicación.
-4. Configurar las variables de entorno requeridas por `application.properties`, incluyendo `DB_USERNAME`, `DB_PASSWORD` y `RAUDSKINNA_ADMIN_PASSWORD`. Revisar también la URL de conexión configurada.
-5. Ejecutar el proyecto desde IntelliJ IDEA o mediante Maven Wrapper.
+### 3.1. Requisitos
 
-Para ejecutar las pruebas desde Bash:
+Para ejecutar Librería Raudskinna se requiere:
 
-```bash
-bash ./mvnw test
+- Java JDK 21.
+- MySQL 8.4 o una versión compatible.
+- Maven Wrapper (incluido en el repositorio).
+- IntelliJ IDEA, NetBeans o una terminal compatible.
+- Postman para probar los endpoints REST.
+
+### 3.2. Preparación de MySQL
+
+Iniciar el servicio de MySQL y crear la base de datos:
+
+```sql
+CREATE DATABASE IF NOT EXISTS libreria_raudskinna;
 ```
 
-Para iniciar la aplicación:
+Configurar un usuario MySQL con permisos sobre esta base de datos.
+
+La aplicación utiliza Spring Data JPA y Hibernate para actualizar el esquema durante el desarrollo mediante `spring.jpa.hibernate.ddl-auto=update`.
+
+### 3.3. Variables de entorno
+
+| Variable | Descripción | Requerimiento |
+|---|---|---|
+| `DB_USERNAME` | Usuario de conexión a MySQL | Obligatoria |
+| `DB_PASSWORD` | Contraseña de conexión a MySQL | Obligatoria para la configuración habitual |
+| `RAUDSKINNA_ADMIN_PASSWORD` | Contraseña de la cuenta administrativa inicial | Necesaria si el administrador todavía no existe |
+| `JWT_SECRET` | Clave Base64 utilizada para firmar y validar JWT | Opcional en la configuración actual de `main`, que dispone de un valor predeterminado |
+
+La contraseña administrativa se utiliza para crear automáticamente `admin@raudskinna.com` mediante `DataInitializer`.
+
+Si la cuenta ya existe, cambiar `RAUDSKINNA_ADMIN_PASSWORD` no actualizará su contraseña almacenada.
+
+### 3.4. Ejecución desde Konsole o Bash
+
+Abrir una terminal en la raíz del proyecto y configurar las variables:
+
+```bash
+read -r -p "Usuario MySQL: " DB_USERNAME
+export DB_USERNAME
+
+read -r -s -p "Contraseña MySQL: " DB_PASSWORD
+echo
+export DB_PASSWORD
+
+read -r -s -p "Contraseña inicial del administrador: " RAUDSKINNA_ADMIN_PASSWORD
+echo
+export RAUDSKINNA_ADMIN_PASSWORD
+```
+
+Si se desea utilizar una clave JWT propia:
+
+```bash
+read -r -s -p "JWT_SECRET (Base64): " JWT_SECRET
+echo
+export JWT_SECRET
+```
+
+La clave JWT debe representar al menos 256 bits (32 bytes) después de decodificarse desde Base64.
+
+Para ejecutar la aplicación:
 
 ```bash
 bash ./mvnw spring-boot:run
 ```
 
-**Importante:** las variables configuradas en IntelliJ no se transfieren automáticamente a Git Bash. La prueba de carga del contexto necesita una configuración válida de MySQL.
+Para ejecutar las pruebas automatizadas:
 
-No subir credenciales reales, tokens de sesión ni contraseñas al repositorio.
+```bash
+bash ./mvnw clean test
+```
 
-Se utiliza `spring.jpa.hibernate.ddl-auto=update` en desarrollo. No debe considerarse un mecanismo de migraciones para producción.
+Las variables exportadas estarán disponibles para los procesos ejecutados desde esa terminal. No se conservarán automáticamente en otras sesiones.
+
+### 3.5. Ejecución desde Windows (PowerShell, CMD y Git Bash)
+
+Librería Raudskinna también puede ejecutarse en Windows 10/11 utilizando PowerShell, Símbolo del sistema (CMD) o Git Bash.
+
+**Requisitos previos:**
+- JDK 21 instalado y configurado.
+- MySQL en ejecución.
+- Base de datos `libreria_raudskinna` creada.
+- Terminal abierta en el directorio raíz del proyecto, donde se encuentra `mvnw.cmd`.
+
+Las variables de entorno necesarias son `DB_USERNAME`, `DB_PASSWORD` y, para la creación inicial del administrador, `RAUDSKINNA_ADMIN_PASSWORD`.
+
+La variable `JWT_SECRET` es opcional en la versión actual de `main`, que dispone de un valor predeterminado para desarrollo. Si se utiliza una clave propia, debe estar codificada en Base64 y representar al menos 256 bits.
+
+#### A. PowerShell (recomendado en Windows)
+
+Configurar las variables de entorno:
+
+```powershell
+$env:DB_USERNAME = Read-Host "Usuario de MySQL"
+
+$claveDB = Read-Host "Contraseña de MySQL" -AsSecureString
+$env:DB_PASSWORD = [System.Net.NetworkCredential]::new("", $claveDB).Password
+
+$claveAdmin = Read-Host "Contraseña inicial del administrador" -AsSecureString
+$env:RAUDSKINNA_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new("", $claveAdmin).Password
+```
+
+El uso de `-AsSecureString` evita mostrar las contraseñas mientras se capturan.
+
+Opcionalmente, configurar una clave JWT propia:
+
+```powershell
+$claveJWT = Read-Host "JWT_SECRET (Base64)" -AsSecureString
+$env:JWT_SECRET = [System.Net.NetworkCredential]::new("", $claveJWT).Password
+```
+
+Para iniciar Spring Boot:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Para ejecutar las pruebas automatizadas:
+
+```powershell
+.\mvnw.cmd clean test
+```
+
+#### B. Símbolo del sistema (CMD)
+
+En CMD, las variables se configuran mediante `set`:
+
+```bat
+set "DB_USERNAME=usuario_mysql"
+set "DB_PASSWORD=contrasena_mysql"
+set "RAUDSKINNA_ADMIN_PASSWORD=contrasena_admin"
+```
+
+Sustituir los valores de ejemplo por las credenciales correspondientes al entorno local.
+
+Opcionalmente, para configurar una clave JWT propia:
+
+```bat
+set "JWT_SECRET=clave_base64"
+```
+
+Para iniciar la aplicación:
+
+```bat
+mvnw.cmd spring-boot:run
+```
+
+Para ejecutar las pruebas:
+
+```bat
+mvnw.cmd clean test
+```
+
+**Advertencia:** escribir contraseñas directamente en comandos CMD puede exponerlas en la pantalla o en registros de la sesión. Para introducir credenciales de manera más segura se recomienda PowerShell o Git Bash.
+
+#### C. Git Bash en Windows
+
+Si se tiene instalado Git for Windows, también puede utilizarse Git Bash.
+
+Los comandos `read`, `export` y las instrucciones Bash de la sección 3.4 pueden utilizarse en este entorno.
+
+Para ejecutar el proyecto:
+
+```bash
+bash ./mvnw spring-boot:run
+```
+
+Para ejecutar las pruebas:
+
+```bash
+bash ./mvnw clean test
+```
+
+#### D. Consideraciones sobre las variables de entorno
+
+- Las variables configuradas mediante `set`, `$env:` o `export` están disponibles para los procesos iniciados desde la terminal correspondiente.
+- Normalmente dejan de estar disponibles al cerrar esa sesión.
+- No se transfieren automáticamente a IntelliJ IDEA o NetBeans si estos ya estaban ejecutándose.
+- Si se utilizan configuraciones de ejecución propias del IDE, deben establecerse allí las variables necesarias.
+- No deben subirse al repositorio contraseñas reales, secretos JWT ni archivos personales que contengan credenciales.
+
+Una vez iniciada la aplicación, normalmente estará disponible en:
+
+`http://localhost:8080`
+
+El acceso administrativo se realiza desde:
+
+`http://localhost:8080/admin/login`
+
+### 3.6. Ejecución desde IntelliJ IDEA
+
+1. Abrir el proyecto Maven en IntelliJ IDEA.
+2. Configurar el JDK 21.
+3. Abrir **Run → Edit Configurations**.
+4. Seleccionar la configuración de ejecución de Spring Boot.
+5. En **Environment variables**, definir `DB_USERNAME`, `DB_PASSWORD` y `RAUDSKINNA_ADMIN_PASSWORD`. Se puede añadir `JWT_SECRET` si se desea utilizar una clave propia.
+6. Guardar la configuración.
+7. Ejecutar la clase principal `ProyectoAplicacionesWebApplication`.
+
+Las variables definidas en IntelliJ corresponden a esa configuración de ejecución y no se exportan automáticamente a otras terminales.
+
+### 3.7. Ejecución desde NetBeans
+
+1. Abrir el proyecto Maven en Apache NetBeans.
+2. Verificar que se utilice el JDK 21.
+3. Asegurarse de que MySQL esté funcionando y la base de datos exista.
+4. Configurar las variables de entorno para el proceso Java que ejecutará la aplicación.
+5. Ejecutar `ProyectoAplicacionesWebApplication`.
+
+Como alternativa reproducible, abrir una terminal en el directorio del proyecto y utilizar los comandos de la sección 3.4. Esto evita depender de diferencias entre versiones de NetBeans y sus configuraciones de ejecución.
+
+### 3.8. Acceso inicial
+
+Una vez iniciada la aplicación, el servidor estará disponible normalmente en:
+
+`http://localhost:8080`
+
+Para acceder al panel administrativo:
+
+`http://localhost:8080/admin/login`
+
+Credenciales de prueba:
+
+- Correo: `admin@raudskinna.com`
+- Contraseña: valor configurado mediante `RAUDSKINNA_ADMIN_PASSWORD` durante la creación inicial de la cuenta.
+
+### 3.9. Pruebas REST con Postman
+
+Importar la colección:
+
+`Postman/Raudskinna_API_Clientes.postman_collection.json`
+
+Configurar `baseUrl` con el valor:
+
+`http://localhost:8080`
+
+Ejecutar el inicio de sesión para obtener un JWT y utilizarlo en las solicitudes protegidas mediante el encabezado:
+
+`Authorization: Bearer <token>`
+
+La colección incluye solicitudes organizadas por módulo para comprobar autenticación, catálogo, carrito, checkout e historial de órdenes.
+
+**Nota:** esta configuración está destinada al entorno académico de desarrollo. No debe considerarse una configuración preparada para producción.
 
 ## 4. Seguridad y autenticación
 
@@ -81,14 +302,13 @@ La aplicación utiliza Spring Security para:
 
 El acceso administrativo y el cierre de sesión fueron comprobados desde el navegador. También se verificó la inclusión del campo `_csrf` en formularios POST administrativos.
 
-## Acceso administrativo para pruebas
+### 4.1. Acceso administrativo para pruebas
 
 El proyecto incluye la clase `DataInitializer`, encargada de crear automáticamente una cuenta administrativa inicial cuando arranca Spring Boot.
 
 **No es necesario insertar manualmente un administrador desde MySQL.**
 
-### Configuración
-
+#### 4.1.1. Configuración
 1. Crear la base de datos `libreria_raudskinna` y configurar la conexión MySQL.
 2. Establecer la variable de entorno `RAUDSKINNA_ADMIN_PASSWORD` con una contraseña de prueba.
 3. Ejecutar Spring Boot.
@@ -177,9 +397,15 @@ Se utilizan formularios POST, redirecciones y mensajes de confirmación o error.
 
 ## 6. Modelo de datos y relaciones
 
-La estructura relacional actual contiene diez tablas principales:
+La estructura relacional del proyecto incluye las tablas correspondientes a usuarios, catálogo, inventario, carritos de compra y órdenes.
+
+Entre las tablas principales se encuentran:
 
 `usuarios`, `ordenes_compra`, `detalles_orden`, `libros`, `formatos_libro`, `items_stock`, `categorias`, `editoriales`, `autores` y `libros_autores`.
+
+El Avance 4.1 incorpora además persistencia para los carritos de compra, sus artículos y los movimientos de inventario asociados a las operaciones comerciales.
+
+Para consultar la estructura definitiva, revisar las entidades JPA y las relaciones existentes en MySQL.
 
 ### Multiplicidades principales
 
@@ -204,28 +430,38 @@ El esquema EER fue generado mediante ingeniería inversa desde MySQL Workbench y
 
 ## 7. Pruebas realizadas
 
-Última ejecución completa verificada: **29 de octubre de 2026**.
+**Última ejecución completa verificada:** 15 de noviembre de 2026.
 
-| Clase | Pruebas |
-|---|---:|
-| ProyectoAplicacionesWebApplicationTests | 1 |
-| AutorServiceTest | 4 |
-| CategoriaServiceTest | 12 |
-| EditorialServiceTest | 5 |
-| LibroServiceTest | 23 |
-| OrdenCompraServiceTest | 9 |
-| **Total** | **54** |
+Se ejecutó la batería de pruebas automatizadas sobre la versión integrada del proyecto, correspondiente al Avance 4.1.
 
-Resultado:
+**Comando utilizado:**
+
+```bash
+bash ./mvnw clean test
+```
+
+**Resultado obtenido:**
 
 ```text
-Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 91, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Posteriormente se realizaron ajustes en las plantillas HTML de los módulos administrativos. Se recomienda ejecutar nuevamente la batería completa antes de la entrega.
+Las 91 pruebas incluyen comprobaciones de servicios, repositorios, controladores y carga del contexto de Spring Boot.
 
-También se verificaron visualmente las páginas administrativas en una resolución móvil de 375 × 825 píxeles.
+Para ejecutar correctamente las pruebas es necesario configurar las credenciales de MySQL mediante las variables de entorno correspondientes y disponer de una base de datos accesible.
+
+**Pruebas funcionales realizadas:**
+
+- Registro de clientes mediante la API REST.
+- Autenticación JWT y acceso a endpoints protegidos.
+- Consulta pública del catálogo de libros.
+- Operaciones de consulta, registro, modificación y eliminación de artículos del carrito.
+- Confirmación exitosa de una compra.
+- Descuento de inventario y registro del movimiento correspondiente.
+- Rechazo del checkout por existencias insuficientes, verificando que no se generan órdenes incompletas y que el carrito conserva sus artículos.
+
+Las pruebas automatizadas y funcionales aportan evidencia del funcionamiento de los módulos evaluados, aunque no sustituyen una revisión integral de todos los escenarios posibles.
 
 ## 8. Limitaciones y puntos para revisión
 
@@ -243,15 +479,17 @@ Repositorio:
 
 https://github.com/M1HUEL/ProyectoAplicacionesWeb
 
-Rama del avance:
+**Rama principal del proyecto:** `main`
 
-`feat-administracion`
-
-Último commit confirmado:
+**Último commit confirmado en `origin/main` (15/nov/2026):**
 
 ```text
-7bab5c9 style: unificar vistas administrativas de autores editoriales y categorias
+96ccf2a Merge pull request #2 from M1HUEL/feat-api-clientes
 ```
+
+**Estado del Avance 4.1:** API REST de clientes integrada, incluyendo autenticación JWT, registro de usuarios, carrito de compras, checkout transaccional e historial de órdenes.
+
+Las actualizaciones de documentación y de la colección Postman se desarrollan en una rama independiente para su posterior revisión e integración mediante Pull Request.
 
 Para consultar el avance:
 
@@ -263,30 +501,43 @@ git log -5 --oneline
 
 Se recomienda realizar nuevas modificaciones en ramas propias, revisarlas en equipo y no fusionarlas directamente a `main` sin coordinación.
 
-## 10. Preparación del video del tercer avance
+## 10. Verificación funcional del Avance 4.1
 
-El entregable requiere un video de **5 a 10 minutos** que explique el avance y demuestre las funcionalidades desarrolladas.
+El Avance 4.1 incorpora una API REST para las operaciones principales del cliente, protegida mediante autenticación JWT cuando corresponde.
 
-Temas sugeridos:
+### 10.1. Funcionalidades disponibles
 
-1. Arquitectura y organización del proyecto.
-2. Inicio de sesión y protección del panel administrativo.
-3. Panel principal e indicadores reales.
-4. Administración de libros, formatos e inventario.
-5. Registro de autores, editoriales y categorías.
-6. Administración de órdenes y transiciones de estado.
-7. Modelo de datos y sus relaciones.
-8. Cierre de sesión y conclusiones.
+Consulta pública del catálogo de libros.
 
-Cada integrante debe revisar previamente los controladores, servicios, repositorios y entidades relacionados con la parte que vaya a explicar.
+Registro de clientes e inicio de sesión mediante JWT.
 
-**Objetivo del equipo:** llegar a la grabación con el código revisado, el modelo de datos comprendido y las funcionalidades que se mostrarán previamente comprobadas.
+Consulta y administración del carrito de compras.
 
----
+Confirmación de compras con validación de existencias.
 
-**Registro del avance — 29/oct/2026:** módulos administrativos implementados y revisados, indicadores reales, pruebas automatizadas satisfactorias, diagrama EER generado y mejoras de navegación y responsividad publicadas en `feat-administracion`.## 11. Scripts SQL para insertar registros (MySQL)
+Consulta del historial de órdenes del usuario autenticado.
 
-Asegurate de tener la base de datos `libreria_raudskinna` creada. Ejecuta en orden, respetando claves foraneas.
+Manejo de errores HTTP mediante respuestas JSON estructuradas.
+
+### 10.2. Pruebas realizadas
+
+Se ejecutaron satisfactoriamente 91 pruebas automatizadas mediante Maven.
+
+Adicionalmente, se realizaron comprobaciones funcionales con Postman sobre autenticación, historial de órdenes y checkout, incluyendo escenarios de carrito vacío y existencias insuficientes.
+
+En la prueba de inventario insuficiente se verificó mediante consultas SQL que la solicitud rechazada no generó una orden adicional, no modificó las existencias y conservó los artículos del carrito.
+
+### 10.3. Colección Postman
+
+La colección se encuentra en:
+
+Postman/Raudskinna_API_Clientes.postman_collection.json
+
+Contiene solicitudes organizadas por funcionalidad, validaciones de respuestas HTTP y documentación de las precondiciones necesarias para ejecutar determinados escenarios.
+
+La aplicación debe estar en ejecución y contar con una base de datos preparada para realizar las pruebas correspondientes.
+
+## 11. Scripts SQL para insertar registros (MySQL)
 
 ### 11.1. Catalogos base
 

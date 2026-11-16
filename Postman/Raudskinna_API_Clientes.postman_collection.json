@@ -1,30 +1,15 @@
 {
   "info": {
-    "_postman_id": "b9413387-0926-4b74-8fb5-e36d04a12f66",
+    "_postman_id": "c316b87f-993a-4d2a-aeed-c43125a8ac04",
     "name": "Librería Raudskinna - API y Vistas",
-    "description": "# Librería Raudskinna - API y vistas\n\nColección para probar los endpoints funcionales y de API de la aplicación.\n\nNo incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. La colección se centra en los endpoints de cliente y de API; las vistas administrativas siguen disponibles en la aplicación.\n\n## Requisitos\n\n1. Importa **solo este archivo**: cada petición ya trae sus valores escritos directamente (URL, IDs, correos y contraseñas).\n2. No necesitas environment ni configurar variables. Las únicas variables que existen son `jwtToken` y `csrfToken`, que Postman rellena automáticamente al iniciar sesión.\n3. La colección apunta a `http://localhost:8080`. Si usas otro puerto o host, edita la URL de cada petición.\n4. En la petición **Iniciar sesión como administrador** reemplaza el texto `CAMBIAR_ESTA_CLAVE` por la contraseña real del administrador (variable de entorno `RAUDSKINNA_ADMIN_PASSWORD`). Solo se usa para consultar `/usuarios`.\n5. No desactives el almacenamiento de cookies de Postman: las rutas con sesión dependen de `JSESSIONID`.\n\n## Orden recomendado\n\nEjecuta las carpetas en orden: `00` → `06`. También puedes ejecutar peticiones sueltas.\n\n| Carpeta | Contenido |\n|---|---|\n| 00 - Preparación | Comprobación de la app y obtención de tokens CSRF |\n| 01 - Catálogo público (API) | `/api/libros` y errores 400/404 |\n| 02 - Autenticación API (JWT) | Registro, login y captura de `jwtToken` |\n| 03 - Carrito (JWT) | Consultar, agregar, modificar y eliminar ítems |\n| 04 - Checkout y órdenes (JWT) | Confirmar compra e historial |\n| 05 - Vistas públicas y sesión | Registro HTML, login y autorización por rol |\n| 06 - Usuarios (JSON, ADMIN) | `/usuarios` y `/usuarios/{id}` |\n\n## CSRF\n\nLas rutas con sesión tienen CSRF habilitado. Antes de un `POST`, `PATCH` o `DELETE` ejecuta la petición **Obtener token CSRF** correspondiente. El token se guarda en `csrfToken`.\n\n## Datos de prueba\n\nLas peticiones de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores 409. El resto de los datos son literales.\n\n## Nota\n\nLa aplicación debe estar en ejecución. La colección no prueba el panel administrativo ni el logout.",
+    "description": "# Librería Raudskinna - API y vistas\n\nColección para probar los endpoints funcionales y de API de la aplicación.\n\nNo incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. La colección se centra en los endpoints de cliente y de API; las vistas administrativas siguen disponibles en la aplicación.\n\n## Requisitos\n\n1. Importa esta colección de Postman. Las solicitudes incluyen URLs y datos de ejemplo para un entorno local de pruebas. Antes de ejecutar las solicitudes de autenticación, sustituye `REEMPLAZAR_CONTRASENA` por la contraseña de un usuario de prueba existente. Para el inicio de sesión administrativo, sustituye `CAMBIAR_ESTA_CLAVE` por la contraseña correspondiente.\n    \n2. Las solicitudes que utilizan identificadores fijos, como `formatoLibroId: 1`, requieren que los registros correspondientes existan en la base de datos.\n    \n3. Las pruebas negativas de checkout deben ejecutarse con las precondiciones indicadas en la descripción de cada solicitud. No se garantiza que funcionen ejecutando toda la colección consecutivamente sin preparar previamente los datos.\n    \n4. No necesitas environment ni configurar variables. Las únicas variables que existen son `jwtToken` y `csrfToken`, que Postman rellena automáticamente al iniciar sesión.\n    \n5. La colección apunta a `http://localhost:8080`. Si usas otro puerto o host, edita la URL de cada petición.\n    \n6. En la petición **Iniciar sesión como administrador** reemplaza el texto `CAMBIAR_ESTA_CLAVE` por la contraseña real del administrador (variable de entorno `RAUDSKINNA_ADMIN_PASSWORD`). Solo se usa para consultar `/usuarios`.\n    \n7. No desactives el almacenamiento de cookies de Postman: las rutas con sesión dependen de `JSESSIONID`.\n    \n\n## Orden recomendado\n\nEjecuta las carpetas en orden: `00` → `06`. También puedes ejecutar peticiones sueltas.\n\n| Carpeta | Contenido |\n| --- | --- |\n| 00 - Preparación | Comprobación de la app y obtención de tokens CSRF |\n| 01 - Catálogo público (API) | `/api/libros` y errores 400/404 |\n| 02 - Autenticación API (JWT) | Registro, login y captura de `jwtToken` |\n| 03 - Carrito (JWT) | Consultar, agregar, modificar y eliminar ítems |\n| 04 - Checkout y órdenes (JWT) | Confirmar compra e historial |\n| 05 - Vistas públicas y sesión | Registro HTML, login y autorización por rol |\n| 06 - Usuarios (JSON, ADMIN) | `/usuarios` y `/usuarios/{id}` |\n\n## CSRF\n\nLas rutas con sesión tienen CSRF habilitado. Antes de un `POST`, `PATCH` o `DELETE` ejecuta la petición **Obtener token CSRF** correspondiente. El token se guarda en `csrfToken`.\n\n## Datos de prueba\n\nLas peticiones de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores 409. El resto de los datos son literales.\n\n## Nota\n\nLa aplicación debe estar en ejecución. La colección no prueba el panel administrativo ni el logout.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "43567406"
+    "_exporter_id": "43567406",
+    "_collection_link": "https://go.postman.co/collection/43567406-c316b87f-993a-4d2a-aeed-c43125a8ac04?source=collection_link"
   },
-  "auth": {
-    "type": "noauth"
-  },
-  "variable": [
-    {
-      "key": "jwtToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "csrfToken",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "item": [
     {
       "name": "00 - Preparación",
-      "description": "Comprueba la aplicación y obtiene tokens CSRF.",
       "item": [
         {
           "name": "Comprobar que la aplicación responde",
@@ -54,13 +39,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
-              "path": []
+              "port": "8080",
+              "path": [
+                ""
+              ]
             },
             "description": "Verifica que la aplicación esté levantada en http://localhost:8080."
-          }
+          },
+          "response": []
         },
         {
           "name": "Obtener token CSRF (público)",
@@ -95,21 +85,24 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/iniciar-sesion",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
             },
             "description": "Guarda en {{csrfToken}} el token del formulario de inicio de sesión. Debe ejecutarse antes de los POST con sesión."
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "description": "Comprueba la aplicación y obtiene tokens CSRF."
     },
     {
       "name": "01 - Catálogo público (API)",
-      "description": "Endpoints públicos del catálogo y sus errores controlados.",
       "item": [
         {
           "name": "Listar libros activos",
@@ -148,15 +141,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/libros",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "libros"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Consultar detalle de libro",
@@ -195,16 +191,19 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/libros/1",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "libros",
                 "1"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Libro inexistente (404)",
@@ -235,16 +234,19 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/libros/99999",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "libros",
                 "99999"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Identificador inválido (400)",
@@ -275,16 +277,19 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/libros/0",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "libros",
                 "0"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Identificador no numérico (400)",
@@ -315,22 +320,25 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/libros/abc",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "libros",
                 "abc"
               ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "description": "Endpoints públicos del catálogo y sus errores controlados."
     },
     {
       "name": "02 - Autenticación API (JWT)",
-      "description": "Registro y login. La petición de login guarda el JWT en `jwtToken`.",
       "item": [
         {
           "name": "Registrar cliente (201)",
@@ -365,18 +373,6 @@
                 "type": "text"
               }
             ],
-            "url": {
-              "raw": "http://localhost:8080/api/auth/registro",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "registro"
-              ]
-            },
-            "description": "Crea un cliente nuevo con un correo único por ejecución.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Cliente Postman\",\n  \"correo\": \"cliente.postman.{{$timestamp}}@test.com\",\n  \"contrasena\": \"Password123!\"\n}",
@@ -385,8 +381,23 @@
                   "language": "json"
                 }
               }
-            }
-          }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/registro",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "description": "Crea un cliente nuevo con un correo único por ejecución."
+          },
+          "response": []
         },
         {
           "name": "Registro con correo duplicado (409)",
@@ -412,17 +423,6 @@
                 "type": "text"
               }
             ],
-            "url": {
-              "raw": "http://localhost:8080/api/auth/registro",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "registro"
-              ]
-            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Cliente Postman\",\n  \"correo\": \"prueba.endpoints@test.com\",\n  \"contrasena\": \"Password123!\"\n}",
@@ -431,8 +431,22 @@
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/registro",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Registro con datos inválidos (400)",
@@ -458,17 +472,6 @@
                 "type": "text"
               }
             ],
-            "url": {
-              "raw": "http://localhost:8080/api/auth/registro",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "registro"
-              ]
-            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"\",\n  \"correo\": \"no-es-un-correo\",\n  \"contrasena\": \"123\"\n}",
@@ -477,8 +480,22 @@
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/registro",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Iniciar sesión y guardar JWT (200)",
@@ -488,21 +505,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"POST /api/auth/login responde 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"La respuesta incluye un token Bearer\", function () {",
-                  "    const respuesta = pm.response.json();",
-                  "    pm.expect(respuesta).to.have.property(\"accessToken\").that.is.a(\"string\");",
-                  "    pm.expect(respuesta.accessToken).to.not.be.empty;",
-                  "    pm.expect(respuesta).to.have.property(\"tokenType\", \"Bearer\");",
-                  "    pm.expect(respuesta).to.have.property(\"expiresIn\");",
-                  "",
-                  "    pm.collectionVariables.set(\"jwtToken\", respuesta.accessToken);",
-                  "    try { pm.environment.set(\"jwtToken\", respuesta.accessToken); } catch (e) {}",
-                  "    console.log(\"JWT guardado en jwtToken.\");",
-                  "});"
+                  "pm.test(\"POST /api/auth/login responde 200 OK\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"La respuesta incluye un token Bearer\", function () {\n    const respuesta = pm.response.json();\n    pm.expect(respuesta).to.have.property(\"accessToken\").that.is.a(\"string\");\n    pm.expect(respuesta.accessToken).to.not.be.empty;\n    pm.expect(respuesta).to.have.property(\"tokenType\", \"Bearer\");\n    pm.expect(respuesta).to.have.property(\"expiresIn\");\n\n    pm.collectionVariables.set(\"jwtToken\", respuesta.accessToken);\n    try { pm.environment.set(\"jwtToken\", respuesta.accessToken); } catch (e) {}\n    console.log(\"JWT guardado en jwtToken.\");\n});"
                 ]
               }
             }
@@ -512,32 +515,34 @@
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+                "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"prueba@raudskinna.mx\",\n  \"contrasena\": \"REEMPLAZAR_CONTRASENA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "http://localhost:8080/api/auth/login",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "auth",
                 "login"
               ]
             },
-            "description": "Guarda el token JWT en {{jwtToken}} para las carpetas de carrito, checkout y órdenes.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"correo\": \"prueba.endpoints@test.com\",\n  \"contrasena\": \"Password123!\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
+            "description": "Guarda el token JWT en {{jwtToken}} para las carpetas de carrito, checkout y órdenes."
+          },
+          "response": []
         },
         {
           "name": "Login con contraseña incorrecta (401)",
@@ -563,17 +568,6 @@
                 "type": "text"
               }
             ],
-            "url": {
-              "raw": "http://localhost:8080/api/auth/login",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"correo\": \"prueba.endpoints@test.com\",\n  \"contrasena\": \"ClaveIncorrecta123!\"\n}",
@@ -582,14 +576,28 @@
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "description": "Registro y login. La petición de login guarda el JWT en `jwtToken`."
     },
     {
       "name": "03 - Carrito (JWT)",
-      "description": "Operaciones del carrito autenticadas con JWT.",
       "item": [
         {
           "name": "Consultar carrito",
@@ -618,16 +626,19 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/carrito",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "carrito"
               ]
             },
             "description": "Requiere {{jwtToken}}. Ejecuta antes 'Iniciar sesión y guardar JWT'."
-          }
+          },
+          "response": []
         },
         {
           "name": "Agregar presentación al carrito",
@@ -637,17 +648,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"POST /api/carrito/items responde 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"El carrito contiene la presentación agregada\", function () {",
-                  "    const carrito = pm.response.json();",
-                  "    const item = (carrito.items || []).find(function (elemento) {",
-                  "        return elemento.formatoLibroId === 1;",
-                  "    });",
-                  "    pm.expect(item, \"No se encontró el ítem agregado\").to.not.be.undefined;",
-                  "});"
+                  "pm.test(\"POST /api/carrito/items responde 200 OK\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"El carrito contiene la presentación agregada\", function () {\n    const carrito = pm.response.json();\n    const item = (carrito.items || []).find(function (elemento) {\n        return elemento.formatoLibroId === 1;\n    });\n    pm.expect(item, \"No se encontró el ítem agregado\").to.not.be.undefined;\n});"
                 ]
               }
             }
@@ -657,31 +658,33 @@
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+                "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "http://localhost:8080/api/carrito/items",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "api",
-                "carrito",
-                "items"
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formatoLibroId\": 1,\n  \"cantidad\": 1\n}",
+              "raw": "{\n  \"formatoLibroId\": 1,\n  \"cantidad\": 5\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/carrito/items",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "carrito",
+                "items"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Modificar cantidad del carrito",
@@ -716,18 +719,6 @@
                 "type": "text"
               }
             ],
-            "url": {
-              "raw": "http://localhost:8080/api/carrito/items/1",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "api",
-                "carrito",
-                "items",
-                "1"
-              ]
-            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"cantidad\": 2\n}",
@@ -736,8 +727,23 @@
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/carrito/items/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "carrito",
+                "items",
+                "1"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Eliminar presentación del carrito",
@@ -767,9 +773,11 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/carrito/items/1",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "carrito",
@@ -777,7 +785,8 @@
                 "1"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Carrito sin token (401)",
@@ -795,25 +804,29 @@
             }
           ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/carrito",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "carrito"
               ]
             },
-            "description": "Comprueba que la API rechace solicitudes sin JWT.",
-            "auth": {
-              "type": "noauth"
-            }
-          }
+            "description": "Comprueba que la API rechace solicitudes sin JWT."
+          },
+          "response": []
         }
       ],
+      "description": "Operaciones del carrito autenticadas con JWT.",
       "auth": {
         "type": "bearer",
         "bearer": [
@@ -827,7 +840,6 @@
     },
     {
       "name": "04 - Checkout y órdenes (JWT)",
-      "description": "Confirmación de compra e historial autenticados con JWT.",
       "item": [
         {
           "name": "Preparar carrito para el checkout",
@@ -853,18 +865,6 @@
                 "type": "text"
               }
             ],
-            "url": {
-              "raw": "http://localhost:8080/api/carrito/items",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "api",
-                "carrito",
-                "items"
-              ]
-            },
-            "description": "Agrega una unidad de la presentación para que el checkout tenga contenido.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"formatoLibroId\": 1,\n  \"cantidad\": 1\n}",
@@ -873,8 +873,23 @@
                   "language": "json"
                 }
               }
-            }
-          }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/carrito/items",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "carrito",
+                "items"
+              ]
+            },
+            "description": "Agrega una unidad de la presentación para que el checkout tenga contenido."
+          },
+          "response": []
         },
         {
           "name": "Confirmar compra (201)",
@@ -904,15 +919,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/checkout",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "checkout"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Consultar historial de órdenes",
@@ -947,15 +965,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/ordenes",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "ordenes"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Órdenes sin token (401)",
@@ -973,24 +994,92 @@
             }
           ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "http://localhost:8080/api/ordenes",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "ordenes"
               ]
-            },
-            "auth": {
-              "type": "noauth"
             }
-          }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar carrito vacío",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Checkout con carrito vacío responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema rechaza la compra sin artículos\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.mensaje)\n        .to.eql(\"No se puede confirmar un carrito vacío.\");\n    pm.expect(respuesta.ruta).to.eql(\"/api/checkout\");\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/checkout",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "checkout"
+              ]
+            },
+            "description": "**Precondición:** El usuario debe estar autenticado mediante JWT y su carrito debe estar vacío.\n\n**Preparación:** Antes de ejecutar esta prueba, consultar `GET /api/carrito` y, si contiene artículos, eliminarlos mediante `DELETE /api/carrito/items/{formatoLibroId}`.\n\n**Resultado esperado:** `400 Bad Request`, con el mensaje `No se puede confirmar un carrito vacío.`\n\n**Nota:** Esta prueba debe ejecutarse por separado de las pruebas que agregan productos al carrito."
+          },
+          "response": []
+        },
+        {
+          "name": "Checkout con existencias insuficientes (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\npm.test(\"Checkout sin existencias suficientes responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema informa las existencias disponibles\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.error).to.eql(\"Bad Request\");\n    pm.expect(respuesta.mensaje).to.include(\"Existencias insuficientes\");\n    pm.expect(respuesta.mensaje).to.match(/Disponibles:\\s*\\d+/);\n    pm.expect(respuesta.ruta).to.eql(\"/api/checkout\");\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/checkout",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "checkout"
+              ]
+            },
+            "description": "**Precondición:** El usuario debe estar autenticado mediante JWT y disponer de un carrito con al menos un artículo cuya cantidad solicitada supere las existencias disponibles.\n\n**Preparación:** Consultar las existencias del producto seleccionado y agregar al carrito una cantidad superior a las unidades disponibles. Para esta prueba se utilizó `formatoLibroId: 1`, con 4 unidades en inventario y 5 unidades solicitadas.\n\n**Resultado esperado:** `400 Bad Request`, con un mensaje que indique `Existencias insuficientes` y la cantidad disponible.\n\n**Integridad de los datos:** La operación rechazada no debe generar una orden de compra, descontar inventario ni vaciar el carrito.\n\n**Nota:** Ejecutar esta prueba por separado del checkout exitoso, ya que depende del inventario y del contenido del carrito."
+          },
+          "response": []
         }
       ],
+      "description": "Confirmación de compra e historial autenticados con JWT.",
       "auth": {
         "type": "bearer",
         "bearer": [
@@ -1004,7 +1093,6 @@
     },
     {
       "name": "05 - Vistas públicas y sesión",
-      "description": "Formularios HTML, login por sesión y autorización por rol.",
       "item": [
         {
           "name": "Página principal (200)",
@@ -1026,12 +1114,17 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
-              "path": []
+              "port": "8080",
+              "path": [
+                ""
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Obtener token CSRF (registro)",
@@ -1066,15 +1159,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/registro",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "registro"
               ]
             },
             "description": "Obtiene el token CSRF necesario para el POST /registro."
-          }
+          },
+          "response": []
         },
         {
           "name": "Registrar cliente desde formulario (302)",
@@ -1096,19 +1192,12 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
           "request": {
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "http://localhost:8080/registro",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "registro"
-              ]
-            },
-            "description": "Envía el formulario HTML de registro con un correo único.",
             "body": {
               "mode": "urlencoded",
               "urlencoded": [
@@ -1133,11 +1222,21 @@
                   "type": "text"
                 }
               ]
-            }
+            },
+            "url": {
+              "raw": "http://localhost:8080/registro",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "Envía el formulario HTML de registro con un correo único."
           },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          }
+          "response": []
         },
         {
           "name": "Obtener token CSRF (login)",
@@ -1172,15 +1271,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/iniciar-sesion",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
             },
             "description": "Renueva {{csrfToken}} antes de autenticar la sesión."
-          }
+          },
+          "response": []
         },
         {
           "name": "Iniciar sesión como cliente (302)",
@@ -1203,19 +1305,12 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
           "request": {
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "http://localhost:8080/iniciar-sesion",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "iniciar-sesion"
-              ]
-            },
-            "description": "Autentica la sesión HTTP con el cliente de prueba. Postman conserva la cookie JSESSIONID.",
             "body": {
               "mode": "urlencoded",
               "urlencoded": [
@@ -1235,11 +1330,21 @@
                   "type": "text"
                 }
               ]
-            }
+            },
+            "url": {
+              "raw": "http://localhost:8080/iniciar-sesion",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "iniciar-sesion"
+              ]
+            },
+            "description": "Autentica la sesión HTTP con el cliente de prueba. Postman conserva la cookie JSESSIONID."
           },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          }
+          "response": []
         },
         {
           "name": "Consulta de usuarios con rol USER (403)",
@@ -1261,14 +1366,17 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/usuarios",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "usuarios"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Obtener token CSRF para login ADMIN",
@@ -1303,15 +1411,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/iniciar-sesion",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
             },
             "description": "La sesión cambió al iniciar como cliente; se obtiene un token nuevo antes del login administrativo."
-          }
+          },
+          "response": []
         },
         {
           "name": "Iniciar sesión como administrador (302)",
@@ -1333,19 +1444,12 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
           "request": {
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "http://localhost:8080/iniciar-sesion",
-              "host": [
-                "http://localhost:8080"
-              ],
-              "path": [
-                "iniciar-sesion"
-              ]
-            },
-            "description": "Requiere reemplazar CAMBIAR_ESTA_CLAVE por la contraseña real del administrador.",
             "body": {
               "mode": "urlencoded",
               "urlencoded": [
@@ -1365,17 +1469,27 @@
                   "type": "text"
                 }
               ]
-            }
+            },
+            "url": {
+              "raw": "http://localhost:8080/iniciar-sesion",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "iniciar-sesion"
+              ]
+            },
+            "description": "Requiere reemplazar CAMBIAR_ESTA_CLAVE por la contraseña real del administrador."
           },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          }
+          "response": []
         }
-      ]
+      ],
+      "description": "Formularios HTML, login por sesión y autorización por rol."
     },
     {
       "name": "06 - Usuarios (JSON, ADMIN)",
-      "description": "Consulta de usuarios con sesión ADMIN. Responde JSON.",
       "item": [
         {
           "name": "Listar usuarios (200)",
@@ -1410,15 +1524,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/usuarios",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "usuarios"
               ]
             },
             "description": "Responde JSON aunque no esté bajo /api. Requiere sesión ADMIN."
-          }
+          },
+          "response": []
         },
         {
           "name": "Consultar usuario por id (200)",
@@ -1449,15 +1566,18 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/usuarios/1",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "usuarios",
                 "1"
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Usuario inexistente (404)",
@@ -1479,17 +1599,31 @@
             "header": [],
             "url": {
               "raw": "http://localhost:8080/usuarios/9999",
+              "protocol": "http",
               "host": [
-                "http://localhost:8080"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "usuarios",
                 "9999"
               ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "description": "Consulta de usuarios con sesión ADMIN. Responde JSON."
+    }
+  ],
+  "variable": [
+    {
+      "key": "jwtToken",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
     }
   ]
 }

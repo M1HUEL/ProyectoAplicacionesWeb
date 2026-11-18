@@ -43,4 +43,29 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
      * @return libro activo, si existe.
      */
     Optional<Libro> findByIdAndActivoTrue(Long id);
+
+    /**
+     * Comprueba si existen libros asociados a un autor.
+     *
+     * Se utiliza para evitar eliminar autores que
+     * todavía participan en libros registrados.
+     *
+     * @param autorId identificador del autor.
+     * @return true si existe al menos un libro asociado.
+     */
+    boolean existsByAutores_Id(Long autorId);
+
+    /**
+     * Comprueba si existen libros asociados a una editorial.
+     *
+     * Se utiliza para impedir eliminar editoriales que
+     * todavía tienen libros registrados en el catálogo.
+     *
+     * Incluye tanto libros activos como inactivos,
+     * preservando las relaciones existentes.
+     *
+     * @param editorialId identificador de la editorial.
+     * @return true si existe al menos un libro asociado.
+     */
+    boolean existsByEditorial_Id(Long editorialId);
 }

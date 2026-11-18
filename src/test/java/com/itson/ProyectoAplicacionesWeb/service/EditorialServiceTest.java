@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.model.Editorial;
 import com.itson.ProyectoAplicacionesWeb.repository.EditorialRepository;
+import com.itson.ProyectoAplicacionesWeb.repository.LibroRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,12 +29,18 @@ class EditorialServiceTest {
 
     private EditorialService editorialService;
 
+    @Mock
+    private LibroRepository libroRepository;
+
     /**
      * Inicializa el servicio antes de cada prueba.
      */
     @BeforeEach
     void configurar() {
-        editorialService = new EditorialService(editorialRepository);
+        editorialService = new EditorialService(
+                editorialRepository,
+                libroRepository
+        );
     }
 
     /**

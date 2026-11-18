@@ -5,10 +5,7 @@ import com.itson.ProyectoAplicacionesWeb.service.EditorialService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -116,4 +113,119 @@ public class EditorialController {
         }
     }
 
+    /**
+     * Muestra el formulario para editar una editorial existente.
+     *
+     * @param id identificador de la editorial.
+     * @param model modelo utilizado por Thymeleaf.
+     * @param redirectAttributes mensajes para la redirección.
+     * @return formulario de edición o listado si hay un error.
+     */
+    @GetMapping("/{id}/editar")
+    public String mostrarFormularioEdicion(
+            @PathVariable("id") Long id,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            // Recupera la editorial mediante la capa Service.
+            var editorial = editorialService.buscarPorId(id);
+
+            // Proporciona sus datos al formulario.
+            model.addAttribute("editorial", editorial);
+
+            return "administrador-editoriales-formulario";
+
+        } catch (IllegalArgumentException excepcion) {
+
+            redirectAttributes.addFlashAttribute(
+                    "error",
+                    excepcion.getMessage()
+            );
+
+            return "redirect:/admin/editoriales";
+        }
+    }
+
+    /**
+     * Procesa la actualización de una editorial existente.
+     *
+     * @param id identificador de la editorial.
+     * @param nombre nuevo nombre.
+     * @param direccion nueva dirección, opcional.
+     * @param redirectAttributes mensajes para la redirección.
+     * @return listado o formulario de edición.
+     */
+    @PostMapping("/{id}/editar")
+    public String actualizar(
+            @PathVariable("id") Long id,
+            @RequestParam("nombre") String nombre,
+            @RequestParam(value = "direccion", required = false) String direccion,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            editorialService.actualizar(id, nombre, direccion);
+
+            redirectAttributes.addFlashAttribute(
+                    "mensaje",
+                    "Editorial actualizada correctamente."
+            );
+
+            return "redirect:/admin/editoriales";
+
+        } catch (IllegalArgumentException excepcion) {
+
+            redirectAttributes.addFlashAttribute(
+                    "error",
+                    excepcion.getMessage()
+            );
+
+            // Conserva los datos capturados cuando falla la validación.
+            redirectAttributes.addFlashAttribute(
+                    "nombreAnterior",
+                    nombre
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "direccionAnterior",
+                    direccion
+            );
+
+            return "redirect:/admin/editoriales/" + id + "/editar";
+        }
+    }
+
+    /**
+     * Elimina una editorial cuando no tiene libros asociados.
+     *
+     * Utiliza POST y conserva la protección CSRF
+     * de los formularios Thymeleaf.
+     *
+     * @param id identificador de la editorial.
+     * @param redirectAttributes mensajes para el usuario.
+     * @return redirección al listado administrativo.
+     */
+    @PostMapping("/{id}/eliminar")
+    public String eliminar(
+            @PathVariable("id") Long id,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            editorialService.eliminar(id);
+
+            redirectAttributes.addFlashAttribute(
+                    "mensaje",
+                    "Editorial eliminada correctamente."
+            );
+
+        } catch (IllegalArgumentException excepcion) {
+
+            redirectAttributes.addFlashAttribute(
+                    "error",
+                    excepcion.getMessage()
+            );
+        }
+
+        return "redirect:/admin/editoriales";
+    }
 }

@@ -26,7 +26,9 @@
 
     <section class="panel registro">
 
-        <h1>Registrar autor</h1>
+        <h1 th:text="${autor != null} ? 'Editar autor' : 'Registrar autor'">
+            Registrar autor
+        </h1>
 
         <p>
             Ingresa el nombre del autor que deseas
@@ -41,7 +43,7 @@
         <p th:if="${error}"
            th:text="${error}"
            class="mensaje-error"
-           role="alert">
+           role="alert"></p>
 
             <!--
         Formulario administrativo para registrar autores.
@@ -51,7 +53,9 @@
         Spring Security mantiene habilitada la protección CSRF.
     -->
         <form class="formulario"
-              th:action="@{/admin/autores}"
+              th:action="${autor != null}
+          ? @{/admin/autores/{id}/editar(id=${autor.id})}
+          : @{/admin/autores}"
               method="post">
 
 
@@ -61,7 +65,7 @@
                    id="nombre"
                    name="nombre"
                    type="text"
-                   th:value="${nombreAnterior}"
+                   th:value="${nombreAnterior != null} ? ${nombreAnterior} : (${autor != null} ? ${autor.nombre} : '')"
                    maxlength="150"
                    placeholder="Ej. Bram Stoker"
                    required>

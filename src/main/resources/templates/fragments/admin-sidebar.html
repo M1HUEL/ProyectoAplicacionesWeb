@@ -54,6 +54,33 @@
             <span>Órdenes</span>
         </a>
 
+        <!-- Administración del catálogo: autores. -->
+        <a th:href="@{/admin/autores}"
+           class="admin-sidebar-enlace"
+           th:classappend="${activePage == 'autores'} ? ' admin-sidebar-activo' : ''"
+           th:attr="aria-current=${activePage == 'autores'} ? 'page' : null">
+            <span aria-hidden="true">♙</span>
+            <span>Autores</span>
+        </a>
+
+        <!-- Administración del catálogo: editoriales. -->
+        <a th:href="@{/admin/editoriales}"
+           class="admin-sidebar-enlace"
+           th:classappend="${activePage == 'editoriales'} ? ' admin-sidebar-activo' : ''"
+           th:attr="aria-current=${activePage == 'editoriales'} ? 'page' : null">
+            <span aria-hidden="true">▥</span>
+            <span>Editoriales</span>
+        </a>
+
+        <!-- Administración del catálogo: categorías. -->
+        <a th:href="@{/admin/categorias}"
+           class="admin-sidebar-enlace"
+           th:classappend="${activePage == 'categorias'} ? ' admin-sidebar-activo' : ''"
+           th:attr="aria-current=${activePage == 'categorias'} ? 'page' : null">
+            <span aria-hidden="true">▧</span>
+            <span>Categorías</span>
+        </a>
+
     </nav>
 
     <!-- Acciones de la cuenta administrativa. -->

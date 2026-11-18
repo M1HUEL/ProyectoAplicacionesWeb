@@ -20,17 +20,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AutorRepository extends JpaRepository<Autor, Long> {
 
-    /**
-     * Comprueba si ya existe un autor con el nombre indicado,
-     * sin distinguir entre mayúsculas y minúsculas.
-     *
-     * Se utilizará para evitar registros duplicados
-     * durante el alta administrativa de autores.
-     *
-     * @param nombre nombre del autor que se desea comprobar.
-     * @return true si existe un autor con ese nombre.
-     *
-     */
-    boolean existsByNombreIgnoreCase(String nombre);
-
 }

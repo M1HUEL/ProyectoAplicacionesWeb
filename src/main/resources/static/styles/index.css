@@ -1180,4 +1180,36 @@ body.admin-layout {
   .admin-contenido {
     padding: 24px 16px;
   }
+
+  /*
+ * =========================================================
+ * RAUDSKINNA - TABLA ADMINISTRATIVA DE EDITORIALES
+ * =========================================================
+ *
+ * Mantiene un ancho mínimo para evitar que las columnas
+ * se compriman excesivamente en pantallas pequeñas.
+ *
+ * El contenedor existente permite desplazamiento
+ * horizontal cuando el espacio disponible es insuficiente.
+ */
+
+  .tabla-editoriales {
+    min-width: 560px;
+  }
+
+  /*
+   * Evita que los botones administrativos
+   * se compriman o dividan su texto.
+   */
+  .tabla-editoriales .acciones-tabla .boton {
+    white-space: nowrap;
+  }
+
+  /*
+   * Permite que los nombres y las direcciones
+   * largos se ajusten dentro de sus columnas.
+   */
+  .tabla-editoriales td {
+    overflow-wrap: anywhere;
+  }
 }

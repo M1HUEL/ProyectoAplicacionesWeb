@@ -3,11 +3,8 @@ package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.dto.CheckoutResponseDTO;
 import com.itson.ProyectoAplicacionesWeb.model.*;
+import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.springframework.transaction.annotation.Transactional;
-import com.itson.ProyectoAplicacionesWeb.repository.CarritoCompraRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.OrdenCompraRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.DetalleOrdenRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.UsuarioRepository;
 
 import org.springframework.stereotype.Service;
 
@@ -30,19 +27,22 @@ public class CheckoutService {
     private final DetalleOrdenRepository detalleOrdenRepository;
     private final UsuarioRepository usuarioRepository;
     private final InventarioService inventarioService;
+    private final DireccionRepository direccionRepository;
 
     public CheckoutService(
             CarritoCompraRepository carritoCompraRepository,
             OrdenCompraRepository ordenCompraRepository,
             DetalleOrdenRepository detalleOrdenRepository,
             UsuarioRepository usuarioRepository,
-            InventarioService inventarioService) {
+            InventarioService inventarioService,
+            DireccionRepository direccionRepository) {
 
         this.carritoCompraRepository = carritoCompraRepository;
         this.ordenCompraRepository = ordenCompraRepository;
         this.detalleOrdenRepository = detalleOrdenRepository;
         this.usuarioRepository = usuarioRepository;
         this.inventarioService = inventarioService;
+        this.direccionRepository = direccionRepository;
     }
 
     /**
@@ -52,7 +52,9 @@ public class CheckoutService {
      * y el vaciado del carrito pertenecen a una transacción.
      */
     @Transactional
-    public CheckoutResponseDTO confirmarCompra(String correo) {
+    public CheckoutResponseDTO confirmarCompra(
+            String correo,
+            Long direccionId) {
 
         // Identificar al cliente.
         Usuario usuario = usuarioRepository.findByCorreo(correo)
@@ -115,10 +117,63 @@ public class CheckoutService {
             total = total.add(subtotal);
         }
 
-        // Registrar la orden.
-        OrdenCompra orden = ordenCompraRepository.save(
-                new OrdenCompra(usuario, total)
-        );
+        // Determinar si el carrito contiene artículos físicos.
+        boolean requiereEnvio = articulos.stream()
+                .anyMatch(item ->
+                        item.getFormatoLibro().getFormato() != Formato.DIGITAL
+                );
+
+        // Las compras físicas o mixtas requieren una dirección.
+        if (requiereEnvio && direccionId == null) {
+            throw new IllegalArgumentException(
+                    "Debes seleccionar una dirección de envío."
+            );
+        }
+
+        DireccionEnvio direccionHistorica = null;
+
+        // Si el cliente seleccionó una dirección, comprobar
+        // que exista y pertenezca al usuario autenticado.
+        if (direccionId != null) {
+
+            if (direccionId <= 0) {
+                throw new IllegalArgumentException(
+                        "El identificador de la dirección no es válido."
+                );
+            }
+
+            Direccion direccion = direccionRepository
+                    .findByIdAndUsuario_Id(direccionId, usuario.getId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "La dirección no existe o no pertenece al cliente."
+                    ));
+
+            // Copiar los datos sin conservar una dependencia
+            // hacia la dirección editable del cliente.
+            if (requiereEnvio) {
+                direccionHistorica = new DireccionEnvio(
+                        direccion.getNombreDestinatario(),
+                        direccion.getCalle(),
+                        direccion.getNumeroExterior(),
+                        direccion.getNumeroInterior(),
+                        direccion.getColonia(),
+                        direccion.getCodigoPostal(),
+                        direccion.getCiudad(),
+                        direccion.getEstado(),
+                        direccion.getPais(),
+                        direccion.getReferencias()
+                );
+            }
+        }
+
+        // Crear la orden.
+        OrdenCompra orden = new OrdenCompra(usuario, total);
+
+        // Incorporar la copia histórica, cuando corresponda.
+        orden.setDireccionEnvio(direccionHistorica);
+
+        // Persistir la orden después de las validaciones.
+        orden = ordenCompraRepository.save(orden);
 
         // Registrar los detalles y descontar inventario físico.
         for (ItemCarrito item : articulos) {

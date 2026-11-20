@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.exception.InventarioInsuficienteException;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.junit.jupiter.api.Test;
@@ -180,8 +181,8 @@ class CheckoutIntegrationTest {
         long movimientosAntes = movimientoInventarioRepository.count();
 
         // ACT: la segunda presentación tiene stock insuficiente.
-        IllegalArgumentException excepcion = assertThrows(
-                IllegalArgumentException.class,
+        InventarioInsuficienteException excepcion = assertThrows(
+                InventarioInsuficienteException.class,
                 () -> checkoutService.confirmarCompra(
                         "rollback@raudskinna.com",
                         direccionId

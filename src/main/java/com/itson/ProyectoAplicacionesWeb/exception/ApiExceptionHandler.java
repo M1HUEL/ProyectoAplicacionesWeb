@@ -41,6 +41,30 @@ public class ApiExceptionHandler {
     }
 
     /**
+     * Maneja compras que no pueden completarse
+     * debido a existencias insuficientes.
+     *
+     * HTTP 409 Conflict.
+     */
+    @ExceptionHandler(InventarioInsuficienteException.class)
+    public ResponseEntity<ErrorRespuestaDTO> manejarInventarioInsuficiente(
+            InventarioInsuficienteException ex,
+            HttpServletRequest request) {
+
+        HttpStatus estado = HttpStatus.CONFLICT;
+
+        ErrorRespuestaDTO respuesta = new ErrorRespuestaDTO(
+                LocalDateTime.now(),
+                estado.value(),
+                estado.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(estado).body(respuesta);
+    }
+
+    /**
      * Maneja argumentos inválidos y conflictos
      * por correos electrónicos duplicados.
      */

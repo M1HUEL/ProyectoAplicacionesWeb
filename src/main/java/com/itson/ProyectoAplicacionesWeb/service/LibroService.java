@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
@@ -146,6 +147,76 @@ public class LibroService {
                         .sorted()
                         .toList()
         );
+    }
+
+    /**
+     * Recupera las presentaciones comerciales de un libro
+     * visible en el catálogo público de Librería Raudskinna.
+     *
+     * Devuelve el formato, precio y disponibilidad informativa
+     * sin exponer directamente las entidades JPA.
+     *
+     * Las presentaciones digitales no requieren inventario físico.
+     * Las presentaciones físicas solamente se consideran disponibles
+     * cuando tienen existencias mayores que cero.
+     *
+     * La disponibilidad puede cambiar antes del checkout.
+     *
+     * @param libroId identificador del libro solicitado.
+     * @return presentaciones comerciales del libro activo.
+     * @throws IllegalArgumentException si el ID no es válido.
+     */
+    @Transactional(readOnly = true)
+    public List<FormatoPublicoDTO> listarFormatosPublicos(Long libroId) {
+
+        // Validar el identificador recibido.
+        if (libroId == null || libroId <= 0) {
+            throw new IllegalArgumentException(
+                    "El identificador del libro no es válido."
+            );
+        }
+
+        // Impedir que se consulten presentaciones de libros inactivos.
+        libroRepository.findByIdAndActivoTrue(libroId)
+                .orElseThrow(() ->
+                        new org.springframework.web.server.ResponseStatusException(
+                                org.springframework.http.HttpStatus.NOT_FOUND,
+                                "El libro solicitado no está disponible."
+                        )
+                );
+
+        // Recuperar los formatos comerciales asociados al libro.
+        List<FormatoLibro> formatos =
+                formatoLibroRepository.findByLibroId(libroId);
+
+        // Transformar cada presentación en información pública.
+        return formatos.stream()
+                .map(formato -> {
+
+                    boolean disponible;
+
+                    if (formato.getFormato() == Formato.DIGITAL) {
+
+                        // Los libros digitales no manejan inventario físico.
+                        disponible = true;
+
+                    } else {
+
+                        // Los formatos físicos necesitan existencias positivas.
+                        disponible = itemStockRepository
+                                .findByFormatoLibroId(formato.getId())
+                                .map(stock -> stock.getCantidad() > 0)
+                                .orElse(false);
+                    }
+
+                    return new FormatoPublicoDTO(
+                            formato.getId(),
+                            formato.getFormato(),
+                            formato.getPrecio(),
+                            disponible
+                    );
+                })
+                .toList();
     }
 
     /**

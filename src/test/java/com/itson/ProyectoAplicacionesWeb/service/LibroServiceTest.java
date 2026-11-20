@@ -1500,4 +1500,249 @@ class LibroServiceTest {
         assertSame(categoriaOriginal, libro.getCategoria());
     }
 
+    /**
+     * Comprueba que una presentación física se considere
+     * disponible cuando tiene existencias mayores que cero.
+     */
+    @Test
+    void listarFormatosPublicos_formatoFisicoConStock_debeEstarDisponible() {
+
+        // ARRANGE: simular un libro activo.
+        Libro libro = mock(Libro.class);
+
+        when(libroRepository.findByIdAndActivoTrue(1L))
+                .thenReturn(Optional.of(libro));
+
+        // Preparación comercial con precio registrado.
+        FormatoLibro formato = mock(FormatoLibro.class);
+
+        when(formato.getId()).thenReturn(2L);
+        when(formato.getFormato()).thenReturn(Formato.PASTA_DURA);
+        when(formato.getPrecio())
+                .thenReturn(new BigDecimal("350.00"));
+
+        when(formatoLibroRepository.findByLibroId(1L))
+                .thenReturn(List.of(formato));
+
+        // El inventario contiene cuatro unidades.
+        ItemStock inventario = mock(ItemStock.class);
+
+        when(inventario.getCantidad()).thenReturn(4);
+
+        when(itemStockRepository.findByFormatoLibroId(2L))
+                .thenReturn(Optional.of(inventario));
+
+        // ACT: consultar las presentaciones públicas.
+        var resultado = libroService.listarFormatosPublicos(1L);
+
+        // ASSERT: comprobar los datos comerciales.
+        assertEquals(1, resultado.size());
+        assertEquals(2L, resultado.get(0).id());
+        assertEquals(Formato.PASTA_DURA, resultado.get(0).formato());
+        assertEquals(new BigDecimal("350.00"), resultado.get(0).precio());
+
+        assertTrue(resultado.get(0).disponible());
+
+        // Verificar que se consultaron las existencias físicas.
+        verify(itemStockRepository).findByFormatoLibroId(2L);
+    }
+
+    /**
+     * Comprueba que una presentación física agotada
+     * no se anuncie como disponible en el catálogo.
+     */
+    @Test
+    void listarFormatosPublicos_formatoFisicoSinStock_debeEstarAgotado() {
+
+        // ARRANGE: simular un libro activo.
+        Libro libro = mock(Libro.class);
+
+        when(libroRepository.findByIdAndActivoTrue(1L))
+                .thenReturn(Optional.of(libro));
+
+        FormatoLibro formato = mock(FormatoLibro.class);
+
+        when(formato.getId()).thenReturn(2L);
+        when(formato.getFormato()).thenReturn(Formato.PASTA_BLANDA);
+        when(formato.getPrecio())
+                .thenReturn(new BigDecimal("250.00"));
+
+        when(formatoLibroRepository.findByLibroId(1L))
+                .thenReturn(List.of(formato));
+
+        // El inventario existe, pero está agotado.
+        ItemStock inventario = mock(ItemStock.class);
+
+        when(inventario.getCantidad()).thenReturn(0);
+
+        when(itemStockRepository.findByFormatoLibroId(2L))
+                .thenReturn(Optional.of(inventario));
+
+        // ACT: recuperar las presentaciones.
+        var resultado = libroService.listarFormatosPublicos(1L);
+
+        // ASSERT: no debe aparecer como disponible.
+        assertEquals(1, resultado.size());
+        assertEquals(Formato.PASTA_BLANDA, resultado.get(0).formato());
+        assertFalse(resultado.get(0).disponible());
+
+        verify(itemStockRepository).findByFormatoLibroId(2L);
+    }
+
+    /**
+     * Comprueba que las presentaciones digitales de libros activos
+     * se consideren disponibles sin requerir inventario físico.
+     *
+     * Las consultas públicas no deben solicitar ItemStock
+     * cuando la presentación es DIGITAL.
+     */
+    @Test
+    void listarFormatosPublicos_formatoDigital_noDebeConsultarInventario() {
+
+        // ARRANGE: preparar un libro activo simulado.
+        Libro libro = mock(Libro.class);
+
+        when(libroRepository.findByIdAndActivoTrue(1L))
+                .thenReturn(Optional.of(libro));
+
+        // Preparar una presentación digital con precio.
+        FormatoLibro formatoDigital = mock(FormatoLibro.class);
+
+        when(formatoDigital.getId()).thenReturn(2L);
+        when(formatoDigital.getFormato()).thenReturn(Formato.DIGITAL);
+        when(formatoDigital.getPrecio())
+                .thenReturn(new BigDecimal("149.00"));
+
+        when(formatoLibroRepository.findByLibroId(1L))
+                .thenReturn(List.of(formatoDigital));
+
+        // ACT: consultar los formatos comerciales públicos.
+        var resultado = libroService.listarFormatosPublicos(1L);
+
+        // ASSERT: el formato digital debe estar disponible.
+        assertEquals(1, resultado.size());
+        assertEquals(Formato.DIGITAL, resultado.get(0).formato());
+        assertEquals(new BigDecimal("149.00"), resultado.get(0).precio());
+        assertTrue(resultado.get(0).disponible());
+
+        // No debe consultar inventario físico para un formato digital.
+        verifyNoInteractions(itemStockRepository);
+    }
+
+    /**
+     * Comprueba que una presentación física sin registro
+     * de inventario no se anuncie como disponible.
+     *
+     * Una presentación sin ItemStock no debe considerarse
+     * disponible para la compra.
+     */
+    @Test
+    void listarFormatosPublicos_formatoFisicoSinInventario_debeEstarAgotado() {
+
+        // ARRANGE: preparar un libro activo.
+        Libro libro = mock(Libro.class);
+
+        when(libroRepository.findByIdAndActivoTrue(1L))
+                .thenReturn(Optional.of(libro));
+
+        // Preparar una presentación comercial física.
+        FormatoLibro formato = mock(FormatoLibro.class);
+
+        when(formato.getId()).thenReturn(2L);
+        when(formato.getFormato()).thenReturn(Formato.PASTA_DURA);
+        when(formato.getPrecio())
+                .thenReturn(new BigDecimal("350.00"));
+
+        when(formatoLibroRepository.findByLibroId(1L))
+                .thenReturn(List.of(formato));
+
+        // No existe registro ItemStock para esta presentación.
+        when(itemStockRepository.findByFormatoLibroId(2L))
+                .thenReturn(Optional.empty());
+
+        // ACT: consultar los formatos públicos del libro.
+        var resultado = libroService.listarFormatosPublicos(1L);
+
+        // ASSERT: la presentación debe aparecer como no disponible.
+        assertEquals(1, resultado.size());
+        assertEquals(Formato.PASTA_DURA, resultado.get(0).formato());
+        assertFalse(resultado.get(0).disponible());
+
+        // Confirmar que se consultó el inventario físico.
+        verify(itemStockRepository).findByFormatoLibroId(2L);
+    }
+
+    /**
+     * Comprueba que el catálogo público no exponga
+     * presentaciones comerciales de libros inactivos
+     * o inexistentes.
+     *
+     * El servicio debe rechazar la consulta antes
+     * de recuperar formatos o inventario.
+     */
+    @Test
+    void listarFormatosPublicos_libroInactivo_debeRetornar404() {
+
+        // ARRANGE: el repositorio no encuentra un libro activo.
+        when(libroRepository.findByIdAndActivoTrue(1L))
+                .thenReturn(Optional.empty());
+
+        // ACT: intentar consultar los formatos públicos.
+        var excepcion = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> libroService.listarFormatosPublicos(1L)
+        );
+
+        // ASSERT: comprobar que la respuesta corresponde a HTTP 404.
+        assertEquals(
+                org.springframework.http.HttpStatus.NOT_FOUND,
+                excepcion.getStatusCode()
+        );
+
+        // No se deben consultar datos comerciales de libros ocultos.
+        verifyNoInteractions(
+                formatoLibroRepository,
+                itemStockRepository
+        );
+    }
+
+    /**
+     * Comprueba que la consulta pública rechace identificadores
+     * nulos, iguales a cero o negativos.
+     *
+     * Los datos inválidos deben rechazarse antes de realizar
+     * cualquier consulta a los repositorios.
+     */
+    @Test
+    void listarFormatosPublicos_idInvalido_debeRechazarConsulta() {
+
+        // ARRANGE: identificadores que no representan libros válidos.
+        Long[] identificadoresInvalidos = {
+                null,
+                0L,
+                -1L
+        };
+
+        // ACT y ASSERT: verificar cada identificador inválido.
+        for (Long libroId : identificadoresInvalidos) {
+
+            IllegalArgumentException excepcion = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> libroService.listarFormatosPublicos(libroId)
+            );
+
+            assertEquals(
+                    "El identificador del libro no es válido.",
+                    excepcion.getMessage()
+            );
+        }
+
+        // No debe consultar ningún repositorio.
+        verifyNoInteractions(
+                libroRepository,
+                formatoLibroRepository,
+                itemStockRepository
+        );
+    }
+
 }

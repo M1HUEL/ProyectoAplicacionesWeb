@@ -2,20 +2,20 @@
 package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
-import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
-import com.itson.ProyectoAplicacionesWeb.model.ItemStock;
+import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.service.AutorService;
 import com.itson.ProyectoAplicacionesWeb.service.CategoriaService;
 import com.itson.ProyectoAplicacionesWeb.service.EditorialService;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 import com.itson.ProyectoAplicacionesWeb.service.PortadaService;
-import com.itson.ProyectoAplicacionesWeb.model.Libro;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import com.itson.ProyectoAplicacionesWeb.model.Formato;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Controlador MVC encargado de atender las solicitudes
@@ -278,7 +278,6 @@ public class LibroController {
         // porque el select está deshabilitado durante la edición.
         formulario.setFormato(formatoSeleccionado.getFormato());
 
-
         // Envía el formulario a Thymeleaf.
         model.addAttribute("libroFormulario", formulario);
 
@@ -289,7 +288,40 @@ public class LibroController {
         // Catálogos necesarios para los campos desplegables.
         model.addAttribute("autores", autorService.listarTodos());
         model.addAttribute("editoriales", editorialService.listarTodas());
-        model.addAttribute("categorias", categoriaService.listarActivas());
+
+        /*
+         * Recupera las categorías activas para el selector.
+         *
+         * Durante la edición también debe aparecer la categoría
+         * original del libro, aunque haya sido desactivada.
+         */
+        List<Categoria> categoriasDisponibles =
+                new ArrayList<>(categoriaService.listarActivas());
+
+        // Consultar la categoría original registrada para el libro.
+        Long categoriaOriginalId = libroService
+                .prepararFormularioEdicion(libroId)
+                .getCategoriaId();
+
+        Categoria categoriaOriginal =
+                categoriaService.buscarPorId(categoriaOriginalId);
+
+        /*
+         * Evitar duplicar la categoría cuando ya forma parte
+         * del listado de categorías activas.
+         */
+        boolean categoriaIncluida = categoriasDisponibles.stream()
+                .anyMatch(categoria ->
+                        categoria.getId().equals(categoriaOriginalId)
+                );
+
+        if (!categoriaIncluida) {
+            categoriasDisponibles.add(categoriaOriginal);
+        }
+
+        // Enviar las opciones disponibles a la vista Thymeleaf.
+        model.addAttribute("categorias", categoriasDisponibles);
+
         model.addAttribute("formatos", Formato.values());
 
         return "administrador-libros-formulario";

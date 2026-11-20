@@ -897,15 +897,31 @@ public class LibroService {
             );
         }
 
+
         /*
-         * Recupera la categoría seleccionada y comprueba
-         * que exista y se encuentre activa.
+         * Permite conservar la categoría original del libro,
+         * incluso cuando haya sido desactivada posteriormente.
          *
-         * Reutiliza la misma regla del registro de libros.
+         * Si el administrador selecciona otra categoría,
+         * esta debe encontrarse activa.
          */
-        Categoria categoria = obtenerCategoriaActiva(
-                formulario.getCategoriaId()
-        );
+        Categoria categoria;
+
+        Long categoriaOriginalId = libro.getCategoria().getId();
+
+        if (categoriaOriginalId != null
+                && categoriaOriginalId.equals(formulario.getCategoriaId())) {
+
+            // La categoría no cambió: conservar la asociación existente.
+            categoria = libro.getCategoria();
+
+        } else {
+
+            // La categoría cambió: exigir que la nueva esté activa.
+            categoria = obtenerCategoriaActiva(
+                    formulario.getCategoriaId()
+            );
+        }
 
         /*
          * Recupera la editorial seleccionada y comprueba

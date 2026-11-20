@@ -1331,4 +1331,173 @@ class LibroServiceTest {
         verify(itemStockRepository, never()).save(any(ItemStock.class));
     }
 
+    /**
+     * Comprueba que un libro existente pueda actualizarse
+     * conservando su categoría original, aunque esta se
+     * encuentre desactivada.
+     *
+     * Desactivar una categoría no debería impedir modificar
+     * otros datos bibliográficos de sus libros asociados.
+     */
+    @Test
+    void actualizar_conCategoriaOriginalInactiva_debePermitirConservarla() {
+
+        // ARRANGE: preparar una categoría desactivada.
+        Categoria categoria = new Categoria("Terror");
+        categoria.setActivo(false);
+
+        // Simular el identificador persistido de la categoría.
+        ReflectionTestUtils.setField(categoria, "id", 1L);
+
+        Editorial editorial = new Editorial(
+                "Raudskinna - Edición de prueba",
+                null
+        );
+
+        // Crear un libro que ya pertenece a la categoría inactiva.
+        Libro libro = new Libro(
+                "La llamada de Cthulhu",
+                "9781234567897",
+                categoria,
+                editorial
+        );
+
+        ReflectionTestUtils.setField(libro, "id", 1L);
+
+        // Utilizar una presentación digital para aislar
+        // la prueba de las operaciones de inventario físico.
+        FormatoLibro formatoExistente = new FormatoLibro(
+                libro,
+                Formato.DIGITAL,
+                new BigDecimal("149.00")
+        );
+
+        // Simular los datos enviados por el formulario de edición.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+
+        formulario.setTitulo("La llamada de Cthulhu - Edición revisada");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(2L));
+        formulario.setEditorialId(1L);
+
+        // El administrador conserva la misma categoría.
+        formulario.setCategoriaId(1L);
+
+        formulario.setSinopsis("Relato de horror cósmico.");
+        formulario.setPortadaUrl(null);
+        formulario.setFormato(null);
+        formulario.setPrecio(new BigDecimal("149.00"));
+
+        // Simular los resultados de los repositorios.
+        when(formatoLibroRepository.findById(2L))
+                .thenReturn(Optional.of(formatoExistente));
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(editorialRepository.findById(1L))
+                .thenReturn(Optional.of(editorial));
+
+        Autor autor = new Autor("H. P. Lovecraft");
+
+        when(autorRepository.findAllById(Set.of(2L)))
+                .thenReturn(List.of(autor));
+
+        // ACT: actualizar el libro sin cambiar su categoría.
+        Libro resultado = libroService.actualizar(
+                1L,
+                2L,
+                formulario
+        );
+
+        // ASSERT: verificar que la actualización sea permitida.
+        assertSame(libro, resultado);
+
+        assertSame(categoria, resultado.getCategoria());
+
+        assertFalse(resultado.getCategoria().isActivo());
+
+        assertEquals(
+                "La llamada de Cthulhu - Edición revisada",
+                resultado.getTitulo()
+        );
+
+        assertEquals(
+                Formato.DIGITAL,
+                formatoExistente.getFormato()
+        );
+    }
+
+    /**
+     * Comprueba que no sea posible cambiar la categoría
+     * de un libro hacia otra categoría desactivada.
+     *
+     * Conservar la categoría original inactiva es válido,
+     * pero asignar una categoría inactiva diferente no lo es.
+     */
+    @Test
+    void actualizar_conOtraCategoriaInactiva_debeRechazarCambio() {
+
+        // ARRANGE: categoría original del libro.
+        Categoria categoriaOriginal = new Categoria("Literatura clásica");
+        ReflectionTestUtils.setField(categoriaOriginal, "id", 1L);
+
+        // Nueva categoría que está desactivada.
+        Categoria categoriaNueva = new Categoria("Terror");
+        categoriaNueva.setActivo(false);
+        ReflectionTestUtils.setField(categoriaNueva, "id", 2L);
+
+        Editorial editorial = new Editorial(
+                "Raudskinna - Edición de prueba",
+                null
+        );
+
+        Libro libro = new Libro(
+                "Drácula",
+                "9781234567897",
+                categoriaOriginal,
+                editorial
+        );
+
+        ReflectionTestUtils.setField(libro, "id", 1L);
+
+        FormatoLibro formatoExistente = new FormatoLibro(
+                libro,
+                Formato.DIGITAL,
+                new BigDecimal("149.00")
+        );
+
+        // Preparar una solicitud de edición válida,
+        // excepto por la nueva categoría inactiva.
+        LibroFormularioDTO formulario = new LibroFormularioDTO();
+
+        formulario.setTitulo("Drácula - Edición revisada");
+        formulario.setIsbn("9781234567897");
+        formulario.setAutoresIds(Set.of(1L));
+        formulario.setEditorialId(1L);
+        formulario.setCategoriaId(2L);
+        formulario.setSinopsis("Novela de terror clásico.");
+        formulario.setPrecio(new BigDecimal("149.00"));
+
+        when(formatoLibroRepository.findById(2L))
+                .thenReturn(Optional.of(formatoExistente));
+
+        when(categoriaRepository.findById(2L))
+                .thenReturn(Optional.of(categoriaNueva));
+
+        // ACT y ASSERT: rechazar la asignación de otra categoría inactiva.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> libroService.actualizar(1L, 2L, formulario)
+        );
+
+        assertEquals(
+                "La categoría seleccionada está desactivada.",
+                excepcion.getMessage()
+        );
+
+        // La relación original del libro debe mantenerse.
+        assertSame(categoriaOriginal, libro.getCategoria());
+    }
+
 }

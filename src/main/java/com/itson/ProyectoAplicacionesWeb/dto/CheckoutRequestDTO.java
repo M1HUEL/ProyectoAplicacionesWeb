@@ -1,6 +1,8 @@
 
 package com.itson.ProyectoAplicacionesWeb.dto;
 
+import com.itson.ProyectoAplicacionesWeb.model.MetodoPago;
+
 /**
  * Datos recibidos al confirmar una compra.
  *
@@ -9,8 +11,12 @@ package com.itson.ProyectoAplicacionesWeb.dto;
  *
  * direccionId puede ser null para compras
  * exclusivamente digitales.
+ *
+ * metodoPago identifica el método seleccionado
+ * por el cliente. No implica procesar un cobro real.
  */
 public record CheckoutRequestDTO(
-        Long direccionId
+        Long direccionId,
+        MetodoPago metodoPago
 ) {
 }

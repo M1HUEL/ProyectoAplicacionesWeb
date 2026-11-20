@@ -28,6 +28,7 @@ public class CheckoutService {
     private final UsuarioRepository usuarioRepository;
     private final InventarioService inventarioService;
     private final DireccionRepository direccionRepository;
+    private final PagoService pagoService;
 
     public CheckoutService(
             CarritoCompraRepository carritoCompraRepository,
@@ -35,7 +36,8 @@ public class CheckoutService {
             DetalleOrdenRepository detalleOrdenRepository,
             UsuarioRepository usuarioRepository,
             InventarioService inventarioService,
-            DireccionRepository direccionRepository) {
+            DireccionRepository direccionRepository,
+            PagoService pagoService) {
 
         this.carritoCompraRepository = carritoCompraRepository;
         this.ordenCompraRepository = ordenCompraRepository;
@@ -43,6 +45,7 @@ public class CheckoutService {
         this.usuarioRepository = usuarioRepository;
         this.inventarioService = inventarioService;
         this.direccionRepository = direccionRepository;
+        this.pagoService = pagoService;
     }
 
     /**
@@ -54,7 +57,14 @@ public class CheckoutService {
     @Transactional
     public CheckoutResponseDTO confirmarCompra(
             String correo,
-            Long direccionId) {
+            Long direccionId,
+            MetodoPago metodoPago) {
+
+        if (metodoPago == null) {
+            throw new IllegalArgumentException(
+                    "Debes seleccionar un método de pago."
+            );
+        }
 
         // Identificar al cliente.
         Usuario usuario = usuarioRepository.findByCorreo(correo)
@@ -197,6 +207,10 @@ public class CheckoutService {
                 );
             }
         }
+
+        // Registrar el pago como pendiente.
+        // No se realiza ningún cobro bancario real.
+        pagoService.registrarPago(orden, metodoPago);
 
         // Vaciar el carrito después de procesar los artículos.
         carrito.getItems().clear();

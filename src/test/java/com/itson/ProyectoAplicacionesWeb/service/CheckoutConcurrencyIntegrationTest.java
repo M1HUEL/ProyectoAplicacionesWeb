@@ -204,7 +204,11 @@ class CheckoutConcurrencyIntegrationTest {
         inicio.await();
 
         try {
-            checkoutService.confirmarCompra(correo, direccionId);
+            checkoutService.confirmarCompra(
+                    correo,
+                    direccionId,
+                    MetodoPago.TRANSFERENCIA
+            );
             return true;
 
         } catch (InventarioInsuficienteException ex) {

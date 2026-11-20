@@ -49,6 +49,9 @@ class CheckoutServiceTest {
 
     private CheckoutService checkoutService;
 
+    @Mock
+    private PagoService pagoService;
+
     @BeforeEach
     void configurar() {
 
@@ -58,7 +61,8 @@ class CheckoutServiceTest {
                 detalleOrdenRepository,
                 usuarioRepository,
                 inventarioService,
-                direccionRepository
+                direccionRepository,
+                pagoService
         );
     }
 
@@ -114,7 +118,8 @@ class CheckoutServiceTest {
                 IllegalArgumentException.class,
                 () -> checkoutService.confirmarCompra(
                         correo,
-                        null
+                        null,
+                        MetodoPago.TRANSFERENCIA
                 )
         );
 
@@ -131,6 +136,8 @@ class CheckoutServiceTest {
 
         // Tampoco debió descontar inventario.
         verifyNoInteractions(inventarioService);
+
+        verifyNoInteractions(pagoService);
     }
 
     @Test
@@ -183,7 +190,8 @@ class CheckoutServiceTest {
                 IllegalArgumentException.class,
                 () -> checkoutService.confirmarCompra(
                         correo,
-                        direccionAjenaId
+                        direccionAjenaId,
+                        MetodoPago.TRANSFERENCIA
                 )
         );
 
@@ -201,6 +209,7 @@ class CheckoutServiceTest {
         verifyNoInteractions(ordenCompraRepository);
         verifyNoInteractions(detalleOrdenRepository);
         verifyNoInteractions(inventarioService);
+        verifyNoInteractions(pagoService);
     }
 
     @Test
@@ -268,7 +277,7 @@ class CheckoutServiceTest {
                 );
 
         // ACT: confirmar la compra.
-        checkoutService.confirmarCompra(correo, direccionId);
+        checkoutService.confirmarCompra(correo, direccionId, MetodoPago.TRANSFERENCIA);
 
         // ASSERT: recuperar la orden enviada al repositorio.
         ArgumentCaptor<OrdenCompra> captor =
@@ -300,6 +309,11 @@ class CheckoutServiceTest {
         // Los libros físicos descuentan inventario.
         verify(inventarioService).descontarPorVenta(
                 formatoId, 2, correo
+        );
+
+        verify(pagoService).registrarPago(
+                any(OrdenCompra.class),
+                eq(MetodoPago.TRANSFERENCIA)
         );
 
         // El carrito debe quedar vacío.
@@ -348,7 +362,7 @@ class CheckoutServiceTest {
                 );
 
         // ACT: confirmar sin seleccionar dirección.
-        checkoutService.confirmarCompra(correo, null);
+        checkoutService.confirmarCompra(correo, null, MetodoPago.TRANSFERENCIA);
 
         // ASSERT: capturar la orden registrada.
         ArgumentCaptor<OrdenCompra> captor =
@@ -374,6 +388,10 @@ class CheckoutServiceTest {
         // No debe consultar direcciones ni descontar inventario.
         verifyNoInteractions(direccionRepository);
         verifyNoInteractions(inventarioService);
+        verify(pagoService).registrarPago(
+                any(OrdenCompra.class),
+                eq(MetodoPago.TRANSFERENCIA)
+        );
 
         // El carrito queda vacío al finalizar.
         assertTrue(articulos.isEmpty());
@@ -459,7 +477,7 @@ class CheckoutServiceTest {
                 .thenAnswer(invocacion -> invocacion.getArgument(0));
 
         // ACT: confirmar la compra mixta.
-        checkoutService.confirmarCompra(correo, direccionId);
+        checkoutService.confirmarCompra(correo, direccionId, MetodoPago.TRANSFERENCIA);
 
         // ASSERT: capturar la orden.
         ArgumentCaptor<OrdenCompra> captor =
@@ -491,6 +509,11 @@ class CheckoutServiceTest {
         );
 
         verifyNoMoreInteractions(inventarioService);
+
+        verify(pagoService).registrarPago(
+                any(OrdenCompra.class),
+                eq(MetodoPago.TRANSFERENCIA)
+        );
 
         // El carrito queda vacío.
         assertTrue(articulos.isEmpty());
@@ -545,7 +568,8 @@ class CheckoutServiceTest {
                 IllegalArgumentException.class,
                 () -> checkoutService.confirmarCompra(
                         correo,
-                        direccionInexistenteId
+                        direccionInexistenteId,
+                        MetodoPago.TRANSFERENCIA
                 )
         );
 
@@ -564,6 +588,7 @@ class CheckoutServiceTest {
         verifyNoInteractions(ordenCompraRepository);
         verifyNoInteractions(detalleOrdenRepository);
         verifyNoInteractions(inventarioService);
+        verifyNoInteractions(pagoService);
     }
 
     @Test
@@ -610,7 +635,8 @@ class CheckoutServiceTest {
                 IllegalArgumentException.class,
                 () -> checkoutService.confirmarCompra(
                         correo,
-                        direccionIdInvalido
+                        direccionIdInvalido,
+                        MetodoPago.TRANSFERENCIA
                 )
         );
 
@@ -627,6 +653,7 @@ class CheckoutServiceTest {
         verifyNoInteractions(ordenCompraRepository);
         verifyNoInteractions(detalleOrdenRepository);
         verifyNoInteractions(inventarioService);
+        verifyNoInteractions(pagoService);
     }
 
     @Test
@@ -694,7 +721,9 @@ class CheckoutServiceTest {
         IllegalArgumentException excepcion = assertThrows(
                 IllegalArgumentException.class,
                 () -> checkoutService.confirmarCompra(
-                        correo, direccionId
+                        correo,
+                        direccionId,
+                        MetodoPago.TRANSFERENCIA
                 )
         );
 
@@ -715,6 +744,8 @@ class CheckoutServiceTest {
         verify(inventarioService).descontarPorVenta(
                 formatoId, 5, correo
         );
+
+        verifyNoInteractions(pagoService);
 
         // El carrito NO debe haberse vaciado.
         assertEquals(1, articulos.size());

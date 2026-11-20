@@ -2,6 +2,7 @@
 package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.CheckoutResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.model.MetodoPago;
 import com.itson.ProyectoAplicacionesWeb.service.CheckoutService;
 
 import com.itson.ProyectoAplicacionesWeb.service.JwtService;
@@ -125,7 +126,8 @@ class CheckoutSecurityIntegrationTest {
 
         when(checkoutService.confirmarCompra(
                 eq(correoAutenticado),
-                eq(25L)
+                eq(25L),
+                eq(MetodoPago.TRANSFERENCIA)
         )).thenReturn(respuestaSimulada);
 
         mockMvc.perform(
@@ -133,17 +135,19 @@ class CheckoutSecurityIntegrationTest {
                                 .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
-                            {
-                              "direccionId": 25
-                            }
-                            """)
+                                {
+                                "direccionId": 25,
+                                "metodoPago": "TRANSFERENCIA"
+                                }
+                                """)
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.ordenId").value(99));
 
         verify(checkoutService).confirmarCompra(
                 correoAutenticado,
-                25L
+                25L,
+                MetodoPago.TRANSFERENCIA
         );
     }
 

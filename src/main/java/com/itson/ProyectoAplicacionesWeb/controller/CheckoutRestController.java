@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.CheckoutRequestDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.CheckoutResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.model.MetodoPago;
 import com.itson.ProyectoAplicacionesWeb.service.CheckoutService;
 
 import org.springframework.http.HttpStatus;
@@ -43,10 +44,15 @@ public class CheckoutRestController {
                 ? solicitud.direccionId()
                 : null;
 
+        MetodoPago metodoPago = solicitud != null
+                ? solicitud.metodoPago()
+                : null;
+
         CheckoutResponseDTO respuesta =
                 checkoutService.confirmarCompra(
                         correo,
-                        direccionId
+                        direccionId,
+                        metodoPago
                 );
 
         return ResponseEntity

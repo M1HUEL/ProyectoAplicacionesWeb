@@ -4,6 +4,7 @@ package com.itson.ProyectoAplicacionesWeb.controller;
 import com.itson.ProyectoAplicacionesWeb.dto.CheckoutResponseDTO;
 import com.itson.ProyectoAplicacionesWeb.exception.ApiExceptionHandler;
 import com.itson.ProyectoAplicacionesWeb.exception.InventarioInsuficienteException;
+import com.itson.ProyectoAplicacionesWeb.model.MetodoPago;
 import com.itson.ProyectoAplicacionesWeb.service.CheckoutService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -64,18 +65,26 @@ class CheckoutRestControllerTest {
         when(autenticacion.getName())
                 .thenReturn(correo);
 
-        when(checkoutService.confirmarCompra(correo, null))
-                .thenThrow(new IllegalArgumentException(
-                        "Debes seleccionar una dirección de envío."
-                ));
+        when(checkoutService.confirmarCompra(
+                correo,
+                null,
+                MetodoPago.TRANSFERENCIA
+        )).thenThrow(new IllegalArgumentException(
+                "Debes seleccionar una dirección de envío."
+        ));
 
         // ACT + ASSERT
         mockMvc.perform(
                         post("/api/checkout")
                                 .principal(autenticacion)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"direccionId\":null}")
-                )
+                                .content("""
+                                {
+                                    "direccionId": null,
+                                    "metodoPago": "TRANSFERENCIA"
+                                }
+                                """)
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.estado").value(400))
                 .andExpect(jsonPath("$.mensaje").value(
@@ -84,7 +93,11 @@ class CheckoutRestControllerTest {
                 .andExpect(jsonPath("$.ruta").value("/api/checkout"));
 
         // Comprobar la delegación al servicio.
-        verify(checkoutService).confirmarCompra(correo, null);
+        verify(checkoutService).confirmarCompra(
+                correo,
+                null,
+                MetodoPago.TRANSFERENCIA
+        );
 
         verifyNoMoreInteractions(checkoutService);
     }
@@ -113,7 +126,9 @@ class CheckoutRestControllerTest {
                 );
 
         when(checkoutService.confirmarCompra(
-                correo, direccionId
+                correo,
+                direccionId,
+                MetodoPago.TRANSFERENCIA
         )).thenReturn(respuestaEsperada);
 
         // ACT + ASSERT: ejecutar la solicitud HTTP.
@@ -121,7 +136,12 @@ class CheckoutRestControllerTest {
                         post("/api/checkout")
                                 .principal(autenticacion)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"direccionId\":25}")
+                                .content("""
+                                        {
+                                        "direccionId": 25,
+                                        "metodoPago": "TRANSFERENCIA"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.ordenId").value(100))
@@ -132,7 +152,9 @@ class CheckoutRestControllerTest {
         // Verificar que utilizó la identidad autenticada
         // y el identificador de dirección recibido.
         verify(checkoutService).confirmarCompra(
-                correo, direccionId
+                correo,
+                direccionId,
+                MetodoPago.TRANSFERENCIA
         );
 
         verifyNoMoreInteractions(checkoutService);
@@ -148,17 +170,25 @@ class CheckoutRestControllerTest {
         Authentication autenticacion = mock(Authentication.class);
         when(autenticacion.getName()).thenReturn(correo);
 
-        when(checkoutService.confirmarCompra(correo, 25L))
-                .thenThrow(new InventarioInsuficienteException(
-                        "Existencias insuficientes. Disponibles: 2"
-                ));
+        when(checkoutService.confirmarCompra(
+                correo,
+                25L,
+                MetodoPago.TRANSFERENCIA
+        )).thenThrow(new InventarioInsuficienteException(
+                "Existencias insuficientes. Disponibles: 2"
+        ));
 
         // ACT + ASSERT
         mockMvc.perform(
                         post("/api/checkout")
                                 .principal(autenticacion)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"direccionId\":25}")
+                                .content("""
+                                {
+                                "direccionId": 25,
+                                "metodoPago": "TRANSFERENCIA"
+                                }
+                                """)
                 )
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.estado").value(409))
@@ -168,7 +198,11 @@ class CheckoutRestControllerTest {
                 ))
                 .andExpect(jsonPath("$.ruta").value("/api/checkout"));
 
-        verify(checkoutService).confirmarCompra(correo, 25L);
+        verify(checkoutService).confirmarCompra(
+                correo,
+                25L,
+                MetodoPago.TRANSFERENCIA
+        );
         verifyNoMoreInteractions(checkoutService);
     }
 

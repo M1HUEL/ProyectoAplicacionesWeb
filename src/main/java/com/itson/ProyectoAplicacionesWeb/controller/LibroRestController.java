@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +46,22 @@ public class LibroRestController {
     @GetMapping("/{id}")
     public LibroPublicoDTO consultarLibro(@PathVariable Long id) {
         return libroService.consultarLibroPublico(id);
+    }
+
+    /**
+     * Consulta las presentaciones comerciales de un libro activo.
+     *
+     * Devuelve el formato, precio y disponibilidad de cada
+     * presentación, utilizando las reglas definidas en LibroService.
+     *
+     * GET /api/libros/{id}/formatos
+     *
+     * @param id identificador del libro.
+     * @return presentaciones comerciales disponibles para consulta pública.
+     */
+    @GetMapping("/{id}/formatos")
+    public List<FormatoPublicoDTO> consultarFormatos(@PathVariable Long id) {
+        return libroService.listarFormatosPublicos(id);
     }
 
 }

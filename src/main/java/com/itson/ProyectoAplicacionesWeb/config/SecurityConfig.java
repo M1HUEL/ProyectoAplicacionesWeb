@@ -66,14 +66,18 @@ public class SecurityConfig {
                         .permitAll()
 
                         // Consultas públicas del catálogo.
+                        // Únicamente se permiten operaciones GET
+                        // para libros activos y sus formatos comerciales.
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/libros",
-                                "/api/libros/*"
+                                "/api/libros/*",
+                                "/api/libros/*/formatos"
                         ).permitAll()
 
                         // Los demás endpoints requieren JWT.
                         .anyRequest().authenticated()
+
                 )
 
                 // La API no utiliza autenticación mediante cookies.

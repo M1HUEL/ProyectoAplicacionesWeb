@@ -48,5 +48,24 @@ public interface FormatoLibroRepository
      */
     List<FormatoLibro> findByLibroId(Long libroId);
 
+    /**
+     * Recupera las presentaciones comerciales de todos
+     * los libros activos del catálogo público.
+     *
+     * JOIN FETCH permite recuperar el libro asociado
+     * en la misma consulta y evita accesos adicionales
+     * al consultar su identificador.
+     *
+     * No recupera presentaciones de libros inactivos.
+     *
+     * @return presentaciones comerciales de libros activos.
+     */
+    @Query("""
+            SELECT f
+            FROM FormatoLibro f
+            JOIN FETCH f.libro l
+            WHERE l.activo = true
+            """)
+    List<FormatoLibro> listarFormatosDeLibrosActivos();
 
 }

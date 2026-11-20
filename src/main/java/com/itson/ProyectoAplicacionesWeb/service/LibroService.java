@@ -1,10 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
-import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.*;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -108,6 +105,100 @@ public class LibroService {
                                 .sorted()
                                 .toList()
                 ))
+                .toList();
+    }
+
+    /**
+     * Recupera los libros activos con un resumen comercial
+     * para las tarjetas del catálogo público.
+     *
+     * El precio inicial corresponde al menor precio entre
+     * las presentaciones disponibles de cada libro.
+     *
+     * Los formatos digitales no requieren inventario físico.
+     * Los formatos físicos necesitan existencias mayores que cero.
+     *
+     * Si un libro no tiene presentaciones disponibles,
+     * su precio inicial será null y disponible será false.
+     *
+     * Utiliza consultas agrupadas para evitar consultar
+     * los formatos y el inventario individualmente por libro.
+     *
+     * @return libros públicos con su resumen comercial.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> listarCatalogoPublico() {
+
+        // Recuperar la información bibliográfica pública.
+        List<LibroPublicoDTO> libros = listarLibrosPublicos();
+
+        // Recuperar las presentaciones de libros activos.
+        List<FormatoLibro> formatos =
+                formatoLibroRepository.listarFormatosDeLibrosActivos();
+
+        // Recuperar el inventario físico mediante una consulta agrupada.
+        List<ItemStock> inventarios =
+                itemStockRepository.listarConFormatoLibro();
+
+        // Asociar cada presentación física con sus existencias.
+        Map<Long, Integer> existenciasPorFormato =
+                inventarios.stream()
+                        .collect(Collectors.toMap(
+                                inventario ->
+                                        inventario.getFormatoLibro().getId(),
+                                ItemStock::getCantidad,
+                                (cantidadAnterior, cantidadNueva) ->
+                                        cantidadNueva
+                        ));
+
+        // Agrupar las presentaciones por identificador de libro.
+        Map<Long, List<FormatoLibro>> formatosPorLibro =
+                formatos.stream()
+                        .collect(Collectors.groupingBy(
+                                formato -> formato.getLibro().getId()
+                        ));
+
+        // Construir el resumen comercial de cada libro público.
+        return libros.stream()
+                .map(libro -> {
+
+                    // Recuperar sus presentaciones comerciales.
+                    List<FormatoLibro> presentaciones =
+                            formatosPorLibro.getOrDefault(
+                                    libro.id(),
+                                    List.of()
+                            );
+
+                    // Encontrar el menor precio entre las
+                    // presentaciones que pueden ofrecerse.
+                    BigDecimal precioDesde = presentaciones.stream()
+                            .filter(formato -> {
+
+                                // Los formatos digitales están disponibles.
+                                if (formato.getFormato() == Formato.DIGITAL) {
+                                    return true;
+                                }
+
+                                // Los formatos físicos necesitan existencias.
+                                return existenciasPorFormato.getOrDefault(
+                                        formato.getId(),
+                                        0
+                                ) > 0;
+                            })
+                            .map(FormatoLibro::getPrecio)
+                            .min(BigDecimal::compareTo)
+                            .orElse(null);
+
+                    // Existe disponibilidad cuando se encontró
+                    // al menos una presentación comercial válida.
+                    boolean disponible = precioDesde != null;
+
+                    return new LibroCatalogoDTO(
+                            libro,
+                            precioDesde,
+                            disponible
+                    );
+                })
                 .toList();
     }
 

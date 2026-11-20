@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 
@@ -12,6 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -45,7 +47,7 @@ class InicioControllerIntegrationTest {
 
     /**
      * Comprueba que un visitante sin sesión pueda acceder
-     * al inicio y visualizar los libros del catálogo.
+     * al inicio y visualizar los libros con sus precios.
      */
     @Test
     void mostrarInicio_conLibros_renderizaCatalogoPublico()
@@ -62,8 +64,15 @@ class InicioControllerIntegrationTest {
                 List.of("Bram Stoker")
         );
 
-        when(libroService.listarLibrosPublicos())
-                .thenReturn(List.of(libro));
+        // Incorporar el resumen comercial calculado por el servicio.
+        LibroCatalogoDTO tarjeta = new LibroCatalogoDTO(
+                libro,
+                new BigDecimal("249.00"),
+                true
+        );
+
+        when(libroService.listarCatalogoPublico())
+                .thenReturn(List.of(tarjeta));
 
         // ACT y ASSERT: solicitar la página sin autenticación.
         mockMvc.perform(get("/"))
@@ -77,10 +86,16 @@ class InicioControllerIntegrationTest {
                 ))
                 .andExpect(content().string(
                         containsString("Terror")
+                ))
+                .andExpect(content().string(
+                        containsString("Desde")
+                ))
+                .andExpect(content().string(
+                        containsString("249.00")
                 ));
 
-        // Verificar que el controlador consultó el servicio.
-        verify(libroService).listarLibrosPublicos();
+        // Verificar que el controlador consultó el servicio comercial.
+        verify(libroService).listarCatalogoPublico();
     }
 
     /**
@@ -91,8 +106,8 @@ class InicioControllerIntegrationTest {
     void mostrarInicio_sinLibros_muestraMensajeCatalogoVacio()
             throws Exception {
 
-        // ARRANGE: simular un catálogo sin libros activos.
-        when(libroService.listarLibrosPublicos())
+        // ARRANGE: simular un catálogo comercial vacío.
+        when(libroService.listarCatalogoPublico())
                 .thenReturn(List.of());
 
         // ACT y ASSERT: verificar el mensaje de catálogo vacío.
@@ -108,6 +123,7 @@ class InicioControllerIntegrationTest {
                         not(containsString("<h3>Drácula</h3>"))
                 ));
 
-        verify(libroService).listarLibrosPublicos();
+        verify(libroService).listarCatalogoPublico();
     }
+
 }

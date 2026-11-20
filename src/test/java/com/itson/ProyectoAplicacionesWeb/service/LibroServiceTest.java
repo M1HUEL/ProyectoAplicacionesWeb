@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
 import com.itson.ProyectoAplicacionesWeb.model.*;
@@ -1743,6 +1744,239 @@ class LibroServiceTest {
                 formatoLibroRepository,
                 itemStockRepository
         );
+    }
+
+    /**
+     * Comprueba que el precio inicial del catálogo público
+     * corresponda a la presentación disponible más económica.
+     *
+     * Las presentaciones físicas agotadas no deben participar
+     * en el cálculo, aunque tengan un precio menor.
+     */
+    @Test
+    void listarCatalogoPublico_debeCalcularMenorPrecioDisponible() {
+
+        // ARRANGE: preparar un libro público con sus relaciones.
+        Categoria categoria = mock(Categoria.class);
+        Editorial editorial = mock(Editorial.class);
+        Libro libro = mock(Libro.class);
+
+        when(libro.getId()).thenReturn(1L);
+        when(libro.getTitulo()).thenReturn("La llamada de Cthulhu");
+        when(libro.getCategoria()).thenReturn(categoria);
+        when(libro.getEditorial()).thenReturn(editorial);
+        when(libro.getAutores()).thenReturn(new HashSet<>());
+
+        when(categoria.getNombre()).thenReturn("Terror");
+        when(editorial.getNombre()).thenReturn("Editorial de prueba");
+
+        when(libroRepository.findByActivoTrue())
+                .thenReturn(List.of(libro));
+
+        // Preparaciones comerciales del mismo libro.
+        FormatoLibro pastaDura = mock(FormatoLibro.class);
+        FormatoLibro pastaBlanda = mock(FormatoLibro.class);
+        FormatoLibro digital = mock(FormatoLibro.class);
+
+        when(pastaDura.getId()).thenReturn(10L);
+        when(pastaDura.getLibro()).thenReturn(libro);
+        when(pastaDura.getFormato()).thenReturn(Formato.PASTA_DURA);
+        when(pastaDura.getPrecio()).thenReturn(new BigDecimal("350.00"));
+
+        when(pastaBlanda.getId()).thenReturn(20L);
+        when(pastaBlanda.getLibro()).thenReturn(libro);
+        when(pastaBlanda.getFormato()).thenReturn(Formato.PASTA_BLANDA);
+        when(pastaBlanda.getPrecio()).thenReturn(new BigDecimal("100.00"));
+
+        when(digital.getLibro()).thenReturn(libro);
+        when(digital.getFormato()).thenReturn(Formato.DIGITAL);
+        when(digital.getPrecio()).thenReturn(new BigDecimal("149.00"));
+
+        when(formatoLibroRepository.listarFormatosDeLibrosActivos())
+                .thenReturn(List.of(pastaDura, pastaBlanda, digital));
+
+        // Inventario: pasta dura disponible, pasta blanda agotada.
+        ItemStock stockDura = mock(ItemStock.class);
+        ItemStock stockBlanda = mock(ItemStock.class);
+
+        when(stockDura.getFormatoLibro()).thenReturn(pastaDura);
+        when(stockDura.getCantidad()).thenReturn(4);
+
+        when(stockBlanda.getFormatoLibro()).thenReturn(pastaBlanda);
+        when(stockBlanda.getCantidad()).thenReturn(0);
+
+        when(itemStockRepository.listarConFormatoLibro())
+                .thenReturn(List.of(stockDura, stockBlanda));
+
+        // ACT: construir el catálogo público.
+        List<LibroCatalogoDTO> resultado =
+                libroService.listarCatalogoPublico();
+
+        // ASSERT: se conserva el libro y se calcula el precio correcto.
+        assertEquals(1, resultado.size());
+
+        LibroCatalogoDTO tarjeta = resultado.get(0);
+
+        assertEquals("La llamada de Cthulhu", tarjeta.libro().titulo());
+        assertEquals(new BigDecimal("149.00"), tarjeta.precioDesde());
+        assertTrue(tarjeta.disponible());
+
+        // Confirmar que se utilizaron consultas agrupadas.
+        verify(formatoLibroRepository).listarFormatosDeLibrosActivos();
+        verify(itemStockRepository).listarConFormatoLibro();
+
+        // No deben hacerse consultas individuales por presentación.
+        verify(itemStockRepository, never())
+                .findByFormatoLibroId(anyLong());
+    }
+
+    /**
+     * Comprueba que un libro con todas sus presentaciones
+     * físicas agotadas no anuncie un precio de compra.
+     *
+     * Cuando ninguna presentación está disponible,
+     * precioDesde debe ser null y disponible debe ser false.
+     */
+    @Test
+    void listarCatalogoPublico_libroAgotado_noDebeMostrarPrecioDesde() {
+
+        // ARRANGE: preparar un libro activo.
+        Categoria categoria = mock(Categoria.class);
+        Editorial editorial = mock(Editorial.class);
+        Libro libro = mock(Libro.class);
+
+        when(libro.getId()).thenReturn(1L);
+        when(libro.getTitulo()).thenReturn("Libro agotado");
+        when(libro.getCategoria()).thenReturn(categoria);
+        when(libro.getEditorial()).thenReturn(editorial);
+        when(libro.getAutores()).thenReturn(new HashSet<>());
+
+        when(categoria.getNombre()).thenReturn("Terror");
+        when(editorial.getNombre()).thenReturn("Editorial de prueba");
+
+        when(libroRepository.findByActivoTrue())
+                .thenReturn(List.of(libro));
+
+        // El libro tiene una presentación física.
+        FormatoLibro formato = mock(FormatoLibro.class);
+
+        when(formato.getId()).thenReturn(10L);
+        when(formato.getLibro()).thenReturn(libro);
+        when(formato.getFormato()).thenReturn(Formato.PASTA_DURA);
+        when(formato.getPrecio()).thenReturn(new BigDecimal("350.00"));
+
+        when(formatoLibroRepository.listarFormatosDeLibrosActivos())
+                .thenReturn(List.of(formato));
+
+        // Su inventario existe, pero está agotado.
+        ItemStock inventario = mock(ItemStock.class);
+
+        when(inventario.getFormatoLibro()).thenReturn(formato);
+        when(inventario.getCantidad()).thenReturn(0);
+
+        when(itemStockRepository.listarConFormatoLibro())
+                .thenReturn(List.of(inventario));
+
+        // ACT: construir el catálogo comercial.
+        List<LibroCatalogoDTO> resultado =
+                libroService.listarCatalogoPublico();
+
+        // ASSERT: el libro permanece visible, pero agotado.
+        assertEquals(1, resultado.size());
+
+        LibroCatalogoDTO tarjeta = resultado.get(0);
+
+        assertEquals("Libro agotado", tarjeta.libro().titulo());
+        assertNull(tarjeta.precioDesde());
+        assertFalse(tarjeta.disponible());
+    }
+
+    /**
+     * Comprueba que un libro activo sin presentaciones
+     * comerciales permanezca visible en el catálogo.
+     *
+     * Como no tiene formatos registrados, no debe
+     * anunciar precio ni disponibilidad comercial.
+     */
+    @Test
+    void listarCatalogoPublico_libroSinFormatos_debePermanecerVisible() {
+
+        // ARRANGE: preparar un libro activo.
+        Categoria categoria = mock(Categoria.class);
+        Editorial editorial = mock(Editorial.class);
+        Libro libro = mock(Libro.class);
+
+        when(libro.getId()).thenReturn(1L);
+        when(libro.getTitulo()).thenReturn("Libro sin formatos");
+        when(libro.getCategoria()).thenReturn(categoria);
+        when(libro.getEditorial()).thenReturn(editorial);
+        when(libro.getAutores()).thenReturn(new HashSet<>());
+
+        when(categoria.getNombre()).thenReturn("Terror");
+        when(editorial.getNombre()).thenReturn("Editorial de prueba");
+
+        when(libroRepository.findByActivoTrue())
+                .thenReturn(List.of(libro));
+
+        // No existen presentaciones comerciales registradas.
+        when(formatoLibroRepository.listarFormatosDeLibrosActivos())
+                .thenReturn(List.of());
+
+        // Tampoco existen registros de inventario físico.
+        when(itemStockRepository.listarConFormatoLibro())
+                .thenReturn(List.of());
+
+        // ACT: construir el catálogo público.
+        List<LibroCatalogoDTO> resultado =
+                libroService.listarCatalogoPublico();
+
+        // ASSERT: el libro permanece visible.
+        assertEquals(1, resultado.size());
+
+        LibroCatalogoDTO tarjeta = resultado.get(0);
+
+        assertEquals("Libro sin formatos", tarjeta.libro().titulo());
+        assertNull(tarjeta.precioDesde());
+        assertFalse(tarjeta.disponible());
+
+        // Confirmar el uso de consultas agrupadas.
+        verify(formatoLibroRepository).listarFormatosDeLibrosActivos();
+        verify(itemStockRepository).listarConFormatoLibro();
+    }
+
+    /**
+     * Comprueba que el catálogo público devuelva una lista vacía
+     * cuando no existen libros activos.
+     *
+     * No deben generarse tarjetas comerciales ficticias,
+     * incluso si existen formatos o inventarios registrados.
+     */
+    @Test
+    void listarCatalogoPublico_sinLibrosActivos_debeRetornarListaVacia() {
+
+        // ARRANGE: no existen libros visibles para el público.
+        when(libroRepository.findByActivoTrue())
+                .thenReturn(List.of());
+
+        // Las consultas agrupadas tampoco encuentran datos públicos.
+        when(formatoLibroRepository.listarFormatosDeLibrosActivos())
+                .thenReturn(List.of());
+
+        when(itemStockRepository.listarConFormatoLibro())
+                .thenReturn(List.of());
+
+        // ACT: consultar el catálogo público.
+        List<LibroCatalogoDTO> resultado =
+                libroService.listarCatalogoPublico();
+
+        // ASSERT: no deben generarse tarjetas.
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        // Confirmar que se consultaron los datos agrupados.
+        verify(libroRepository).findByActivoTrue();
+        verify(formatoLibroRepository).listarFormatosDeLibrosActivos();
+        verify(itemStockRepository).listarConFormatoLibro();
     }
 
 }

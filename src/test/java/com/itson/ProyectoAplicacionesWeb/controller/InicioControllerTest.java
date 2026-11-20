@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.Model;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,25 +47,33 @@ class InicioControllerTest {
 
     /**
      * Comprueba que la página principal reciba los libros activos
-     * y devuelva el nombre de la plantilla correspondiente.
+     * con su resumen comercial y devuelva la plantilla correspondiente.
      */
     @Test
     void mostrarInicio_entregaLibrosPublicosYRetornaIndex() {
 
-        // ARRANGE: simular el listado devuelto por el servicio.
-        List<LibroPublicoDTO> libros = List.of(
-                new LibroPublicoDTO(
-                        1L,
-                        "Drácula",
-                        "Novela de terror",
-                        null,
-                        "Terror",
-                        "Editorial de prueba",
-                        List.of("Bram Stoker")
+        // ARRANGE: preparar la información bibliográfica.
+        LibroPublicoDTO libro = new LibroPublicoDTO(
+                1L,
+                "Drácula",
+                "Novela de terror",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("Bram Stoker")
+        );
+
+        // Preparar la tarjeta con su precio inicial y disponibilidad.
+        List<LibroCatalogoDTO> libros = List.of(
+                new LibroCatalogoDTO(
+                        libro,
+                        new BigDecimal("249.00"),
+                        true
                 )
         );
 
-        when(libroService.listarLibrosPublicos())
+        // Simular la respuesta del nuevo servicio comercial.
+        when(libroService.listarCatalogoPublico())
                 .thenReturn(libros);
 
         // ACT: solicitar al controlador la página principal.
@@ -72,8 +82,9 @@ class InicioControllerTest {
         // ASSERT: verificar la plantilla y los datos proporcionados.
         assertEquals("index", vista);
 
-        verify(libroService).listarLibrosPublicos();
+        verify(libroService).listarCatalogoPublico();
         verify(model).addAttribute("libros", libros);
         verifyNoMoreInteractions(libroService, model);
     }
+
 }

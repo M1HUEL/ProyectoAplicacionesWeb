@@ -53,7 +53,6 @@
     </div>
   </section>
 
-
   <!--
     Libros activos recuperados desde la base de datos.
     InicioController proporciona la colección mediante LibroService.
@@ -69,32 +68,59 @@
     <!-- Presentar los libros públicos conservando los estilos existentes. -->
     <ul class="libros" th:unless="${#lists.isEmpty(libros)}">
 
-      <li class="libro" th:each="libro : ${libros}">
+      <li class="libro" th:each="tarjeta : ${libros}">
 
-        <!-- Portada y título del libro. -->
+        <!-- Portada del libro y alternativa cuando no existe imagen. -->
         <div class="portada">
-          <img th:if="${libro.portadaUrl != null and !#strings.isEmpty(libro.portadaUrl)}"
-               th:src="${libro.portadaUrl}"
-               th:alt="|Portada de ${libro.titulo}|"
+          <img th:if="${tarjeta.libro.portadaUrl != null
+                 and !#strings.isEmpty(tarjeta.libro.portadaUrl)}"
+               th:src="${tarjeta.libro.portadaUrl}"
+               th:alt="|Portada de ${tarjeta.libro.titulo}|"
                loading="lazy" />
 
-          <span th:unless="${libro.portadaUrl != null and !#strings.isEmpty(libro.portadaUrl)}">
-          PORTADA
-        </span>
+          <span th:unless="${tarjeta.libro.portadaUrl != null
+                      and !#strings.isEmpty(tarjeta.libro.portadaUrl)}">
+      PORTADA
+    </span>
         </div>
 
-        <h3 th:text="${libro.titulo}">Título del libro</h3>
+        <!-- Información bibliográfica pública. -->
+        <h3 th:text="${tarjeta.libro.titulo}">
+          Título del libro
+        </h3>
 
-        <!-- Autores asociados al libro. -->
         <p class="autor"
-           th:text="${#strings.listJoin(libro.autores, ', ')}">
+           th:text="${#strings.listJoin(tarjeta.libro.autores, ', ')}">
           Autor
         </p>
 
-        <!-- Categoría bibliográfica. -->
-        <p th:text="${libro.categoria}">
+        <p th:text="${tarjeta.libro.categoria}">
           Categoría
         </p>
+
+        <!--
+          Resumen comercial calculado previamente por LibroService.
+          La vista únicamente presenta los valores recibidos.
+        -->
+        <div class="informacion-comercial">
+
+          <!-- Mostrar el menor precio disponible del libro. -->
+          <p th:if="${tarjeta.disponible}">
+            Desde
+
+            <strong th:with="precioFormateado=${#numbers.formatDecimal(tarjeta.precioDesde, 1, 'COMMA', 2, 'POINT')}"
+                    th:text="|$${precioFormateado} MXN|">
+              $149.00 MXN
+            </strong>
+
+          </p>
+
+          <!-- Mostrar agotado cuando ninguna presentación esté disponible. -->
+          <p th:unless="${tarjeta.disponible}">
+            Agotado
+          </p>
+
+        </div>
 
       </li>
 

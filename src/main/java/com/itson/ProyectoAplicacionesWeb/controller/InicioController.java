@@ -44,10 +44,12 @@ public class InicioController {
     @GetMapping("/")
     public String mostrarInicio(Model model) {
 
-        // Recuperar los libros visibles para el catálogo público.
+        // Recuperar los libros activos con su resumen comercial.
+        // LibroService calcula el menor precio disponible
+        // y determina si cada libro puede ofrecerse.
         model.addAttribute(
                 "libros",
-                libroService.listarLibrosPublicos()
+                libroService.listarCatalogoPublico()
         );
 
         // Presentar la página principal de la librería.

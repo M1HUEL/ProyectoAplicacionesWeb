@@ -1,0 +1,172 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title th:text="|${libro.titulo} - Librería Raudskinna|">
+        Detalle del libro - Librería Raudskinna
+    </title>
+
+    <!-- Reutilizar los estilos públicos de la librería. -->
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+
+<body>
+
+<!-- Cabecera compartida de las vistas públicas. -->
+<th:block th:replace="~{fragments/header :: header('catalogo')}">
+</th:block>
+
+<main class="contenedor">
+
+    <!-- Navegación hacia la página principal. -->
+    <section class="seccion">
+        <a th:href="@{/}">← Volver al inicio</a>
+    </section>
+
+    <!-- Información bibliográfica del libro. -->
+    <section class="seccion detalle">
+
+        <div class="detalle-portada">
+
+            <!-- Mostrar la portada cuando exista una URL registrada. -->
+            <div class="portada">
+                <img th:if="${libro.portadaUrl != null
+                             and !#strings.isEmpty(libro.portadaUrl)}"
+                     th:src="${libro.portadaUrl}"
+                     th:alt="|Portada de ${libro.titulo}|"
+                     loading="lazy" />
+
+                <span th:unless="${libro.portadaUrl != null
+                                  and !#strings.isEmpty(libro.portadaUrl)}">
+                    PORTADA
+                </span>
+            </div>
+
+        </div>
+
+        <div class="detalle-info">
+
+            <h1 th:text="${libro.titulo}">
+                Título del libro
+            </h1>
+
+            <!-- Autores asociados al libro. -->
+            <p class="detalle-autor"
+               th:text="${#strings.listJoin(libro.autores, ', ')}">
+                Autor
+            </p>
+
+            <p>
+                <strong>Categoría:</strong>
+                <span th:text="${libro.categoria}">Categoría</span>
+            </p>
+
+            <p>
+                <strong>Editorial:</strong>
+                <span th:text="${libro.editorial}">Editorial</span>
+            </p>
+
+            <h2>Sinopsis</h2>
+
+            <p th:if="${libro.sinopsis != null
+                       and !#strings.isEmpty(libro.sinopsis)}"
+               th:text="${libro.sinopsis}">
+                Sinopsis del libro.
+            </p>
+
+            <p th:unless="${libro.sinopsis != null
+                           and !#strings.isEmpty(libro.sinopsis)}">
+                Sinopsis no disponible.
+            </p>
+
+        </div>
+
+    </section>
+
+    <!-- Información comercial proporcionada por LibroService. -->
+    <section class="seccion">
+
+        <h2>Presentaciones comerciales</h2>
+
+        <!-- Informar cuando todavía no existen formatos registrados. -->
+        <p th:if="${#lists.isEmpty(formatos)}">
+            Este libro todavía no tiene presentaciones comerciales registradas.
+        </p>
+
+        <ul class="formatos-libro"
+            th:unless="${#lists.isEmpty(formatos)}">
+
+            <li class="formato-libro"
+                th:each="presentacion : ${formatos}">
+
+                <!-- Mostrar el nombre comercial de cada formato. -->
+                <h3 th:switch="${presentacion.formato.name()}">
+
+                    <span th:case="'PASTA_DURA'">
+                        Pasta dura
+                    </span>
+
+                    <span th:case="'PASTA_BLANDA'">
+                        Pasta blanda
+                    </span>
+
+                    <span th:case="'DIGITAL'">
+                        Digital
+                    </span>
+
+                    <span th:case="*"
+                          th:text="${presentacion.formato}">
+                        Otro formato
+                    </span>
+
+                </h3>
+
+                <!-- Presentar el precio utilizando el formato monetario mexicano. -->
+                <p>
+                    <strong th:with="precioFormateado=${#numbers.formatDecimal(presentacion.precio, 1, 'COMMA', 2, 'POINT')}"
+                            th:text="|$${precioFormateado} MXN|">
+                        $350.00 MXN
+                    </strong>
+                </p>
+
+                <!--
+                    La disponibilidad se determina en LibroService.
+                    Thymeleaf únicamente presenta el resultado.
+                -->
+                <p class="formato-disponible etiqueta-disponible"
+                   th:if="${presentacion.disponible}">
+                    Disponible
+                </p>
+
+                <p class="formato-agotado etiqueta-agotado"
+                   th:unless="${presentacion.disponible}">
+                    Agotado
+                </p>
+
+            </li>
+
+        </ul>
+
+    </section>
+
+</main>
+
+<!-- Pie de página de Librería Raudskinna. -->
+<footer class="pie">
+    <div class="contenedor">
+        <span>Librería Raudskinna</span>
+
+        <nav aria-label="Pie de página">
+            <a th:href="@{/}">Inicio</a> ·
+            <a th:href="@{/catalogo}">Catálogo</a> ·
+            <a th:href="@{/carrito}">Carrito</a>
+        </nav>
+    </div>
+</footer>
+
+</body>
+</html>

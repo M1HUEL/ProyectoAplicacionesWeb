@@ -92,6 +92,16 @@ class InicioControllerIntegrationTest {
                 ))
                 .andExpect(content().string(
                         containsString("249.00")
+                ))
+
+                // Verificar el enlace dinámico hacia el detalle del libro.
+                .andExpect(content().string(
+                        containsString("href=\"/detalle-libro/1\"")
+                ))
+
+                // Verificar que se presente la opción de navegación.
+                .andExpect(content().string(
+                        containsString("Ver detalle")
                 ));
 
         // Verificar que el controlador consultó el servicio comercial.

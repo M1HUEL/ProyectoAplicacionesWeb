@@ -180,6 +180,15 @@ public class SecurityConfig {
                                 "/api/libros/*"
                         ).permitAll()
 
+                        // Consulta pública del detalle de libros.
+                        // Permite que cualquier visitante conozca
+                        // los formatos, precios y disponibilidad
+                        // sin necesidad de iniciar sesión.
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/detalle-libro/*"
+                        ).permitAll()
+
                         // La gestión de usuarios es exclusiva de administradores.
                         // Estas rutas no forman parte de /admin, por lo que
                         // necesitan una regla explícita.

@@ -115,12 +115,24 @@
 
           </p>
 
+
           <!-- Mostrar agotado cuando ninguna presentación esté disponible. -->
           <p th:unless="${tarjeta.disponible}">
             Agotado
           </p>
 
         </div>
+
+        <!--
+          Permite consultar el detalle bibliográfico y comercial del libro.
+          El enlace permanece disponible incluso cuando el libro está agotado.
+
+          Thymeleaf construye la URL utilizando el identificador del libro.
+        -->
+        <a class="boton boton-primario"
+           th:href="@{/detalle-libro/{id}(id=${tarjeta.libro.id})}">
+          Ver detalle
+        </a>
 
       </li>
 

@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import com.itson.ProyectoAplicacionesWeb.dto.CatalogoPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
@@ -300,8 +301,17 @@ class CatalogoControllerIntegrationTest {
         );
 
         // Simular la respuesta del servicio.
-        when(libroService.buscarCatalogoPublico(null))
-                .thenReturn(libros);
+        // Preparar los resultados y las opciones dinámicas.
+        CatalogoPublicoDTO catalogo = new CatalogoPublicoDTO(
+                libros,
+                List.of("Terror"),
+                List.of("Bram Stoker", "H. P. Lovecraft")
+        );
+
+        // Simular la consulta del catálogo público.
+        when(libroService.consultarCatalogoPublico(
+                null, null, null, "relevancia"
+        )).thenReturn(catalogo);
 
         // ACT y ASSERT: consultar el catálogo sin autenticación.
         mockMvc.perform(get("/catalogo"))
@@ -344,7 +354,9 @@ class CatalogoControllerIntegrationTest {
                 ));
 
         // Confirmar la consulta realizada al servicio.
-        verify(libroService).buscarCatalogoPublico(null);
+        verify(libroService).consultarCatalogoPublico(
+                null, null, null, "relevancia"
+        );
 
         verifyNoMoreInteractions(libroService);
     }
@@ -361,9 +373,17 @@ class CatalogoControllerIntegrationTest {
     void mostrarCatalogo_sinLibros_muestraMensajeInformativo()
             throws Exception {
 
-        // ARRANGE: simular un catálogo público vacío.
-        when(libroService.buscarCatalogoPublico(null))
-                .thenReturn(List.of());
+        // Preparar un catálogo sin libros ni opciones de filtrado.
+        CatalogoPublicoDTO catalogo = new CatalogoPublicoDTO(
+                List.of(),
+                List.of(),
+                List.of()
+        );
+
+        // Simular la consulta del catálogo vacío.
+        when(libroService.consultarCatalogoPublico(
+                null, null, null, "relevancia"
+        )).thenReturn(catalogo);
 
         // ACT y ASSERT: consultar el catálogo sin autenticación.
         mockMvc.perform(get("/catalogo"))
@@ -393,7 +413,9 @@ class CatalogoControllerIntegrationTest {
                 ));
 
         // Confirmar la consulta realizada al servicio.
-        verify(libroService).buscarCatalogoPublico(null);
+        verify(libroService).consultarCatalogoPublico(
+                null, null, null, "relevancia"
+        );
 
         verifyNoMoreInteractions(libroService);
     }
@@ -430,9 +452,17 @@ class CatalogoControllerIntegrationTest {
 
         List<LibroCatalogoDTO> libros = List.of(tarjeta);
 
-        // Simular los resultados proporcionados por LibroService.
-        when(libroService.buscarCatalogoPublico("Lovecraft"))
-                .thenReturn(libros);
+        // Preparar los resultados y las opciones de filtrado.
+        CatalogoPublicoDTO catalogo = new CatalogoPublicoDTO(
+                libros,
+                List.of("Terror"),
+                List.of("H. P. Lovecraft")
+        );
+
+        // Simular una búsqueda bibliográfica.
+        when(libroService.consultarCatalogoPublico(
+                "Lovecraft", null, null, "relevancia"
+        )).thenReturn(catalogo);
 
         // ACT y ASSERT: realizar una búsqueda sin autenticación.
         mockMvc.perform(
@@ -479,7 +509,9 @@ class CatalogoControllerIntegrationTest {
                 ));
 
         // Confirmar que el término llegó correctamente al servicio.
-        verify(libroService).buscarCatalogoPublico("Lovecraft");
+        verify(libroService).consultarCatalogoPublico(
+                "Lovecraft", null, null, "relevancia"
+        );
 
         verifyNoMoreInteractions(libroService);
     }
@@ -496,9 +528,18 @@ class CatalogoControllerIntegrationTest {
     void mostrarCatalogo_busquedaSinCoincidencias_muestraMensaje()
             throws Exception {
 
-        // ARRANGE: simular una búsqueda sin resultados.
-        when(libroService.buscarCatalogoPublico("Stephen King"))
-                .thenReturn(List.of());
+        // Preparar una búsqueda sin resultados, conservando
+// las opciones disponibles en el catálogo completo.
+        CatalogoPublicoDTO catalogo = new CatalogoPublicoDTO(
+                List.of(),
+                List.of("Terror"),
+                List.of("H. P. Lovecraft")
+        );
+
+        // Simular una búsqueda sin coincidencias.
+        when(libroService.consultarCatalogoPublico(
+                "Stephen King", null, null, "relevancia"
+        )).thenReturn(catalogo);
 
         // ACT y ASSERT: realizar la búsqueda sin autenticación.
         mockMvc.perform(
@@ -544,7 +585,9 @@ class CatalogoControllerIntegrationTest {
                 ));
 
         // Confirmar que el término llegó correctamente al servicio.
-        verify(libroService).buscarCatalogoPublico("Stephen King");
+        verify(libroService).consultarCatalogoPublico(
+                "Stephen King", null, null, "relevancia"
+        );
 
         verifyNoMoreInteractions(libroService);
     }

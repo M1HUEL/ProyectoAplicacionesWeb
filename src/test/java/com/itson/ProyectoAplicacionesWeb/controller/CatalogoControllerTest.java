@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import com.itson.ProyectoAplicacionesWeb.dto.CatalogoPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
@@ -193,25 +194,60 @@ class CatalogoControllerTest {
         // Preparar la colección del catálogo público.
         List<LibroCatalogoDTO> libros = List.of(tarjeta);
 
-        // Simular la respuesta de LibroService.
-        when(libroService.buscarCatalogoPublico(null))
-                .thenReturn(libros);
 
-        // ACT: solicitar el catálogo público.
-        String vista = catalogoController.mostrarCatalogo(null, model);
+        // Preparar las opciones dinámicas de filtrado.
+        List<String> categorias = List.of("Terror");
+        List<String> autores = List.of("H. P. Lovecraft");
+
+        // Agrupar los resultados y las opciones del catálogo.
+        CatalogoPublicoDTO catalogo = new CatalogoPublicoDTO(
+                libros,
+                categorias,
+                autores
+        );
+
+        // Simular la respuesta proporcionada por LibroService.
+        when(libroService.consultarCatalogoPublico(
+                null,
+                null,
+                null,
+                "relevancia"
+        )).thenReturn(catalogo);
+
+        // ACT: consultar el catálogo sin criterios bibliográficos.
+        String vista = catalogoController.mostrarCatalogo(
+                null,
+                null,
+                null,
+                "relevancia",
+                model
+        );
 
         // ASSERT: verificar la plantilla seleccionada.
         assertEquals("catalogo", vista);
 
-        // Confirmar que se realizó la consulta al servicio.
-        verify(libroService).buscarCatalogoPublico(null);
+        // Confirmar la delegación de la consulta a LibroService.
+        verify(libroService).consultarCatalogoPublico(
+                null,
+                null,
+                null,
+                "relevancia"
+        );
 
-        // Verificar los datos proporcionados a Thymeleaf.
+        // Verificar los resultados y opciones entregados a Thymeleaf.
         verify(model).addAttribute("libros", libros);
+        verify(model).addAttribute("categorias", categorias);
+        verify(model).addAttribute("autores", autores);
+
+        // Verificar los criterios conservados en el modelo.
         verify(model).addAttribute("busqueda", null);
+        verify(model).addAttribute("categoria", null);
+        verify(model).addAttribute("autor", null);
+        verify(model).addAttribute("orden", "relevancia");
 
         // El controlador no debe realizar operaciones adicionales.
         verifyNoMoreInteractions(libroService, model);
+
     }
 
 }

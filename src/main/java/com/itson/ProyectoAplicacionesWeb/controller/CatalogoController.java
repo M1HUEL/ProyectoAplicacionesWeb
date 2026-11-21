@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.controller;
 
+import com.itson.ProyectoAplicacionesWeb.dto.CatalogoPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,20 +35,23 @@ public class CatalogoController {
         this.libroService = libroService;
     }
 
-
     /**
      * Presenta el catálogo público de Librería Raudskinna.
      *
-     * Permite consultar todos los libros activos o realizar
-     * búsquedas mediante coincidencias en el título o autor.
+     * Permite realizar búsquedas bibliográficas, aplicar
+     * filtros por categoría y autor, y ordenar los
+     * resultados mediante diferentes criterios.
      *
-     * La lógica de búsqueda, los precios y la disponibilidad
-     * comercial permanecen en LibroService.
+     * Las opciones dinámicas de filtrado se obtienen
+     * del catálogo público completo.
      *
-     * GET /catalogo
-     * GET /catalogo?busqueda=termino
+     * Toda la lógica de búsqueda, filtrado y ordenamiento
+     * permanece centralizada en LibroService.
      *
-     * @param busqueda término opcional introducido por el visitante.
+     * @param busqueda término opcional de búsqueda.
+     * @param categoria categoría seleccionada.
+     * @param autor autor seleccionado.
+     * @param orden criterio de ordenamiento seleccionado.
      * @param model modelo que transporta los datos a Thymeleaf.
      * @return nombre de la plantilla del catálogo público.
      */
@@ -55,16 +59,39 @@ public class CatalogoController {
     public String mostrarCatalogo(
             @RequestParam(name = "busqueda", required = false)
             String busqueda,
+
+            @RequestParam(name = "categoria", required = false)
+            String categoria,
+
+            @RequestParam(name = "autor", required = false)
+            String autor,
+
+            @RequestParam(name = "orden", defaultValue = "relevancia")
+            String orden,
+
             Model model) {
 
-        // Recuperar el catálogo aplicando el término de búsqueda.
-        model.addAttribute(
-                "libros",
-                libroService.buscarCatalogoPublico(busqueda)
-        );
+        // Consultar los resultados y las opciones de filtrado.
+        CatalogoPublicoDTO catalogo =
+                libroService.consultarCatalogoPublico(
+                        busqueda,
+                        categoria,
+                        autor,
+                        orden
+                );
 
-        // Conservar el término introducido por el visitante.
+        // Transportar los libros filtrados y ordenados.
+        model.addAttribute("libros", catalogo.libros());
+
+        // Transportar las opciones dinámicas de filtrado.
+        model.addAttribute("categorias", catalogo.categorias());
+        model.addAttribute("autores", catalogo.autores());
+
+        // Conservar los criterios seleccionados por el visitante.
         model.addAttribute("busqueda", busqueda);
+        model.addAttribute("categoria", categoria);
+        model.addAttribute("autor", autor);
+        model.addAttribute("orden", orden);
 
         // Presentar la página del catálogo público.
         return "catalogo";

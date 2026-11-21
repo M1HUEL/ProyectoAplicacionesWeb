@@ -1,10 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
-import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.*;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,10 +11,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -2246,6 +2240,1240 @@ class LibroServiceTest {
 
         // Confirmar una consulta por cada búsqueda.
         verify(servicioSpy, times(2)).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público pueda filtrarse
+     * mediante una categoría específica.
+     *
+     * El filtro debe conservar tanto los libros disponibles
+     * como los agotados que pertenezcan a dicha categoría.
+     *
+     * La comparación no distingue entre mayúsculas
+     * y minúsculas y admite espacios exteriores.
+     */
+    @Test
+    void filtrarCatalogoPublico_porCategoria_debeRetornarCoincidencias() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar por categoría sin término de búsqueda.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        "  TERROR  "
+                );
+
+        // ASSERT: deben recuperarse dos libros.
+        assertNotNull(resultado);
+        assertEquals(2, resultado.size());
+
+        // Comprobar que todos pertenecen a la categoría solicitada.
+        assertTrue(resultado.stream()
+                .allMatch(tarjeta ->
+                        "Terror".equals(tarjeta.libro().categoria())
+                ));
+
+        // Confirmar la presencia del libro disponible.
+        assertEquals(catalogo.get(0), resultado.get(0));
+        assertTrue(resultado.get(0).disponible());
+
+        // Confirmar que el libro agotado permanece visible.
+        assertEquals(catalogo.get(1), resultado.get(1));
+        assertFalse(resultado.get(1).disponible());
+        assertNull(resultado.get(1).precioDesde());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy, times(1)).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el filtrado por una categoría
+     * inexistente devuelva una colección vacía.
+     *
+     * La ausencia de coincidencias representa un
+     * resultado válido y no un error del sistema.
+     */
+    @Test
+    void filtrarCatalogoPublico_categoriaInexistente_debeRetornarListaVacia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar por una categoría inexistente.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        "Ciencia ficción"
+                );
+
+        // ASSERT: debe devolverse una colección válida pero vacía.
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que la ausencia de criterios de búsqueda
+     * y categoría permita consultar el catálogo completo.
+     *
+     * No deben excluirse libros por su categoría
+     * ni por su disponibilidad comercial.
+     */
+    @Test
+    void filtrarCatalogoPublico_categoriaNula_debeRetornarCatalogoCompleto() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: consultar sin criterios de filtrado.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(null, null);
+
+        // ASSERT: debe conservarse el catálogo completo.
+        assertNotNull(resultado);
+        assertEquals(catalogo, resultado);
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que una categoría vacía o compuesta
+     * únicamente por espacios no restrinja los resultados
+     * del catálogo público.
+     *
+     * Ambos valores deben interpretarse como ausencia
+     * del criterio de filtrado por categoría.
+     */
+    @Test
+    void filtrarCatalogoPublico_categoriaVacia_debeRetornarCatalogoCompleto() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: realizar consultas con categorías vacías.
+        List<LibroCatalogoDTO> resultadoVacio =
+                servicioSpy.filtrarCatalogoPublico(null, "");
+
+        List<LibroCatalogoDTO> resultadoEspacios =
+                servicioSpy.filtrarCatalogoPublico(null, "   ");
+
+        // ASSERT: ambos resultados deben conservar el catálogo.
+        assertEquals(catalogo, resultadoVacio);
+        assertEquals(catalogo, resultadoEspacios);
+
+        // Confirmar una recuperación por cada consulta.
+        verify(servicioSpy, times(2)).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público permita combinar
+     * un término de búsqueda con una categoría específica.
+     *
+     * El libro debe satisfacer ambos criterios para
+     * formar parte de los resultados.
+     */
+    @Test
+    void filtrarCatalogoPublico_criteriosCompatibles_debeRetornarCoincidencia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: combinar una búsqueda por autor y categoría.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        "Lovecraft",
+                        "Terror"
+                );
+
+        // ASSERT: únicamente debe recuperarse un libro.
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+
+        // Confirmar que se conserva toda su información.
+        assertEquals(catalogo.get(0), resultado.get(0));
+
+        assertEquals(
+                "La llamada de Cthulhu",
+                resultado.get(0).libro().titulo()
+        );
+
+        assertEquals(
+                "Terror",
+                resultado.get(0).libro().categoria()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que la combinación de criterios
+     * incompatibles devuelva una colección vacía.
+     *
+     * Aunque existan coincidencias individuales,
+     * ningún libro debe incluirse si no satisface
+     * todos los criterios proporcionados.
+     */
+    @Test
+    void filtrarCatalogoPublico_criteriosIncompatibles_debeRetornarListaVacia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: combinar criterios bibliográficos incompatibles.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        "Lovecraft",
+                        "Fantasía"
+                );
+
+        // ASSERT: ningún libro debe satisfacer ambos criterios.
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público pueda filtrarse
+     * mediante un autor específico.
+     *
+     * La comparación debe realizarse utilizando el nombre
+     * completo del autor, sin distinguir entre mayúsculas
+     * y minúsculas y admitiendo espacios exteriores.
+     *
+     * Debe conservarse toda la información bibliográfica
+     * y comercial del libro encontrado.
+     */
+    @Test
+    void filtrarCatalogoPublico_porAutor_debeRetornarCoincidencias() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar únicamente por autor.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        "  H. P. LOVECRAFT  "
+                );
+
+        // ASSERT: únicamente debe recuperarse un libro.
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+
+        // Confirmar que se conserva toda su información.
+        assertEquals(catalogo.get(0), resultado.get(0));
+
+        // Verificar la información bibliográfica.
+        assertEquals(
+                "La llamada de Cthulhu",
+                resultado.get(0).libro().titulo()
+        );
+
+        assertTrue(resultado.get(0).libro().autores()
+                .contains("H. P. Lovecraft"));
+
+        // Verificar la información comercial.
+        assertTrue(resultado.get(0).disponible());
+
+        assertEquals(
+                new BigDecimal("350.00"),
+                resultado.get(0).precioDesde()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el filtrado por un autor inexistente
+     * devuelva una colección vacía.
+     *
+     * La ausencia de coincidencias representa un
+     * resultado válido y no un error del sistema.
+     */
+    @Test
+    void filtrarCatalogoPublico_autorInexistente_debeRetornarListaVacia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar por un autor inexistente.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        "Stephen King"
+                );
+
+        // ASSERT: debe devolverse una colección válida pero vacía.
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el filtro por autor requiera una
+     * coincidencia completa con el nombre registrado.
+     *
+     * A diferencia del buscador bibliográfico, el filtro
+     * por autor no debe admitir coincidencias parciales.
+     */
+    @Test
+    void filtrarCatalogoPublico_autorParcial_debeRetornarListaVacia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar utilizando únicamente el apellido.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        "Lovecraft"
+                );
+
+        // ASSERT: no deben admitirse coincidencias parciales.
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el filtrado por autor conserve
+     * los libros que no tienen disponibilidad comercial.
+     *
+     * La ausencia de existencias no debe impedir
+     * que un libro activo aparezca en el catálogo.
+     */
+    @Test
+    void filtrarCatalogoPublico_porAutor_debeConservarLibroAgotado() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar por el autor de un libro agotado.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        "Bram Stoker"
+                );
+
+        // ASSERT: debe recuperarse el libro agotado.
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+
+        // Confirmar que se conserva toda su información.
+        assertEquals(catalogo.get(1), resultado.get(0));
+
+        assertEquals(
+                "Drácula",
+                resultado.get(0).libro().titulo()
+        );
+
+        // Verificar su información comercial.
+        assertFalse(resultado.get(0).disponible());
+        assertNull(resultado.get(0).precioDesde());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que un autor nulo, vacío o compuesto
+     * únicamente por espacios no restrinja los
+     * resultados del catálogo público.
+     *
+     * Los tres valores deben interpretarse como
+     * ausencia del criterio de filtrado por autor.
+     */
+    @Test
+    void filtrarCatalogoPublico_autorSinContenido_debeRetornarCatalogoCompleto() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: realizar consultas sin un autor específico.
+        List<LibroCatalogoDTO> resultadoNulo =
+                servicioSpy.filtrarCatalogoPublico(
+                        null, null, null
+                );
+
+        List<LibroCatalogoDTO> resultadoVacio =
+                servicioSpy.filtrarCatalogoPublico(
+                        null, null, ""
+                );
+
+        List<LibroCatalogoDTO> resultadoEspacios =
+                servicioSpy.filtrarCatalogoPublico(
+                        null, null, "   "
+                );
+
+        // ASSERT: deben conservarse todos los libros.
+        assertEquals(catalogo, resultadoNulo);
+        assertEquals(catalogo, resultadoVacio);
+        assertEquals(catalogo, resultadoEspacios);
+
+        // Confirmar una recuperación por cada consulta.
+        verify(servicioSpy, times(3)).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el filtrado por autor considere
+     * todos los autores asociados a un libro.
+     *
+     * Un libro escrito por múltiples autores debe
+     * aparecer cuando cualquiera de ellos sea
+     * seleccionado como criterio de filtrado.
+     */
+    @Test
+    void filtrarCatalogoPublico_multiplesAutores_debeRetornarCoincidencias() {
+
+        // ARRANGE: preparar un libro con múltiples autores.
+        LibroPublicoDTO libro = new LibroPublicoDTO(
+                4L,
+                "El superviviente",
+                "Relato de terror cósmico.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of(
+                        "H. P. Lovecraft",
+                        "August Derleth"
+                )
+        );
+
+        // Preparar su información comercial.
+        LibroCatalogoDTO tarjeta = new LibroCatalogoDTO(
+                libro,
+                new BigDecimal("280.00"),
+                true
+        );
+
+        List<LibroCatalogoDTO> catalogo = List.of(tarjeta);
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar por cada uno de los autores asociados.
+        List<LibroCatalogoDTO> resultadoPrimerAutor =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        "H. P. Lovecraft"
+                );
+
+        List<LibroCatalogoDTO> resultadoSegundoAutor =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        "August Derleth"
+                );
+
+        // ASSERT: ambos autores deben conducir al mismo libro.
+        assertEquals(catalogo, resultadoPrimerAutor);
+        assertEquals(catalogo, resultadoSegundoAutor);
+
+        // Confirmar una recuperación por cada consulta.
+        verify(servicioSpy, times(2)).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público permita combinar
+     * simultáneamente los tres criterios de filtrado:
+     *
+     * - Término de búsqueda.
+     * - Categoría seleccionada.
+     * - Autor seleccionado.
+     *
+     * El libro debe satisfacer todos los criterios
+     * para formar parte de los resultados.
+     */
+    @Test
+    void filtrarCatalogoPublico_tresCriteriosCompatibles_debeRetornarCoincidencia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: combinar los tres criterios de filtrado.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        "Cthulhu",
+                        "Terror",
+                        "H. P. Lovecraft"
+                );
+
+        // ASSERT: únicamente debe recuperarse un libro.
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+
+        // Confirmar que se conserva toda su información.
+        assertEquals(catalogo.get(0), resultado.get(0));
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que la combinación de tres criterios
+     * incompatibles devuelva una colección vacía.
+     *
+     * Aunque un libro satisfaga dos de los criterios,
+     * no debe incluirse si incumple el tercero.
+     */
+    @Test
+    void filtrarCatalogoPublico_tresCriteriosIncompatibles_debeRetornarListaVacia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: combinar criterios incompatibles.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        "Cthulhu",
+                        "Terror",
+                        "Bram Stoker"
+                );
+
+        // ASSERT: ningún libro satisface los tres criterios.
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público pueda ordenarse
+     * por precio de menor a mayor.
+     *
+     * Los libros sin precio disponible deben permanecer
+     * al final de los resultados.
+     *
+     * La colección original no debe modificarse.
+     */
+    @Test
+    void filtrarCatalogoPublico_precioAscendente_debeOrdenarResultados() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: ordenar por precio de menor a mayor.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        null,
+                        "precio-asc"
+                );
+
+        // ASSERT: comprobar el orden comercial esperado.
+        assertEquals(
+                List.of(
+                        catalogo.get(2), // El Hobbit: $299.00
+                        catalogo.get(0), // Cthulhu: $350.00
+                        catalogo.get(1)  // Drácula: agotado
+                ),
+                resultado
+        );
+
+        // Confirmar que el libro agotado permanece al final.
+        assertNull(resultado.get(2).precioDesde());
+        assertFalse(resultado.get(2).disponible());
+
+        // Confirmar que la colección original no fue modificada.
+        assertEquals(
+                "La llamada de Cthulhu",
+                catalogo.get(0).libro().titulo()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público pueda ordenarse
+     * por precio de mayor a menor.
+     *
+     * Invertir el orden de los precios no debe provocar
+     * que los libros sin precio aparezcan al principio
+     * de los resultados.
+     */
+    @Test
+    void filtrarCatalogoPublico_precioDescendente_debeOrdenarResultados() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: ordenar por precio de mayor a menor.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        null,
+                        "precio-desc"
+                );
+
+        // ASSERT: comprobar el orden comercial esperado.
+        assertEquals(
+                List.of(
+                        catalogo.get(0), // Cthulhu: $350.00
+                        catalogo.get(2), // El Hobbit: $299.00
+                        catalogo.get(1)  // Drácula: agotado
+                ),
+                resultado
+        );
+
+        // Confirmar que el libro agotado permanece al final.
+        assertNull(resultado.get(2).precioDesde());
+        assertFalse(resultado.get(2).disponible());
+
+        // Confirmar que la colección original no fue modificada.
+        assertEquals(
+                "Drácula",
+                catalogo.get(1).libro().titulo()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público pueda ordenarse
+     * alfabéticamente mediante el título de los libros.
+     *
+     * La disponibilidad comercial no debe afectar
+     * la posición de los libros en este ordenamiento.
+     */
+    @Test
+    void filtrarCatalogoPublico_tituloAscendente_debeOrdenarResultados() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: ordenar alfabéticamente los títulos.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        null,
+                        "titulo-asc"
+                );
+
+        // ASSERT: comprobar el orden alfabético esperado.
+        assertEquals(
+                List.of(
+                        catalogo.get(1), // Drácula
+                        catalogo.get(2), // El Hobbit
+                        catalogo.get(0)  // La llamada de Cthulhu
+                ),
+                resultado
+        );
+
+        // Confirmar que la disponibilidad no afecta el orden.
+        assertFalse(resultado.get(0).disponible());
+        assertNull(resultado.get(0).precioDesde());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el criterio de ordenamiento por
+     * relevancia conserve el orden original del catálogo.
+     *
+     * No deben aplicarse comparadores comerciales
+     * ni alfabéticos cuando se selecciona esta opción.
+     */
+    @Test
+    void filtrarCatalogoPublico_relevancia_debeConservarOrdenOriginal() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: consultar utilizando el orden predeterminado.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        null,
+                        null,
+                        "relevancia"
+                );
+
+        // ASSERT: debe conservarse el contenido y orden original.
+        assertNotNull(resultado);
+        assertEquals(catalogo, resultado);
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que los criterios de ordenamiento nulos,
+     * vacíos, compuestos por espacios o desconocidos
+     * conserven el orden original del catálogo público.
+     *
+     * Un criterio no reconocido no debe provocar
+     * excepciones ni modificar los resultados.
+     */
+    @Test
+    void filtrarCatalogoPublico_ordenNoReconocido_debeConservarOrdenOriginal() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: consultar utilizando diferentes criterios inválidos.
+        List<LibroCatalogoDTO> resultadoNulo =
+                servicioSpy.filtrarCatalogoPublico(
+                        null, null, null, null
+                );
+
+        List<LibroCatalogoDTO> resultadoVacio =
+                servicioSpy.filtrarCatalogoPublico(
+                        null, null, null, ""
+                );
+
+        List<LibroCatalogoDTO> resultadoEspacios =
+                servicioSpy.filtrarCatalogoPublico(
+                        null, null, null, "   "
+                );
+
+        List<LibroCatalogoDTO> resultadoDesconocido =
+                servicioSpy.filtrarCatalogoPublico(
+                        null, null, null, "orden-inexistente"
+                );
+
+        // ASSERT: todas las consultas deben conservar el orden.
+        assertEquals(catalogo, resultadoNulo);
+        assertEquals(catalogo, resultadoVacio);
+        assertEquals(catalogo, resultadoEspacios);
+        assertEquals(catalogo, resultadoDesconocido);
+
+        // Confirmar una recuperación por cada consulta.
+        verify(servicioSpy, times(4)).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que el catálogo público permita combinar
+     * criterios de filtrado y ordenamiento.
+     *
+     * El ordenamiento debe aplicarse únicamente sobre
+     * los libros que satisfacen los criterios bibliográficos.
+     *
+     * También verifica la normalización del criterio
+     * de ordenamiento seleccionado.
+     */
+    @Test
+    void filtrarCatalogoPublico_categoriaYOrden_debeRetornarResultadosOrdenados() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: combinar categoría y ordenamiento alfabético.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.filtrarCatalogoPublico(
+                        null,
+                        "Terror",
+                        null,
+                        "  TITULO-ASC  "
+                );
+
+        // ASSERT: comprobar el contenido y orden esperado.
+        assertNotNull(resultado);
+
+        assertEquals(
+                List.of(
+                        catalogo.get(1), // Drácula
+                        catalogo.get(0)  // La llamada de Cthulhu
+                ),
+                resultado
+        );
+
+        // Confirmar que El Hobbit fue excluido por el filtro.
+        assertFalse(resultado.contains(catalogo.get(2)));
+
+        // Confirmar que todos pertenecen a la categoría solicitada.
+        assertTrue(resultado.stream()
+                .allMatch(tarjeta ->
+                        "Terror".equals(tarjeta.libro().categoria())
+                ));
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que la consulta del catálogo público
+     * genere dinámicamente las opciones de filtrado.
+     *
+     * Las categorías y autores deben presentarse
+     * sin duplicados exactos y en orden alfabético.
+     *
+     * También verifica que el catálogo completo
+     * se recupere una sola vez.
+     */
+    @Test
+    void consultarCatalogoPublico_sinCriterios_debeGenerarOpciones() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: consultar el catálogo sin criterios de filtrado.
+        CatalogoPublicoDTO resultado =
+                servicioSpy.consultarCatalogoPublico(
+                        null,
+                        null,
+                        null,
+                        null
+                );
+
+        // ASSERT: verificar el DTO generado.
+        assertNotNull(resultado);
+
+        // Deben conservarse todos los libros.
+        assertEquals(catalogo, resultado.libros());
+
+        // Verificar las categorías únicas y ordenadas.
+        assertEquals(
+                List.of("Fantasía", "Terror"),
+                resultado.categorias()
+        );
+
+        // Verificar los autores ordenados alfabéticamente.
+        assertEquals(
+                List.of(
+                        "Bram Stoker",
+                        "H. P. Lovecraft",
+                        "J. R. R. Tolkien"
+                ),
+                resultado.autores()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy, times(1)).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que las opciones de filtrado se obtengan
+     * del catálogo público completo y no únicamente
+     * de los libros que satisfacen los criterios.
+     *
+     * Seleccionar una categoría no debe provocar que
+     * desaparezcan las demás categorías o autores
+     * de las listas desplegables.
+     */
+    @Test
+    void consultarCatalogoPublico_conFiltros_debeConservarOpcionesCompletas() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: filtrar por Terror y ordenar alfabéticamente.
+        CatalogoPublicoDTO resultado =
+                servicioSpy.consultarCatalogoPublico(
+                        null,
+                        "Terror",
+                        null,
+                        "titulo-asc"
+                );
+
+        // ASSERT: verificar el DTO generado.
+        assertNotNull(resultado);
+
+        // Verificar los libros filtrados y ordenados.
+        assertEquals(
+                List.of(
+                        catalogo.get(1), // Drácula
+                        catalogo.get(0)  // La llamada de Cthulhu
+                ),
+                resultado.libros()
+        );
+
+        // Ambas categorías deben permanecer disponibles.
+        assertEquals(
+                List.of("Fantasía", "Terror"),
+                resultado.categorias()
+        );
+
+        // Todos los autores deben permanecer disponibles.
+        assertEquals(
+                List.of(
+                        "Bram Stoker",
+                        "H. P. Lovecraft",
+                        "J. R. R. Tolkien"
+                ),
+                resultado.autores()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que una búsqueda sin coincidencias
+     * conserve las opciones dinámicas de filtrado.
+     *
+     * La ausencia de resultados no significa que
+     * el catálogo público esté vacío.
+     *
+     * El visitante debe conservar la posibilidad
+     * de seleccionar otras categorías y autores.
+     */
+    @Test
+    void consultarCatalogoPublico_sinCoincidencias_debeConservarOpciones() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: realizar una búsqueda sin coincidencias.
+        CatalogoPublicoDTO resultado =
+                servicioSpy.consultarCatalogoPublico(
+                        "Stephen King",
+                        null,
+                        null,
+                        null
+                );
+
+        // ASSERT: verificar el DTO generado.
+        assertNotNull(resultado);
+
+        // No deben existir libros coincidentes.
+        assertNotNull(resultado.libros());
+        assertTrue(resultado.libros().isEmpty());
+
+        // Las categorías deben permanecer disponibles.
+        assertEquals(
+                List.of("Fantasía", "Terror"),
+                resultado.categorias()
+        );
+
+        // Los autores deben permanecer disponibles.
+        assertEquals(
+                List.of(
+                        "Bram Stoker",
+                        "H. P. Lovecraft",
+                        "J. R. R. Tolkien"
+                ),
+                resultado.autores()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que las opciones dinámicas de filtrado
+     * consideren todos los autores asociados a cada libro.
+     *
+     * Los autores que aparezcan en múltiples libros
+     * deben incluirse una sola vez en las opciones.
+     *
+     * Las categorías tampoco deben duplicarse.
+     */
+    @Test
+    void consultarCatalogoPublico_autoresDuplicados_debeGenerarOpcionesUnicas() {
+
+        // ARRANGE: preparar un catálogo ampliable.
+        List<LibroCatalogoDTO> catalogo =
+                new ArrayList<>(prepararCatalogoDePrueba());
+
+        // Preparar un libro asociado a múltiples autores.
+        LibroPublicoDTO libro = new LibroPublicoDTO(
+                4L,
+                "El superviviente",
+                "Relato de terror cósmico.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of(
+                        "H. P. Lovecraft",
+                        "August Derleth"
+                )
+        );
+
+        // Incorporar el libro con su información comercial.
+        catalogo.add(
+                new LibroCatalogoDTO(
+                        libro,
+                        new BigDecimal("280.00"),
+                        true
+                )
+        );
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: consultar el catálogo completo.
+        CatalogoPublicoDTO resultado =
+                servicioSpy.consultarCatalogoPublico(
+                        null, null, null, null
+                );
+
+        // ASSERT: deben conservarse los cuatro libros.
+        assertNotNull(resultado);
+        assertEquals(catalogo, resultado.libros());
+        assertEquals(4, resultado.libros().size());
+
+        // Verificar las categorías únicas y ordenadas.
+        assertEquals(
+                List.of("Fantasía", "Terror"),
+                resultado.categorias()
+        );
+
+        // Verificar los autores únicos y ordenados.
+        assertEquals(
+                List.of(
+                        "August Derleth",
+                        "Bram Stoker",
+                        "H. P. Lovecraft",
+                        "J. R. R. Tolkien"
+                ),
+                resultado.autores()
+        );
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que un catálogo público completamente
+     * vacío genere un DTO válido.
+     *
+     * Las colecciones de libros, categorías y autores
+     * deben existir, aunque no contengan elementos.
+     *
+     * Esta condición no representa un error del sistema.
+     */
+    @Test
+    void consultarCatalogoPublico_catalogoVacio_debeRetornarColeccionesVacias() {
+
+        // ARRANGE: simular un catálogo sin libros registrados.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(List.of())
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: consultar el catálogo público.
+        CatalogoPublicoDTO resultado =
+                servicioSpy.consultarCatalogoPublico(
+                        null, null, null, null
+                );
+
+        // ASSERT: debe generarse un DTO válido.
+        assertNotNull(resultado);
+
+        // Verificar la colección de libros.
+        assertNotNull(resultado.libros());
+        assertTrue(resultado.libros().isEmpty());
+
+        // Verificar la colección de categorías.
+        assertNotNull(resultado.categorias());
+        assertTrue(resultado.categorias().isEmpty());
+
+        // Verificar la colección de autores.
+        assertNotNull(resultado.autores());
+        assertTrue(resultado.autores().isEmpty());
+
+        // Confirmar una sola recuperación del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
     }
 
 }

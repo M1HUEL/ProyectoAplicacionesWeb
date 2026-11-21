@@ -240,28 +240,382 @@ public class LibroService {
         String terminoNormalizado =
                 busqueda.toLowerCase(Locale.ROOT);
 
-        // Filtrar los libros por título o por cualquiera de sus autores.
+        // Reutilizar la lógica de coincidencias bibliográficas.
         return catalogo.stream()
-                .filter(tarjeta -> {
-
-                    LibroPublicoDTO libro = tarjeta.libro();
-
-                    // Comprobar coincidencias parciales en el título.
-                    boolean coincideTitulo = libro.titulo()
-                            .toLowerCase(Locale.ROOT)
-                            .contains(terminoNormalizado);
-
-                    // Comprobar coincidencias entre los autores asociados.
-                    boolean coincideAutor = libro.autores()
-                            .stream()
-                            .anyMatch(autor -> autor
-                                    .toLowerCase(Locale.ROOT)
-                                    .contains(terminoNormalizado));
-
-                    // Basta con que coincida el título o algún autor.
-                    return coincideTitulo || coincideAutor;
-                })
+                .filter(tarjeta -> coincideConBusqueda(
+                        tarjeta.libro(),
+                        terminoNormalizado
+                ))
                 .toList();
+    }
+
+    /**
+     * Determina si un libro coincide con el término
+     * de búsqueda normalizado.
+     *
+     * Las coincidencias pueden ser parciales y se evalúan
+     * sobre el título y cualquiera de los autores asociados.
+     *
+     * La comparación no distingue entre mayúsculas
+     * y minúsculas.
+     *
+     * @param libro información bibliográfica del libro.
+     * @param terminoNormalizado término previamente
+     *                           convertido a minúsculas.
+     * @return true si coincide el título o algún autor.
+     */
+    private boolean coincideConBusqueda(
+            LibroPublicoDTO libro,
+            String terminoNormalizado) {
+
+        // Comprobar coincidencias parciales en el título.
+        boolean coincideTitulo = libro.titulo()
+                .toLowerCase(Locale.ROOT)
+                .contains(terminoNormalizado);
+
+        // Comprobar coincidencias entre los autores asociados.
+        boolean coincideAutor = libro.autores()
+                .stream()
+                .anyMatch(autor -> autor
+                        .toLowerCase(Locale.ROOT)
+                        .contains(terminoNormalizado));
+
+        // Basta con que coincida el título o algún autor.
+        return coincideTitulo || coincideAutor;
+    }
+
+    /**
+     * Filtra el catálogo público mediante criterios
+     * de búsqueda bibliográfica y categoría.
+     *
+     * Los criterios son opcionales y acumulativos.
+     * Cuando se proporcionan ambos, el libro debe
+     * satisfacer las dos condiciones.
+     *
+     * Únicamente se consideran libros activos,
+     * conservando su información comercial y
+     * disponibilidad.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @return libros que satisfacen los criterios proporcionados.
+     */
+    @Transactional(readOnly = true)
+
+    public List<LibroCatalogoDTO> filtrarCatalogoPublico(
+            String termino,
+            String categoria) {
+
+        // Delegar el filtrado sin seleccionar un autor específico.
+        return filtrarCatalogoPublico(
+                termino,
+                categoria,
+                null
+        );
+    }
+
+    /**
+     * Filtra el catálogo público mediante criterios
+     * de búsqueda bibliográfica, categoría y autor.
+     *
+     * Los criterios son opcionales y acumulativos.
+     * Cada libro debe satisfacer todos los criterios
+     * proporcionados para formar parte del resultado.
+     *
+     * Se conserva la información bibliográfica,
+     * comercial y de disponibilidad de los libros.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @return libros que satisfacen los criterios proporcionados.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> filtrarCatalogoPublico(
+            String termino,
+            String categoria,
+            String autor) {
+
+        // Delegar el filtrado conservando el orden predeterminado.
+        return filtrarCatalogoPublico(
+                termino,
+                categoria,
+                autor,
+                null
+        );
+    }
+
+    /**
+     * Filtra y ordena el catálogo público mediante los
+     * criterios seleccionados por el visitante.
+     *
+     * Los criterios bibliográficos son opcionales
+     * y acumulativos. Cada libro debe satisfacer
+     * todos los criterios proporcionados.
+     *
+     * El ordenamiento se aplica después del filtrado,
+     * conservando la información bibliográfica,
+     * comercial y de disponibilidad.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return libros filtrados y ordenados.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> filtrarCatalogoPublico(
+            String termino,
+            String categoria,
+            String autor,
+            String orden) {
+
+        // Recuperar el catálogo público una sola vez.
+        List<LibroCatalogoDTO> catalogo =
+                listarCatalogoPublico();
+
+        // Delegar el procesamiento del catálogo recuperado.
+        return aplicarCriteriosCatalogoPublico(
+                catalogo,
+                termino,
+                categoria,
+                autor,
+                orden
+        );
+    }
+
+    /**
+     * Aplica los criterios de búsqueda, filtrado y
+     * ordenamiento sobre un catálogo previamente recuperado.
+     *
+     * Este método no realiza consultas a la base de datos.
+     * Su responsabilidad consiste exclusivamente en
+     * procesar la colección proporcionada.
+     *
+     * Los criterios bibliográficos son opcionales
+     * y acumulativos.
+     *
+     * @param catalogo catálogo público previamente recuperado.
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return libros filtrados y ordenados.
+     */
+    private List<LibroCatalogoDTO> aplicarCriteriosCatalogoPublico(
+            List<LibroCatalogoDTO> catalogo,
+            String termino,
+            String categoria,
+            String autor,
+            String orden) {
+
+        // Normalizar los criterios proporcionados.
+        String busqueda = normalizarTextoOpcional(termino);
+
+        String categoriaSeleccionada =
+                normalizarTextoOpcional(categoria);
+
+        String autorSeleccionado =
+                normalizarTextoOpcional(autor);
+
+        // Normalizar el término para las comparaciones.
+        String terminoNormalizado = busqueda == null
+                ? null
+                : busqueda.toLowerCase(Locale.ROOT);
+
+        // Aplicar los criterios de manera acumulativa.
+        List<LibroCatalogoDTO> resultados = catalogo.stream()
+
+                // Filtrar por coincidencias en título o autor.
+                .filter(tarjeta ->
+                        terminoNormalizado == null
+                                || coincideConBusqueda(
+                                tarjeta.libro(),
+                                terminoNormalizado
+                        )
+                )
+
+                // Filtrar por la categoría seleccionada.
+                .filter(tarjeta ->
+                        categoriaSeleccionada == null
+                                || categoriaSeleccionada.equalsIgnoreCase(
+                                tarjeta.libro().categoria()
+                        )
+                )
+
+                // Filtrar por cualquiera de los autores asociados.
+                .filter(tarjeta ->
+                        autorSeleccionado == null
+                                || tarjeta.libro().autores()
+                                .stream()
+                                .anyMatch(nombreAutor ->
+                                        autorSeleccionado
+                                                .equalsIgnoreCase(nombreAutor)
+                                )
+                )
+
+                // Obtener los libros que cumplen todos los criterios.
+                .toList();
+
+        // Ordenar únicamente los resultados del filtrado.
+        return ordenarCatalogoPublico(resultados, orden);
+    }
+
+    /**
+     * Ordena los resultados del catálogo público mediante
+     * el criterio seleccionado por el visitante.
+     *
+     * El ordenamiento comercial utiliza el precio mínimo
+     * de las presentaciones disponibles de cada libro.
+     *
+     * Los libros sin precio disponible permanecen al final
+     * tanto en orden ascendente como descendente.
+     *
+     * Los criterios nulos, vacíos o desconocidos conservan
+     * el orden original de los resultados.
+     *
+     * @param libros resultados del filtrado bibliográfico.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return resultados ordenados según el criterio.
+     */
+    private List<LibroCatalogoDTO> ordenarCatalogoPublico(
+            List<LibroCatalogoDTO> libros,
+            String orden) {
+
+        // Normalizar el criterio de ordenamiento.
+        String criterio = normalizarTextoOpcional(orden);
+
+        // Sin criterio, conservar el orden original.
+        if (criterio == null) {
+            return libros;
+        }
+
+        // Seleccionar el comparador correspondiente.
+        Comparator<LibroCatalogoDTO> comparador =
+                switch (criterio.toLowerCase(Locale.ROOT)) {
+
+                    // Precio de menor a mayor.
+                    case "precio-asc" -> Comparator.comparing(
+                            LibroCatalogoDTO::precioDesde,
+                            Comparator.nullsLast(
+                                    Comparator.naturalOrder()
+                            )
+                    );
+
+                    // Precio de mayor a menor.
+                    case "precio-desc" -> Comparator.comparing(
+                            LibroCatalogoDTO::precioDesde,
+                            Comparator.nullsLast(
+                                    Comparator.reverseOrder()
+                            )
+                    );
+
+                    // Título en orden alfabético.
+                    case "titulo-asc" -> Comparator.comparing(
+                            tarjeta -> tarjeta.libro().titulo(),
+                            String.CASE_INSENSITIVE_ORDER
+                    );
+
+                    // Relevancia o criterio desconocido.
+                    default -> null;
+                };
+
+        // Conservar el orden original si no existe comparador.
+        if (comparador == null) {
+            return libros;
+        }
+
+        // Ordenar sin modificar la colección original.
+        return libros.stream()
+                .sorted(comparador)
+                .toList();
+    }
+
+    /**
+     * Consulta el catálogo público y genera las opciones
+     * disponibles para su filtrado.
+     *
+     * Las categorías y autores se obtienen del catálogo
+     * completo antes de aplicar los criterios seleccionados
+     * por el visitante.
+     *
+     * Las opciones se presentan sin duplicados y en
+     * orden alfabético.
+     *
+     * El catálogo se recupera una sola vez, evitando
+     * consultas adicionales para construir las opciones.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return resultados y opciones dinámicas del catálogo.
+     */
+    @Transactional(readOnly = true)
+    public CatalogoPublicoDTO consultarCatalogoPublico(
+            String termino,
+            String categoria,
+            String autor,
+            String orden) {
+
+        // Recuperar el catálogo público completo una sola vez.
+        List<LibroCatalogoDTO> catalogo =
+                listarCatalogoPublico();
+
+        // Obtener las categorías presentes en el catálogo.
+        List<String> categorias = catalogo.stream()
+
+                // Recuperar la categoría de cada libro.
+                .map(tarjeta -> tarjeta.libro().categoria())
+
+                // Excluir valores nulos o vacíos.
+                .filter(Objects::nonNull)
+                .filter(nombre -> !nombre.isBlank())
+
+                // Eliminar duplicados.
+                .distinct()
+
+                // Ordenar alfabéticamente.
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+
+                .toList();
+
+        // Obtener todos los autores asociados a los libros.
+        List<String> autores = catalogo.stream()
+
+                // Recuperar las colecciones de autores.
+                .flatMap(tarjeta ->
+                        tarjeta.libro().autores().stream()
+                )
+
+                // Excluir valores nulos o vacíos.
+                .filter(Objects::nonNull)
+                .filter(nombre -> !nombre.isBlank())
+
+                // Eliminar duplicados.
+                .distinct()
+
+                // Ordenar alfabéticamente.
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+
+                .toList();
+
+        // Aplicar los criterios sobre el catálogo recuperado.
+        List<LibroCatalogoDTO> resultados =
+                aplicarCriteriosCatalogoPublico(
+                        catalogo,
+                        termino,
+                        categoria,
+                        autor,
+                        orden
+                );
+
+        // Agrupar los resultados y las opciones de filtrado.
+        return new CatalogoPublicoDTO(
+                resultados,
+                categorias,
+                autores
+        );
     }
 
     /**

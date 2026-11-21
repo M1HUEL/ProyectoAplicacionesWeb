@@ -136,4 +136,57 @@ class InicioControllerIntegrationTest {
         verify(libroService).listarCatalogoPublico();
     }
 
+    /**
+     * Comprueba que las categorías destacadas de la
+     * página principal permitan acceder directamente
+     * al catálogo público aplicando el filtro correspondiente.
+     *
+     * También verifica la codificación de los caracteres
+     * acentuados en los parámetros de las URL.
+     */
+    @Test
+    void mostrarInicio_debeRenderizarEnlacesDeCategorias()
+            throws Exception {
+
+        // ARRANGE: simular la consulta del catálogo público.
+        when(libroService.listarCatalogoPublico())
+                .thenReturn(List.of());
+
+        // ACT y ASSERT: consultar la página principal.
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+
+                // Verificar el enlace general al catálogo.
+                .andExpect(content().string(
+                        containsString("href=\"/catalogo\"")
+                ))
+
+                // Verificar el enlace de la categoría Ficción.
+                .andExpect(content().string(
+                        containsString(
+                                "href=\"/catalogo?categoria=Ficci%C3%B3n\""
+                        )
+                ))
+
+                // Verificar el enlace de la categoría Fantasía.
+                .andExpect(content().string(
+                        containsString(
+                                "href=\"/catalogo?categoria=Fantas%C3%ADa\""
+                        )
+                ))
+
+                // Verificar el enlace de la categoría Terror.
+                .andExpect(content().string(
+                        containsString(
+                                "href=\"/catalogo?categoria=Terror\""
+                        )
+                ));
+
+        // Confirmar la consulta al servicio.
+        verify(libroService).listarCatalogoPublico();
+
+        verifyNoMoreInteractions(libroService);
+    }
+
 }

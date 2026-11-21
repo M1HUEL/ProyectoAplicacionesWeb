@@ -34,23 +34,38 @@
     </aside>
   </section>
 
-  <!-- Categorías de ejemplo del segundo avance. -->
+  <!--
+      Categorías destacadas del catálogo público.
+
+      Cada enlace permite acceder directamente al catálogo
+      aplicando el filtro de la categoría seleccionada.
+
+      CatalogoController recibe el parámetro categoria
+      y delega su procesamiento a LibroService.
+  -->
   <section class="seccion">
+
     <h2>Categorías</h2>
 
     <div class="categorias">
-      <a class="categoria" th:href="@{/catalogo}">
+
+      <a class="categoria"
+         th:href="@{/catalogo(categoria='Ficción')}">
         Ficción
       </a>
 
-      <a class="categoria" th:href="@{/catalogo}">
+      <a class="categoria"
+         th:href="@{/catalogo(categoria='Fantasía')}">
         Fantasía
       </a>
 
-      <a class="categoria" th:href="@{/catalogo}">
+      <a class="categoria"
+         th:href="@{/catalogo(categoria='Terror')}">
         Terror
       </a>
+
     </div>
+
   </section>
 
   <!--

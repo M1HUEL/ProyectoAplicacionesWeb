@@ -32,7 +32,8 @@
     </div>
 
     <!--
-        Formulario de búsqueda del catálogo público.
+        Formulario de búsqueda, filtrado y ordenamiento
+        del catálogo público.
 
         Utiliza el método GET porque la operación únicamente
         consulta información y no modifica datos en MySQL.
@@ -55,7 +56,87 @@
                 aria-label="Buscar por título o autor"
         />
 
-        <!-- Enviar el término de búsqueda al controlador. -->
+        <!--
+            Filtro dinámico por categoría.
+
+            Las opciones se obtienen del catálogo público completo,
+            independientemente de los resultados del filtrado.
+        -->
+        <select class="campo campo-select"
+                name="categoria"
+                aria-label="Filtrar por categoría">
+
+            <option value="">Todas las categorías</option>
+
+            <option th:each="opcionCategoria : ${categorias}"
+                    th:value="${opcionCategoria}"
+                    th:text="${opcionCategoria}"
+                    th:selected="${categoria != null
+                and #strings.equalsIgnoreCase(
+                    opcionCategoria,
+                    #strings.trim(categoria)
+                )}">
+            </option>
+
+        </select>
+
+        <!--
+            Filtro dinámico por autor.
+
+            Cada autor aparece una sola vez, aunque esté
+            asociado a múltiples libros del catálogo.
+        -->
+        <select class="campo campo-select"
+                name="autor"
+                aria-label="Filtrar por autor">
+
+            <option value="">Todos los autores</option>
+
+            <option th:each="opcionAutor : ${autores}"
+                    th:value="${opcionAutor}"
+                    th:text="${opcionAutor}"
+                    th:selected="${autor != null
+                and #strings.equalsIgnoreCase(
+                    opcionAutor,
+                    #strings.trim(autor)
+                )}">
+            </option>
+
+        </select>
+
+        <!--
+            Ordenamiento de los resultados del catálogo.
+
+            LibroService aplica el criterio seleccionado
+            después de realizar el filtrado bibliográfico.
+        -->
+        <select class="campo campo-select"
+                name="orden"
+                aria-label="Ordenar resultados">
+
+            <option value="relevancia"
+                    th:selected="${orden == 'relevancia'}">
+                Relevancia
+            </option>
+
+            <option value="precio-asc"
+                    th:selected="${orden == 'precio-asc'}">
+                Precio: menor a mayor
+            </option>
+
+            <option value="precio-desc"
+                    th:selected="${orden == 'precio-desc'}">
+                Precio: mayor a menor
+            </option>
+
+            <option value="titulo-asc"
+                    th:selected="${orden == 'titulo-asc'}">
+                Título: A-Z
+            </option>
+
+        </select>
+
+        <!-- Enviar los criterios de consulta al controlador. -->
         <button class="boton boton-primario"
                 type="submit">
             Buscar
@@ -77,16 +158,29 @@
         0 libros
     </p>
 
-    <!-- Diferenciar la ausencia de libros de una búsqueda sin resultados. -->
-    <div th:if="${#lists.isEmpty(libros)}">
+    <!--
+        Diferenciar un catálogo vacío de una consulta
+        sin coincidencias bibliográficas.
+    -->
+    <div th:if="${#lists.isEmpty(libros)}"
+         th:with="hayCriterios=${
+         (busqueda != null
+             and !#strings.isEmpty(#strings.trim(busqueda)))
+         or
+         (categoria != null
+             and !#strings.isEmpty(#strings.trim(categoria)))
+         or
+         (autor != null
+             and !#strings.isEmpty(#strings.trim(autor)))
+     }">
 
-        <!-- No existen coincidencias con el término proporcionado. -->
-        <p th:if="${busqueda != null and !#strings.isEmpty(#strings.trim(busqueda))}">
+        <!-- No existen coincidencias con los criterios seleccionados. -->
+        <p th:if="${hayCriterios}">
             No se encontraron libros que coincidan con tu búsqueda.
         </p>
 
         <!-- El catálogo público todavía no contiene libros activos. -->
-        <p th:unless="${busqueda != null and !#strings.isEmpty(#strings.trim(busqueda))}">
+        <p th:unless="${hayCriterios}">
             Todavía no hay libros disponibles en el catálogo.
         </p>
 

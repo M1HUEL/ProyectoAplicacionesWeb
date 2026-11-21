@@ -21,8 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -587,6 +586,279 @@ class CatalogoControllerIntegrationTest {
         // Confirmar que el término llegó correctamente al servicio.
         verify(libroService).consultarCatalogoPublico(
                 "Stephen King", null, null, "relevancia"
+        );
+
+        verifyNoMoreInteractions(libroService);
+    }
+
+    /**
+     * Comprueba que un visitante pueda combinar búsquedas,
+     * filtros bibliográficos y criterios de ordenamiento
+     * desde el catálogo público sin iniciar sesión.
+     *
+     * Verifica la recepción de los parámetros HTTP,
+     * su delegación a LibroService y la conservación
+     * de las opciones seleccionadas en Thymeleaf.
+     */
+    @Test
+    void mostrarCatalogo_conFiltrosYOrden_renderizaResultados()
+            throws Exception {
+
+        // ARRANGE: preparar un libro coincidente.
+        LibroPublicoDTO libro = new LibroPublicoDTO(
+                1L,
+                "La llamada de Cthulhu",
+                "Relato de terror cósmico.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("H. P. Lovecraft")
+        );
+
+        // Preparar su información comercial.
+        LibroCatalogoDTO tarjeta = new LibroCatalogoDTO(
+                libro,
+                new BigDecimal("350.00"),
+                true
+        );
+
+        List<LibroCatalogoDTO> libros = List.of(tarjeta);
+
+        // Preparar las opciones del catálogo completo.
+        List<String> categorias =
+                List.of("Fantasía", "Terror");
+
+        List<String> autores =
+                List.of(
+                        "Bram Stoker",
+                        "H. P. Lovecraft",
+                        "J. R. R. Tolkien"
+                );
+
+        // Agrupar los resultados y opciones de filtrado.
+        CatalogoPublicoDTO catalogo = new CatalogoPublicoDTO(
+                libros,
+                categorias,
+                autores
+        );
+
+        // Simular la respuesta proporcionada por LibroService.
+        when(libroService.consultarCatalogoPublico(
+                "Cthulhu",
+                "Terror",
+                "H. P. Lovecraft",
+                "precio-asc"
+        )).thenReturn(catalogo);
+
+        // ACT y ASSERT: realizar una consulta combinada.
+        mockMvc.perform(
+                        get("/catalogo")
+                                .param("busqueda", "Cthulhu")
+                                .param("categoria", "Terror")
+                                .param("autor", "H. P. Lovecraft")
+                                .param("orden", "precio-asc")
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("catalogo"))
+
+                // Verificar los siete atributos del modelo.
+                .andExpect(model().attribute("libros", libros))
+                .andExpect(model().attribute("categorias", categorias))
+                .andExpect(model().attribute("autores", autores))
+                .andExpect(model().attribute("busqueda", "Cthulhu"))
+                .andExpect(model().attribute("categoria", "Terror"))
+                .andExpect(model().attribute("autor", "H. P. Lovecraft"))
+                .andExpect(model().attribute("orden", "precio-asc"))
+
+                // Verificar los controles del formulario.
+                .andExpect(content().string(
+                        containsString("name=\"busqueda\"")
+                ))
+                .andExpect(content().string(
+                        containsString("name=\"categoria\"")
+                ))
+                .andExpect(content().string(
+                        containsString("name=\"autor\"")
+                ))
+                .andExpect(content().string(
+                        containsString("name=\"orden\"")
+                ))
+                // Verificar que se conserve el término de búsqueda.
+                .andExpect(content().string(
+                        containsString("value=\"Cthulhu\"")
+                ))
+                // Verificar la categoría seleccionada,
+                // admitiendo espacios y saltos de línea entre atributos.
+                .andExpect(content().string(
+                        matchesPattern(
+                                "(?s).*<option\\s+value=\"Terror\""
+                                        + "\\s+selected=\"selected\"\\s*>.*"
+                        )
+                ))
+                // Verificar el autor seleccionado.
+                .andExpect(content().string(
+                        matchesPattern(
+                                "(?s).*<option\\s+value=\"H\\. P\\. Lovecraft\""
+                                        + "\\s+selected=\"selected\"\\s*>.*"
+                        )
+                ))
+                // Verificar el criterio de ordenamiento seleccionado.
+                .andExpect(content().string(
+                        matchesPattern(
+                                "(?s).*<option\\s+value=\"precio-asc\""
+                                        + "\\s+selected=\"selected\"\\s*>.*"
+                        )
+                ))
+                // Las demás opciones deben permanecer disponibles.
+                .andExpect(content().string(
+                        containsString("value=\"Fantasía\"")
+                ))
+                .andExpect(content().string(
+                        containsString("value=\"Bram Stoker\"")
+                ))
+                .andExpect(content().string(
+                        containsString("value=\"J. R. R. Tolkien\"")
+                ))
+                // Verificar el resultado bibliográfico y comercial.
+                .andExpect(content().string(
+                        containsString("1 libro")
+                ))
+                .andExpect(content().string(
+                        containsString("La llamada de Cthulhu")
+                ))
+                .andExpect(content().string(
+                        containsString("$350.00 MXN")
+                ))
+                .andExpect(content().string(
+                        containsString("href=\"/detalle-libro/1\"")
+                ));
+
+        // Confirmar la delegación de todos los criterios.
+        verify(libroService).consultarCatalogoPublico(
+                "Cthulhu",
+                "Terror",
+                "H. P. Lovecraft",
+                "precio-asc"
+        );
+
+        verifyNoMoreInteractions(libroService);
+    }
+
+    /**
+     * Comprueba que una combinación incompatible de
+     * filtros presente un mensaje informativo al visitante.
+     *
+     * La ausencia de coincidencias no debe confundirse
+     * con un catálogo completamente vacío.
+     *
+     * Las opciones dinámicas deben permanecer disponibles
+     * y conservar los criterios seleccionados.
+     */
+    @Test
+    void mostrarCatalogo_filtrosSinCoincidencias_muestraMensaje()
+            throws Exception {
+
+        // ARRANGE: preparar las opciones del catálogo completo.
+        List<String> categorias =
+                List.of("Fantasía", "Terror");
+
+        List<String> autores =
+                List.of(
+                        "Bram Stoker",
+                        "H. P. Lovecraft",
+                        "J. R. R. Tolkien"
+                );
+
+        // Preparar un resultado sin libros coincidentes.
+        CatalogoPublicoDTO catalogo = new CatalogoPublicoDTO(
+                List.of(),
+                categorias,
+                autores
+        );
+
+        // Simular una combinación incompatible de filtros.
+        when(libroService.consultarCatalogoPublico(
+                null,
+                "Fantasía",
+                "H. P. Lovecraft",
+                "relevancia"
+        )).thenReturn(catalogo);
+
+        // ACT y ASSERT: realizar una consulta sin autenticación.
+        mockMvc.perform(
+                        get("/catalogo")
+                                .param("categoria", "Fantasía")
+                                .param("autor", "H. P. Lovecraft")
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("catalogo"))
+
+                // Verificar los resultados y opciones disponibles.
+                .andExpect(model().attribute("libros", List.of()))
+                .andExpect(model().attribute("categorias", categorias))
+                .andExpect(model().attribute("autores", autores))
+
+                // Verificar los criterios conservados.
+                .andExpect(model().attribute("categoria", "Fantasía"))
+                .andExpect(model().attribute("autor", "H. P. Lovecraft"))
+                .andExpect(model().attribute("orden", "relevancia"))
+
+                // Verificar el conteo de resultados.
+                .andExpect(content().string(
+                        containsString("0 libros")
+                ))
+
+                // Mostrar el mensaje correspondiente al filtrado.
+                .andExpect(content().string(
+                        containsString(
+                                "No se encontraron libros que "
+                                        + "coincidan con tu búsqueda."
+                        )
+                ))
+
+                // No confundir el resultado con un catálogo vacío.
+                .andExpect(content().string(
+                        not(containsString(
+                                "Todavía no hay libros disponibles "
+                                        + "en el catálogo."
+                        ))
+                ))
+
+                // Verificar la categoría seleccionada.
+                .andExpect(content().string(
+                        matchesPattern(
+                                "(?s).*<option\\s+value=\"Fantasía\""
+                                        + "\\s+selected=\"selected\"\\s*>.*"
+                        )
+                ))
+
+                // Verificar el autor seleccionado.
+                .andExpect(content().string(
+                        matchesPattern(
+                                "(?s).*<option\\s+value=\"H\\. P\\. Lovecraft\""
+                                        + "\\s+selected=\"selected\"\\s*>.*"
+                        )
+                ))
+
+                // Las demás opciones deben permanecer disponibles.
+                .andExpect(content().string(
+                        containsString("value=\"Terror\"")
+                ))
+                .andExpect(content().string(
+                        containsString("value=\"J. R. R. Tolkien\"")
+                ))
+
+                // No deben generarse tarjetas ficticias.
+                .andExpect(content().string(
+                        not(containsString("class=\"libros\""))
+                ));
+
+        // Confirmar la delegación de los criterios al servicio.
+        verify(libroService).consultarCatalogoPublico(
+                null,
+                "Fantasía",
+                "H. P. Lovecraft",
+                "relevancia"
         );
 
         verifyNoMoreInteractions(libroService);

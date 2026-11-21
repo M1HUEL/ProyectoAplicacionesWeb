@@ -4,6 +4,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -1977,6 +1978,274 @@ class LibroServiceTest {
         verify(libroRepository).findByActivoTrue();
         verify(formatoLibroRepository).listarFormatosDeLibrosActivos();
         verify(itemStockRepository).listarConFormatoLibro();
+    }
+
+    /**
+     * Prepara un catálogo público de ejemplo para las
+     * pruebas unitarias de búsqueda y filtrado.
+     *
+     * Incluye libros disponibles y agotados para comprobar
+     * que las búsquedas conserven su información comercial.
+     *
+     * @return catálogo público simulado.
+     */
+    private List<LibroCatalogoDTO> prepararCatalogoDePrueba() {
+
+        LibroPublicoDTO cthulhu = new LibroPublicoDTO(
+                1L,
+                "La llamada de Cthulhu",
+                "Relato de terror cósmico.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("H. P. Lovecraft")
+        );
+
+        LibroPublicoDTO dracula = new LibroPublicoDTO(
+                2L,
+                "Drácula",
+                "Novela de terror.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("Bram Stoker")
+        );
+
+        LibroPublicoDTO hobbit = new LibroPublicoDTO(
+                3L,
+                "El Hobbit",
+                "Novela de fantasía.",
+                null,
+                "Fantasía",
+                "Editorial de prueba",
+                List.of("J. R. R. Tolkien")
+        );
+
+        return List.of(
+                new LibroCatalogoDTO(
+                        cthulhu,
+                        new BigDecimal("350.00"),
+                        true
+                ),
+                new LibroCatalogoDTO(
+                        dracula,
+                        null,
+                        false
+                ),
+                new LibroCatalogoDTO(
+                        hobbit,
+                        new BigDecimal("299.00"),
+                        true
+                )
+        );
+    }
+
+    /**
+     * Comprueba que la búsqueda pública encuentre libros
+     * mediante coincidencias parciales en su título.
+     *
+     * También verifica que la búsqueda ignore mayúsculas,
+     * minúsculas y espacios exteriores, conservando la
+     * información comercial del libro encontrado.
+     */
+    @Test
+    void buscarCatalogoPublico_porTitulo_debeRetornarCoincidencias() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        /*
+         * Crear un Spy para ejecutar la lógica real de búsqueda,
+         * simulando únicamente la recuperación del catálogo.
+         */
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: buscar mediante una coincidencia parcial.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.buscarCatalogoPublico("  CTHULHU  ");
+
+        // ASSERT: únicamente debe encontrarse el libro solicitado.
+        assertEquals(1, resultado.size());
+
+        LibroCatalogoDTO tarjeta = resultado.get(0);
+
+        // Verificar la información bibliográfica.
+        assertEquals(1L, tarjeta.libro().id());
+
+        assertEquals(
+                "La llamada de Cthulhu",
+                tarjeta.libro().titulo()
+        );
+
+        // Verificar que se conserve la información comercial.
+        assertEquals(
+                new BigDecimal("350.00"),
+                tarjeta.precioDesde()
+        );
+
+        assertTrue(tarjeta.disponible());
+
+        // Confirmar que se reutilizó la consulta del catálogo.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que la búsqueda pública encuentre libros
+     * mediante coincidencias parciales en el nombre del autor.
+     *
+     * Los libros agotados deben permanecer visibles cuando
+     * coincidan con el término de búsqueda, conservando
+     * su correspondiente información comercial.
+     */
+    @Test
+    void buscarCatalogoPublico_porAutor_debeRetornarLibroAgotado() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: buscar mediante el apellido del autor.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.buscarCatalogoPublico("stoker");
+
+        // ASSERT: únicamente debe encontrarse Drácula.
+        assertEquals(1, resultado.size());
+
+        LibroCatalogoDTO tarjeta = resultado.get(0);
+
+        // Verificar la información bibliográfica.
+        assertEquals(2L, tarjeta.libro().id());
+
+        assertEquals(
+                "Drácula",
+                tarjeta.libro().titulo()
+        );
+
+        assertTrue(
+                tarjeta.libro().autores().contains("Bram Stoker")
+        );
+
+        // El libro debe conservar su estado de agotamiento.
+        assertNull(tarjeta.precioDesde());
+        assertFalse(tarjeta.disponible());
+
+        // Confirmar la reutilización del catálogo público.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que la búsqueda pública devuelva una
+     * colección vacía cuando ningún libro coincida
+     * con el término proporcionado.
+     *
+     * La ausencia de coincidencias representa un
+     * resultado válido y no un error del sistema.
+     */
+    @Test
+    void buscarCatalogoPublico_sinCoincidencias_debeRetornarListaVacia() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: buscar un autor que no pertenece al catálogo.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.buscarCatalogoPublico("Stephen King");
+
+        // ASSERT: debe devolverse una colección válida pero vacía.
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        // Confirmar la reutilización del catálogo público.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que la ausencia del término de búsqueda
+     * permita consultar el catálogo público completo.
+     *
+     * Este escenario ocurre cuando el visitante accede
+     * al catálogo sin proporcionar parámetros de búsqueda.
+     */
+    @Test
+    void buscarCatalogoPublico_terminoNulo_debeRetornarCatalogoCompleto() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: consultar el catálogo sin término de búsqueda.
+        List<LibroCatalogoDTO> resultado =
+                servicioSpy.buscarCatalogoPublico(null);
+
+        // ASSERT: debe conservarse el catálogo completo.
+        assertNotNull(resultado);
+        assertEquals(catalogo, resultado);
+
+        // Confirmar la reutilización del catálogo público.
+        verify(servicioSpy).listarCatalogoPublico();
+    }
+
+    /**
+     * Comprueba que una búsqueda vacía o compuesta
+     * únicamente por espacios devuelva el catálogo
+     * público completo.
+     *
+     * No deben aplicarse filtros ni modificarse
+     * los datos bibliográficos y comerciales.
+     */
+    @Test
+    void buscarCatalogoPublico_terminoVacio_debeRetornarCatalogoCompleto() {
+
+        // ARRANGE: preparar el catálogo público de ejemplo.
+        List<LibroCatalogoDTO> catalogo =
+                prepararCatalogoDePrueba();
+
+        // Simular únicamente la recuperación del catálogo.
+        LibroService servicioSpy = spy(libroService);
+
+        doReturn(catalogo)
+                .when(servicioSpy)
+                .listarCatalogoPublico();
+
+        // ACT: realizar búsquedas sin contenido significativo.
+        List<LibroCatalogoDTO> resultadoVacio =
+                servicioSpy.buscarCatalogoPublico("");
+
+        List<LibroCatalogoDTO> resultadoEspacios =
+                servicioSpy.buscarCatalogoPublico("   ");
+
+        // ASSERT: ambos resultados deben conservar el catálogo.
+        assertEquals(catalogo, resultadoVacio);
+        assertEquals(catalogo, resultadoEspacios);
+
+        // Confirmar una consulta por cada búsqueda.
+        verify(servicioSpy, times(2)).listarCatalogoPublico();
     }
 
 }

@@ -2,6 +2,7 @@
 package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.model.Formato;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
@@ -246,6 +247,304 @@ class CatalogoControllerIntegrationTest {
         // Confirmar las consultas realizadas al servicio.
         verify(libroService).consultarLibroPublico(2L);
         verify(libroService).listarFormatosPublicos(2L);
+
+        verifyNoMoreInteractions(libroService);
+    }
+
+    /**
+     * Comprueba que un visitante sin autenticación pueda
+     * consultar el catálogo público de Librería Raudskinna.
+     *
+     * Verifica el renderizado de libros disponibles y agotados,
+     * sus datos bibliográficos, precios y enlaces hacia
+     * las correspondientes páginas de detalle.
+     */
+    @Test
+    void mostrarCatalogo_sinSesion_renderizaLibros()
+            throws Exception {
+
+        // ARRANGE: preparar un libro disponible.
+        LibroPublicoDTO libroDisponible = new LibroPublicoDTO(
+                1L,
+                "La llamada de Cthulhu",
+                "Relato de terror cósmico.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("H. P. Lovecraft")
+        );
+
+        // Preparar un libro agotado.
+        LibroPublicoDTO libroAgotado = new LibroPublicoDTO(
+                2L,
+                "Drácula",
+                "Novela de terror.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("Bram Stoker")
+        );
+
+        // Preparar las tarjetas con información comercial.
+        List<LibroCatalogoDTO> libros = List.of(
+                new LibroCatalogoDTO(
+                        libroDisponible,
+                        new BigDecimal("350.00"),
+                        true
+                ),
+                new LibroCatalogoDTO(
+                        libroAgotado,
+                        null,
+                        false
+                )
+        );
+
+        // Simular la respuesta del servicio.
+        when(libroService.buscarCatalogoPublico(null))
+                .thenReturn(libros);
+
+        // ACT y ASSERT: consultar el catálogo sin autenticación.
+        mockMvc.perform(get("/catalogo"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("catalogo"))
+
+                // Verificar el conteo dinámico.
+                .andExpect(content().string(
+                        containsString("2 libros")
+                ))
+
+                // Verificar la información del libro disponible.
+                .andExpect(content().string(
+                        containsString("La llamada de Cthulhu")
+                ))
+                .andExpect(content().string(
+                        containsString("H. P. Lovecraft")
+                ))
+                .andExpect(content().string(
+                        containsString("$350.00 MXN")
+                ))
+
+                // Verificar la información del libro agotado.
+                .andExpect(content().string(
+                        containsString("Drácula")
+                ))
+                .andExpect(content().string(
+                        containsString("Bram Stoker")
+                ))
+                .andExpect(content().string(
+                        containsString("Agotado")
+                ))
+
+                // Ambos libros deben permitir consultar su detalle.
+                .andExpect(content().string(
+                        containsString("href=\"/detalle-libro/1\"")
+                ))
+                .andExpect(content().string(
+                        containsString("href=\"/detalle-libro/2\"")
+                ));
+
+        // Confirmar la consulta realizada al servicio.
+        verify(libroService).buscarCatalogoPublico(null);
+
+        verifyNoMoreInteractions(libroService);
+    }
+
+    /**
+     * Comprueba que un visitante pueda consultar el catálogo
+     * público cuando todavía no existen libros activos.
+     *
+     * La aplicación debe presentar un conteo de cero libros
+     * y un mensaje informativo, sin generar tarjetas ficticias
+     * ni errores durante el renderizado de Thymeleaf.
+     */
+    @Test
+    void mostrarCatalogo_sinLibros_muestraMensajeInformativo()
+            throws Exception {
+
+        // ARRANGE: simular un catálogo público vacío.
+        when(libroService.buscarCatalogoPublico(null))
+                .thenReturn(List.of());
+
+        // ACT y ASSERT: consultar el catálogo sin autenticación.
+        mockMvc.perform(get("/catalogo"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("catalogo"))
+
+                // Verificar el conteo dinámico.
+                .andExpect(content().string(
+                        containsString("0 libros")
+                ))
+
+                // Verificar el mensaje informativo.
+                .andExpect(content().string(
+                        containsString(
+                                "Todavía no hay libros disponibles en el catálogo."
+                        )
+                ))
+
+                // No deben generarse tarjetas de libros ficticios.
+                .andExpect(content().string(
+                        not(containsString("class=\"libros\""))
+                ))
+
+                // No deben generarse enlaces hacia libros inexistentes.
+                .andExpect(content().string(
+                        not(containsString("href=\"/detalle-libro/"))
+                ));
+
+        // Confirmar la consulta realizada al servicio.
+        verify(libroService).buscarCatalogoPublico(null);
+
+        verifyNoMoreInteractions(libroService);
+    }
+
+    /**
+     * Comprueba que un visitante pueda realizar búsquedas
+     * dentro del catálogo público sin iniciar sesión.
+     *
+     * Verifica que Spring MVC reciba el parámetro de búsqueda,
+     * lo transmita a LibroService y conserve el término
+     * introducido por el visitante en el modelo.
+     */
+    @Test
+    void mostrarCatalogo_conBusqueda_renderizaCoincidencias()
+            throws Exception {
+
+        // ARRANGE: preparar un libro coincidente.
+        LibroPublicoDTO libro = new LibroPublicoDTO(
+                1L,
+                "La llamada de Cthulhu",
+                "Relato de terror cósmico.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("H. P. Lovecraft")
+        );
+
+        // Preparar su correspondiente información comercial.
+        LibroCatalogoDTO tarjeta = new LibroCatalogoDTO(
+                libro,
+                new BigDecimal("350.00"),
+                true
+        );
+
+        List<LibroCatalogoDTO> libros = List.of(tarjeta);
+
+        // Simular los resultados proporcionados por LibroService.
+        when(libroService.buscarCatalogoPublico("Lovecraft"))
+                .thenReturn(libros);
+
+        // ACT y ASSERT: realizar una búsqueda sin autenticación.
+        mockMvc.perform(
+                        get("/catalogo")
+                                .param("busqueda", "Lovecraft")
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("catalogo"))
+
+                // Verificar los atributos entregados a Thymeleaf.
+                .andExpect(model().attribute("busqueda", "Lovecraft"))
+                .andExpect(model().attribute("libros", libros))
+
+                // Verificar el conteo de resultados.
+                .andExpect(content().string(
+                        containsString("1 libro")
+                ))
+
+                // Verificar la información bibliográfica.
+                .andExpect(content().string(
+                        containsString("La llamada de Cthulhu")
+                ))
+                .andExpect(content().string(
+                        containsString("H. P. Lovecraft")
+                ))
+
+                // Verificar la información comercial.
+                .andExpect(content().string(
+                        containsString("$350.00 MXN")
+                ))
+
+                // Conservar la navegación hacia el detalle.
+                .andExpect(content().string(
+                        containsString("href=\"/detalle-libro/1\"")
+                ))
+                // Verificar que exista el campo de búsqueda.
+                .andExpect(content().string(
+                        containsString("name=\"busqueda\"")
+                ))
+
+                // Verificar que se conserve el término introducido.
+                .andExpect(content().string(
+                        containsString("value=\"Lovecraft\"")
+                ));
+
+        // Confirmar que el término llegó correctamente al servicio.
+        verify(libroService).buscarCatalogoPublico("Lovecraft");
+
+        verifyNoMoreInteractions(libroService);
+    }
+
+    /**
+     * Comprueba que una búsqueda sin coincidencias
+     * presente un mensaje informativo al visitante.
+     *
+     * La ausencia de resultados no debe confundirse
+     * con un catálogo completamente vacío ni generar
+     * errores durante el renderizado de Thymeleaf.
+     */
+    @Test
+    void mostrarCatalogo_busquedaSinCoincidencias_muestraMensaje()
+            throws Exception {
+
+        // ARRANGE: simular una búsqueda sin resultados.
+        when(libroService.buscarCatalogoPublico("Stephen King"))
+                .thenReturn(List.of());
+
+        // ACT y ASSERT: realizar la búsqueda sin autenticación.
+        mockMvc.perform(
+                        get("/catalogo")
+                                .param("busqueda", "Stephen King")
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("catalogo"))
+
+                // Conservar el término introducido.
+                .andExpect(model().attribute(
+                        "busqueda", "Stephen King"
+                ))
+
+                .andExpect(content().string(
+                        containsString("value=\"Stephen King\"")
+                ))
+
+                // Verificar el conteo de resultados.
+                .andExpect(content().string(
+                        containsString("0 libros")
+                ))
+
+                // Mostrar el mensaje correspondiente a la búsqueda.
+                .andExpect(content().string(
+                        containsString(
+                                "No se encontraron libros que "
+                                        + "coincidan con tu búsqueda."
+                        )
+                ))
+
+                // No confundir la búsqueda con un catálogo vacío.
+                .andExpect(content().string(
+                        not(containsString(
+                                "Todavía no hay libros disponibles "
+                                        + "en el catálogo."
+                        ))
+                ))
+
+                // No deben generarse tarjetas ficticias.
+                .andExpect(content().string(
+                        not(containsString("class=\"libros\""))
+                ));
+
+        // Confirmar que el término llegó correctamente al servicio.
+        verify(libroService).buscarCatalogoPublico("Stephen King");
 
         verifyNoMoreInteractions(libroService);
     }

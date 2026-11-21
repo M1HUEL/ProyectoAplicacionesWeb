@@ -1300,3 +1300,25 @@ main.contenedor:has(.detalle) {
     grid-template-columns: 1fr;
   }
 }
+/* =========================================================
+   RAUDSKINNA - CATÁLOGO PÚBLICO
+   ========================================================= */
+
+/* Aprovecha el ancho disponible sin desbordar la pantalla. */
+.inicio-publico,
+.catalogo-publico {
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 40px;
+}
+
+/* Adaptación del catálogo a dispositivos móviles. */
+@media (max-width: 760px) {
+  .inicio-publico,
+  .catalogo-publico .libros {
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(100%, 200px), 1fr)
+    );
+  }
+}

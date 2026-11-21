@@ -2,6 +2,7 @@
 package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.LibroCatalogoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.model.Formato;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
@@ -158,6 +159,59 @@ class CatalogoControllerTest {
         verifyNoInteractions(model);
 
         verifyNoMoreInteractions(libroService);
+    }
+
+    /**
+     * Comprueba que el controlador recupere el catálogo
+     * público mediante LibroService y entregue los libros
+     * junto con su información comercial a Thymeleaf.
+     *
+     * El controlador no debe calcular precios ni determinar
+     * la disponibilidad comercial de los libros.
+     */
+    @Test
+    void mostrarCatalogo_entregaLibrosConInformacionComercial() {
+
+        // ARRANGE: preparar la información bibliográfica.
+        LibroPublicoDTO libro = new LibroPublicoDTO(
+                1L,
+                "La llamada de Cthulhu",
+                "Relato de terror cósmico.",
+                null,
+                "Terror",
+                "Editorial de prueba",
+                List.of("H. P. Lovecraft")
+        );
+
+        // Preparar la información comercial del libro.
+        LibroCatalogoDTO tarjeta = new LibroCatalogoDTO(
+                libro,
+                new BigDecimal("350.00"),
+                true
+        );
+
+        // Preparar la colección del catálogo público.
+        List<LibroCatalogoDTO> libros = List.of(tarjeta);
+
+        // Simular la respuesta de LibroService.
+        when(libroService.buscarCatalogoPublico(null))
+                .thenReturn(libros);
+
+        // ACT: solicitar el catálogo público.
+        String vista = catalogoController.mostrarCatalogo(null, model);
+
+        // ASSERT: verificar la plantilla seleccionada.
+        assertEquals("catalogo", vista);
+
+        // Confirmar que se realizó la consulta al servicio.
+        verify(libroService).buscarCatalogoPublico(null);
+
+        // Verificar los datos proporcionados a Thymeleaf.
+        verify(model).addAttribute("libros", libros);
+        verify(model).addAttribute("busqueda", null);
+
+        // El controlador no debe realizar operaciones adicionales.
+        verifyNoMoreInteractions(libroService, model);
     }
 
 }

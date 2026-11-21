@@ -6,6 +6,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Controlador MVC del catálogo público de Librería Raudskinna.
@@ -31,6 +32,42 @@ public class CatalogoController {
      */
     public CatalogoController(LibroService libroService) {
         this.libroService = libroService;
+    }
+
+
+    /**
+     * Presenta el catálogo público de Librería Raudskinna.
+     *
+     * Permite consultar todos los libros activos o realizar
+     * búsquedas mediante coincidencias en el título o autor.
+     *
+     * La lógica de búsqueda, los precios y la disponibilidad
+     * comercial permanecen en LibroService.
+     *
+     * GET /catalogo
+     * GET /catalogo?busqueda=termino
+     *
+     * @param busqueda término opcional introducido por el visitante.
+     * @param model modelo que transporta los datos a Thymeleaf.
+     * @return nombre de la plantilla del catálogo público.
+     */
+    @GetMapping("/catalogo")
+    public String mostrarCatalogo(
+            @RequestParam(name = "busqueda", required = false)
+            String busqueda,
+            Model model) {
+
+        // Recuperar el catálogo aplicando el término de búsqueda.
+        model.addAttribute(
+                "libros",
+                libroService.buscarCatalogoPublico(busqueda)
+        );
+
+        // Conservar el término introducido por el visitante.
+        model.addAttribute("busqueda", busqueda);
+
+        // Presentar la página del catálogo público.
+        return "catalogo";
     }
 
     /**

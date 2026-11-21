@@ -203,6 +203,68 @@ public class LibroService {
     }
 
     /**
+     * Busca libros dentro del catálogo público de
+     * Librería Raudskinna mediante su título o autor.
+     *
+     * Reutiliza la consulta pública de libros activos
+     * con su correspondiente información comercial.
+     *
+     * La búsqueda admite coincidencias parciales y
+     * no distingue entre mayúsculas y minúsculas.
+     *
+     * Cuando el término es nulo o está vacío,
+     * devuelve el catálogo público completo.
+     *
+     * @param termino texto introducido por el visitante.
+     * @return libros públicos que coinciden con la búsqueda.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> buscarCatalogoPublico(
+            String termino) {
+
+        // Normalizar el término recibido desde el buscador.
+        String busqueda = normalizarTextoOpcional(termino);
+
+        // Recuperar el catálogo con su información comercial.
+        List<LibroCatalogoDTO> catalogo = listarCatalogoPublico();
+
+        // Sin término de búsqueda, presentar el catálogo completo.
+        if (busqueda == null) {
+            return catalogo;
+        }
+
+        /*
+         * Convertir el término a minúsculas para realizar
+         * comparaciones independientes de la configuración regional.
+         */
+        String terminoNormalizado =
+                busqueda.toLowerCase(Locale.ROOT);
+
+        // Filtrar los libros por título o por cualquiera de sus autores.
+        return catalogo.stream()
+                .filter(tarjeta -> {
+
+                    LibroPublicoDTO libro = tarjeta.libro();
+
+                    // Comprobar coincidencias parciales en el título.
+                    boolean coincideTitulo = libro.titulo()
+                            .toLowerCase(Locale.ROOT)
+                            .contains(terminoNormalizado);
+
+                    // Comprobar coincidencias entre los autores asociados.
+                    boolean coincideAutor = libro.autores()
+                            .stream()
+                            .anyMatch(autor -> autor
+                                    .toLowerCase(Locale.ROOT)
+                                    .contains(terminoNormalizado));
+
+                    // Basta con que coincida el título o algún autor.
+                    return coincideTitulo || coincideAutor;
+                })
+                .toList();
+    }
+
+    /**
      * Consulta el detalle público de un libro activo.
      *
      * Los libros inexistentes o inactivos no deben

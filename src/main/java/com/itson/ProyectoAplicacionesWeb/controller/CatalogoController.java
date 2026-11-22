@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import java.security.Principal;
 
 /**
  * Controlador MVC del catálogo público de Librería Raudskinna.
@@ -97,6 +98,7 @@ public class CatalogoController {
         return "catalogo";
     }
 
+
     /**
      * Presenta la información detallada de un libro activo
      * junto con sus formatos, precios y disponibilidad.
@@ -104,16 +106,23 @@ public class CatalogoController {
      * Los libros inactivos o inexistentes serán rechazados
      * mediante las validaciones realizadas en LibroService.
      *
+     * Identifica si el visitante cuenta con una sesión
+     * autenticada para presentar las opciones de compra
+     * correspondientes.
+     *
      * GET /detalle-libro/{id}
      *
      * @param id identificador del libro solicitado.
      * @param model modelo que transporta los datos a Thymeleaf.
+     * @param principal identidad autenticada del visitante,
+     *                  o null si no ha iniciado sesión.
      * @return nombre de la plantilla de detalle del libro.
      */
     @GetMapping("/detalle-libro/{id}")
     public String mostrarDetalleLibro(
             @PathVariable Long id,
-            Model model) {
+            Model model,
+            Principal principal) {
 
         // Recuperar la información bibliográfica pública.
         model.addAttribute(
@@ -127,7 +136,15 @@ public class CatalogoController {
                 libroService.listarFormatosPublicos(id)
         );
 
+        // Informar a la vista si el visitante
+        // cuenta con una sesión autenticada.
+        model.addAttribute(
+                "clienteAutenticado",
+                principal != null
+        );
+
         // Presentar la página de detalle del libro.
         return "detalle-libro";
     }
+
 }

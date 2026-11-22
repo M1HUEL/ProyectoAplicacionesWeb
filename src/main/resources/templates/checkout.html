@@ -1,0 +1,422 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Confirmar compra · Librería Raudskinna</title>
+
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+
+<body>
+
+<!-- Encabezado compartido de la tienda. -->
+<header th:replace="~{fragments/header :: header('carrito')}">
+</header>
+
+<!--
+    La necesidad de mostrar datos de envío se determina
+    a partir de las presentaciones incluidas en el carrito.
+
+    CheckoutService realizará la validación definitiva
+    al procesar la compra.
+-->
+<main class="contenedor checkout-publico"
+      th:with="requiereEnvio=${!carrito.items.?[formato != 'DIGITAL'].isEmpty()}">
+
+    <div class="encabezado-pagina">
+        <h1>Confirmar compra</h1>
+
+        <p>
+            Completa los datos necesarios para generar tu orden.
+        </p>
+    </div>
+
+    <!-- Mensajes temporales provenientes del controlador. -->
+    <div class="mensaje-exito"
+         role="status"
+         th:if="${mensajeExito != null}"
+         th:text="${mensajeExito}">
+    </div>
+
+    <div class="mensaje-error"
+         role="alert"
+         th:if="${mensajeError != null}"
+         th:text="${mensajeError}">
+    </div>
+
+    <div class="checkout">
+
+        <section class="panel">
+
+            <!-- Formulario principal de confirmación. -->
+            <form class="formulario"
+                  id="form-checkout"
+                  method="post"
+                  th:action="@{/checkout/confirmar}">
+
+                <!--
+                    Las compras físicas o mixtas requieren
+                    seleccionar una dirección de envío.
+                -->
+                <div class="checkout-entrega"
+                     th:if="${requiereEnvio}">
+
+                    <h2>Datos de entrega</h2>
+
+                    <p th:if="${#lists.isEmpty(direcciones)}">
+                        Todavía no tienes direcciones registradas.
+                        Registra una dirección para continuar.
+                    </p>
+
+                    <div th:unless="${#lists.isEmpty(direcciones)}">
+
+                        <label for="direccionId">
+                            Dirección de envío
+                        </label>
+
+                        <select class="campo campo-formulario"
+                                id="direccionId"
+                                name="direccionId"
+                                required>
+
+                            <option value="">
+                                Selecciona una dirección
+                            </option>
+
+                            <option
+                                    th:each="direccion : ${direcciones}"
+                                    th:value="${direccion.id}"
+                                    th:selected="${direccion.id == direccionSeleccionadaId}"
+                                    th:text="|${direccion.nombreDestinatario} · ${direccion.calle} ${direccion.numeroExterior}, ${direccion.colonia}, ${direccion.ciudad}, ${direccion.estado}, CP ${direccion.codigoPostal}|">
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <!-- Información para compras digitales. -->
+                <div th:unless="${requiereEnvio}">
+
+                    <h2>Entrega digital</h2>
+
+                    <p>
+                        Tu carrito contiene exclusivamente
+                        libros digitales.
+                    </p>
+
+                    <p>
+                        No necesitas registrar una dirección
+                        de envío para esta compra.
+                    </p>
+
+                </div>
+
+                <!-- Métodos de pago proporcionados por el controlador. -->
+                <div class="checkout-metodos-pago">
+
+                    <h2>Método de pago</h2>
+
+                    <label class="opcion-pago"
+                           th:each="metodo : ${metodosPago}">
+
+                        <input type="radio"
+                               name="metodoPago"
+                               th:value="${metodo.name()}"
+                               th:checked="${metodo == metodoPagoSeleccionado}"
+                               required />
+
+                        <span th:switch="${metodo.name()}">
+
+                            <span th:case="'TRANSFERENCIA'">
+                                Transferencia bancaria
+                            </span>
+
+                            <span th:case="'TARJETA'">
+                                Tarjeta
+                            </span>
+
+                            <span th:case="'EFECTIVO'">
+                                Efectivo
+                            </span>
+
+                        </span>
+
+                    </label>
+
+                    <p class="nota">
+                        Simulación académica.
+                        No se realizará ningún cobro real.
+                    </p>
+
+                </div>
+
+            </form>
+
+            <!--
+                Formulario independiente para registrar
+                una dirección sin abandonar el checkout.
+            -->
+            <details class="checkout-nueva-direccion"
+                     th:if="${requiereEnvio}"
+                     th:open="${#lists.isEmpty(direcciones) or datosDireccion != null}">
+
+                <summary>Registrar nueva dirección</summary>
+
+                <form class="formulario"
+                      method="post"
+                      th:action="@{/checkout/direcciones}">
+
+                    <label for="nombreDestinatario">
+                        Nombre del destinatario
+                    </label>
+
+                    <input class="campo campo-formulario"
+                           id="nombreDestinatario"
+                           name="nombreDestinatario"
+                           type="text"
+                           autocomplete="name"
+                           maxlength="150"
+                           th:value="${datosDireccion?.nombreDestinatario}"
+                           required />
+
+                    <label for="calle">Calle</label>
+
+                    <input class="campo campo-formulario"
+                           id="calle"
+                           name="calle"
+                           type="text"
+                           maxlength="150"
+                           th:value="${datosDireccion?.calle}"
+                           required />
+
+                    <label for="numeroExterior">
+                        Número exterior
+                    </label>
+
+                    <input class="campo campo-formulario"
+                           id="numeroExterior"
+                           name="numeroExterior"
+                           type="text"
+                           maxlength="20"
+                           th:value="${datosDireccion?.numeroExterior}"
+                           required />
+
+                    <label for="numeroInterior">
+                        Número interior (opcional)
+                    </label>
+
+                    <input class="campo campo-formulario"
+                           id="numeroInterior"
+                           name="numeroInterior"
+                           type="text"
+                           maxlength="20"
+                           th:value="${datosDireccion?.numeroInterior}" />
+
+                    <label for="colonia">Colonia</label>
+
+                    <input class="campo campo-formulario"
+                           id="colonia"
+                           name="colonia"
+                           type="text"
+                           maxlength="100"
+                           th:value="${datosDireccion?.colonia}"
+                           required />
+
+                    <label for="codigoPostal">
+                        Código postal
+                    </label>
+
+                    <input class="campo campo-formulario"
+                           id="codigoPostal"
+                           name="codigoPostal"
+                           type="text"
+                           inputmode="numeric"
+                           autocomplete="postal-code"
+                           pattern="[0-9]{5}"
+                           maxlength="5"
+                           th:value="${datosDireccion?.codigoPostal}"
+                           required />
+
+                    <label for="ciudad">Ciudad</label>
+
+                    <input class="campo campo-formulario"
+                           id="ciudad"
+                           name="ciudad"
+                           type="text"
+                           autocomplete="address-level2"
+                           maxlength="100"
+                           th:value="${datosDireccion?.ciudad}"
+                           required />
+
+                    <label for="estado">Estado</label>
+
+                    <input class="campo campo-formulario"
+                           id="estado"
+                           name="estado"
+                           type="text"
+                           autocomplete="address-level1"
+                           maxlength="100"
+                           th:value="${datosDireccion?.estado}"
+                           required />
+
+                    <label for="pais">País</label>
+
+                    <input class="campo campo-formulario"
+                           id="pais"
+                           name="pais"
+                           type="text"
+                           autocomplete="country-name"
+                           maxlength="100"
+                           th:value="${datosDireccion != null ? datosDireccion.pais : 'México'}"
+                           required />
+
+                    <label for="referencias">
+                        Referencias (opcional)
+                    </label>
+
+                    <textarea class="campo campo-formulario"
+                              id="referencias"
+                              name="referencias"
+                              maxlength="500"
+                              rows="3"
+                              th:text="${datosDireccion?.referencias}">
+                    </textarea>
+
+                    <button class="boton boton-primario"
+                            type="submit">
+
+                        Guardar dirección
+
+                    </button>
+
+                </form>
+
+            </details>
+
+        </section>
+
+        <!-- Resumen comercial proporcionado por CarritoService. -->
+        <aside class="resumen">
+
+            <h2>Resumen de la orden</h2>
+
+            <div class="resumen-fila"
+                 th:each="item : ${carrito.items}"
+                 th:with="subtotal=${#numbers.formatDecimal(item.subtotal, 1, 'COMMA', 2, 'POINT')}">
+
+                <div class="checkout-articulo">
+
+                    <span th:text="|${item.titulo} × ${item.cantidad}|">
+                    </span>
+
+                    <small th:switch="${item.formato}">
+
+                        <span th:case="'PASTA_DURA'">
+                            Pasta dura
+                        </span>
+
+                        <span th:case="'PASTA_BLANDA'">
+                            Pasta blanda
+                        </span>
+
+                        <span th:case="'DIGITAL'">
+                            Digital
+                        </span>
+
+                    </small>
+
+                </div>
+
+                <span th:text="|$${subtotal} MXN|">
+                </span>
+
+            </div>
+
+            <div th:with="total=${#numbers.formatDecimal(carrito.total, 1, 'COMMA', 2, 'POINT')}">
+
+                <div class="resumen-fila">
+
+                    <span>Subtotal</span>
+
+                    <span th:text="|$${total} MXN|">
+                    </span>
+
+                </div>
+
+                <div class="resumen-fila"
+                     th:if="${requiereEnvio}">
+
+                    <span>Envío</span>
+                    <span>Sin costo</span>
+
+                </div>
+
+                <div class="resumen-fila resumen-total">
+
+                    <span>Total</span>
+
+                    <span th:text="|$${total} MXN|">
+                    </span>
+
+                </div>
+
+            </div>
+
+            <!--
+                El atributo form permite enviar el formulario
+                principal desde el resumen de la orden.
+
+                No se permite continuar si la compra requiere
+                envío y el cliente no tiene direcciones.
+            -->
+            <button class="boton boton-primario"
+                    type="submit"
+                    form="form-checkout"
+                    th:disabled="${requiereEnvio and #lists.isEmpty(direcciones)}">
+
+                Confirmar orden
+
+            </button>
+
+            <p class="nota">
+                Revisa tus datos antes de confirmar.
+            </p>
+
+            <a class="boton boton-claro"
+               th:href="@{/carrito}">
+
+                Regresar al carrito
+
+            </a>
+
+        </aside>
+
+    </div>
+
+</main>
+
+<footer class="pie">
+
+    <div class="contenedor">
+
+        <span>Librería Raudskinna</span>
+
+        <nav aria-label="Pie de página">
+
+            <a th:href="@{/}">Inicio</a> ·
+            <a th:href="@{/catalogo}">Catálogo</a> ·
+            <a th:href="@{/carrito}">Carrito</a>
+
+        </nav>
+
+    </div>
+
+</footer>
+
+</body>
+</html>

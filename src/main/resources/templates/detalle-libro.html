@@ -155,7 +155,7 @@
                     de disponibilidad y cantidad al recibir la solicitud.
                 -->
                 <form class="formulario-agregar-carrito"
-                      th:if="${presentacion.disponible}"
+                      th:if="${presentacion.disponible and clienteAutenticado}"
                       method="post"
                       th:action="@{/carrito/agregar}">
 
@@ -184,6 +184,21 @@
                     </button>
 
                 </form>
+
+                <!--
+                    Los visitantes sin autenticación deben iniciar
+                    sesión antes de agregar artículos al carrito.
+
+                    La ruta GET protegida permite recuperar el detalle
+                    del libro después de una autenticación exitosa.
+                -->
+                <a class="boton boton-primario"
+                   th:if="${presentacion.disponible and !clienteAutenticado}"
+                   th:href="@{/carrito/continuar/{libroId}(libroId=${libro.id})}">
+
+                    Iniciar sesión para comprar
+
+                </a>
 
             </li>
 

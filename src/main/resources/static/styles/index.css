@@ -1464,3 +1464,161 @@ main.contenedor:has(.detalle) {
     width: 100%;
   }
 }
+
+
+/* ==========================================================
+   CHECKOUT Y CONFIRMACIÓN DE COMPRA
+   Librería Raudskinna
+   ========================================================== */
+
+.checkout-publico,
+.confirmacion-publica {
+  padding-bottom: 40px;
+  min-width: 0;
+}
+
+.checkout-publico .checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+  gap: 24px;
+  align-items: start;
+}
+
+.checkout-publico .panel,
+.checkout-publico .resumen {
+  min-width: 0;
+}
+
+.checkout-publico .formulario {
+  width: 100%;
+  min-width: 0;
+}
+
+.checkout-publico .campo-formulario {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.checkout-entrega,
+.checkout-metodos-pago {
+  margin-bottom: 20px;
+}
+
+.checkout-publico .opcion-pago {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #d9d0c4;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.checkout-publico .opcion-pago input {
+  flex: 0 0 auto;
+  accent-color: #6b4f3a;
+}
+
+.checkout-nueva-direccion {
+  border-top: 1px solid #d9d0c4;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+.checkout-nueva-direccion summary {
+  color: #6b4f3a;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.checkout-nueva-direccion textarea {
+  resize: vertical;
+}
+
+.checkout-articulo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.checkout-articulo small {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.checkout-publico .resumen-fila,
+.confirmacion-publica .resumen-fila {
+  gap: 12px;
+}
+
+.checkout-publico .resumen-fila > span:last-child,
+.confirmacion-publica .resumen-fila > span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.checkout-publico .resumen .boton {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.checkout-publico button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmacion-publica .confirmacion {
+  width: 100%;
+  max-width: 760px;
+  margin: 24px auto;
+  box-sizing: border-box;
+}
+
+.confirmacion-publica .confirmacion-detalle {
+  text-align: left;
+}
+
+.confirmacion-publica .acciones {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Diseño responsivo para tablets y dispositivos móviles. */
+@media (max-width: 1000px) {
+
+  .checkout-publico .checkout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+}
+
+@media (max-width: 600px) {
+
+  .checkout-publico .panel,
+  .checkout-publico .resumen,
+  .confirmacion-publica .panel {
+    padding: 16px;
+  }
+
+  .confirmacion-publica .acciones {
+    flex-direction: column;
+  }
+
+  .confirmacion-publica .acciones .boton {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+}

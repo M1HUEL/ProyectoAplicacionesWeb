@@ -8,9 +8,11 @@ import com.itson.ProyectoAplicacionesWeb.model.EstadoOrden;
 import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
 import com.itson.ProyectoAplicacionesWeb.model.OrdenCompra;
 import com.itson.ProyectoAplicacionesWeb.repository.OrdenCompraRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -83,6 +85,55 @@ public class OrdenCompraService {
                 .stream()
                 .map(this::convertirARespuesta)
                 .toList();
+    }
+
+    /**
+     * Consulta una orden específica perteneciente
+     * al cliente autenticado.
+     *
+     * Utiliza los datos persistidos de la compra,
+     * incluyendo los precios unitarios históricos.
+     *
+     * No permite consultar órdenes pertenecientes
+     * a otros clientes, aunque se conozca su identificador.
+     *
+     * @param correo correo del cliente autenticado.
+     * @param ordenId identificador de la orden solicitada.
+     * @return información comercial de la orden.
+     */
+    @Transactional(readOnly = true)
+    public OrdenCompraResponseDTO consultarOrdenPropia(
+            String correo,
+            Long ordenId) {
+
+        // Validar la identidad recibida.
+        if (correo == null || correo.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "El correo del cliente autenticado no es válido."
+            );
+        }
+
+        // Validar el identificador solicitado.
+        if (ordenId == null || ordenId <= 0) {
+
+            throw new IllegalArgumentException(
+                    "El identificador de la orden no es válido."
+            );
+        }
+
+        // Recuperar exclusivamente una orden perteneciente
+        // al cliente autenticado.
+        OrdenCompra orden = ordenCompraRepository
+                .buscarOrdenPropia(ordenId, correo.trim())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No se encontró la orden solicitada."
+                ));
+
+        // Reutilizar la conversión existente para evitar
+        // duplicar la construcción de los DTO.
+        return convertirARespuesta(orden);
     }
 
     /**

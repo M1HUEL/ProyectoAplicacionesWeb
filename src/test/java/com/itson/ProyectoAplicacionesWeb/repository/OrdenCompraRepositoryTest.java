@@ -246,4 +246,158 @@ class OrdenCompraRepositoryTest {
         );
     }
 
+    /**
+     * Comprueba que un cliente puede recuperar una orden
+     * propia mediante su identificador y correo electrónico.
+     */
+    @Test
+    void buscarOrdenPropia_ordenDelCliente_retornaOrden() {
+
+        // 1. Registrar un cliente.
+        Usuario cliente = usuarioRepository.save(
+                new Usuario(
+                        null,
+                        "H. P. Lovecraft",
+                        "lovecraft@raudskinna.com",
+                        "hash",
+                        Rol.USER
+                )
+        );
+
+        // 2. Registrar una orden perteneciente al cliente.
+        OrdenCompra orden = ordenCompraRepository.saveAndFlush(
+                new OrdenCompra(
+                        cliente,
+                        new BigDecimal("350.00")
+                )
+        );
+
+        Long ordenId = orden.getId();
+
+        // 3. Limpiar el contexto de persistencia.
+        entityManager.clear();
+
+        // 4. Recuperar la orden mediante la nueva consulta.
+        var resultado = ordenCompraRepository.buscarOrdenPropia(
+                ordenId,
+                "lovecraft@raudskinna.com"
+        );
+
+        // 5. Comprobar los datos recuperados.
+        assertTrue(resultado.isPresent());
+
+        assertEquals(
+                ordenId,
+                resultado.get().getId()
+        );
+
+        assertEquals(
+                "lovecraft@raudskinna.com",
+                resultado.get().getUsuario().getCorreo()
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("350.00")
+                        .compareTo(resultado.get().getTotal())
+        );
+    }
+
+    /**
+     * Comprueba que conocer el identificador de una orden
+     * no permite acceder a compras de otros clientes.
+     *
+     * Previene el acceso indebido mediante la manipulación
+     * del identificador de una orden (IDOR).
+     */
+    @Test
+    void buscarOrdenPropia_ordenDeOtroCliente_retornaVacio() {
+
+        // 1. Registrar dos clientes independientes.
+        Usuario ana = usuarioRepository.save(
+                new Usuario(
+                        null,
+                        "Ana",
+                        "ana@raudskinna.com",
+                        "hash",
+                        Rol.USER
+                )
+        );
+
+        Usuario luis = usuarioRepository.save(
+                new Usuario(
+                        null,
+                        "Luis",
+                        "luis@raudskinna.com",
+                        "hash",
+                        Rol.USER
+                )
+        );
+
+        // 2. Registrar una orden perteneciente a Luis.
+        OrdenCompra ordenLuis =
+                ordenCompraRepository.saveAndFlush(
+                        new OrdenCompra(
+                                luis,
+                                new BigDecimal("700.00")
+                        )
+                );
+
+        Long ordenId = ordenLuis.getId();
+
+        entityManager.clear();
+
+        // 3. Ana intenta recuperar la orden de Luis.
+        var resultadoAna =
+                ordenCompraRepository.buscarOrdenPropia(
+                        ordenId,
+                        ana.getCorreo()
+                );
+
+        // 4. Comprobar que Ana no obtiene información.
+        assertTrue(resultadoAna.isEmpty());
+
+        // 5. Comprobar que el propietario legítimo
+        // sí puede recuperar la misma orden.
+        var resultadoLuis =
+                ordenCompraRepository.buscarOrdenPropia(
+                        ordenId,
+                        luis.getCorreo()
+                );
+
+        assertTrue(resultadoLuis.isPresent());
+
+        assertEquals(
+                ordenId,
+                resultadoLuis.get().getId()
+        );
+    }
+
+    /**
+     * Comprueba que solicitar una orden inexistente
+     * devuelve un resultado vacío.
+     */
+    @Test
+    void buscarOrdenPropia_ordenInexistente_retornaVacio() {
+
+        // Registrar un cliente válido.
+        Usuario cliente = usuarioRepository.saveAndFlush(
+                new Usuario(
+                        null,
+                        "Cliente",
+                        "cliente@raudskinna.com",
+                        "hash",
+                        Rol.USER
+                )
+        );
+
+        // Consultar un identificador inexistente.
+        var resultado = ordenCompraRepository.buscarOrdenPropia(
+                Long.MAX_VALUE,
+                cliente.getCorreo()
+        );
+
+        assertTrue(resultado.isEmpty());
+    }
+
 }

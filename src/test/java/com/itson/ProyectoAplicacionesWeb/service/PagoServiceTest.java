@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,7 +34,7 @@ class PagoServiceTest {
 
         orden = mock(OrdenCompra.class);
 
-        when(orden.getId()).thenReturn(10L);
+        lenient().when(orden.getId()).thenReturn(10L);
 
         lenient().when(orden.getTotal())
                 .thenReturn(new BigDecimal("499.00"));
@@ -132,4 +133,108 @@ class PagoServiceTest {
 
         verify(pagoRepository, never()).save(any());
     }
+
+    /**
+     * Comprueba que el servicio recupera el registro
+     * de pago asociado a una orden existente.
+     *
+     * La consulta no debe modificar información
+     * persistida ni generar otro registro de pago.
+     */
+    @Test
+    void consultarPagoPorOrden_pagoExistente_retornaPago() {
+
+        // 1. Preparar el identificador de la orden.
+        Long ordenId = 10L;
+
+        // 2. Simular un registro de pago existente.
+        Pago pago = mock(Pago.class);
+
+        when(pagoRepository.findByOrdenCompraId(ordenId))
+                .thenReturn(Optional.of(pago));
+
+        // 3. Ejecutar el método de consulta.
+        Optional<Pago> resultado =
+                pagoService.consultarPagoPorOrden(ordenId);
+
+        // 4. Comprobar que se recuperó el registro esperado.
+        assertTrue(resultado.isPresent());
+        assertSame(pago, resultado.orElseThrow());
+
+        // 5. Verificar la consulta realizada.
+        verify(pagoRepository)
+                .findByOrdenCompraId(ordenId);
+
+        // 6. Comprobar que no se generaron operaciones
+        // adicionales sobre el repositorio.
+        verifyNoMoreInteractions(pagoRepository);
+    }
+
+    /**
+     * Comprueba que una orden anterior al módulo
+     * de pagos puede no tener un registro asociado.
+     *
+     * La ausencia de un pago no debe impedir
+     * la consulta administrativa de la orden.
+     */
+    @Test
+    void consultarPagoPorOrden_sinPago_retornaVacio() {
+
+        Long ordenId = 1L;
+
+        // Simular una orden sin registro de pago.
+        when(pagoRepository.findByOrdenCompraId(ordenId))
+                .thenReturn(Optional.empty());
+
+        // Ejecutar la consulta.
+        Optional<Pago> resultado =
+                pagoService.consultarPagoPorOrden(ordenId);
+
+        // Comprobar que no existe un pago asociado.
+        assertTrue(resultado.isEmpty());
+
+        verify(pagoRepository)
+                .findByOrdenCompraId(ordenId);
+
+        verifyNoMoreInteractions(pagoRepository);
+    }
+
+    /**
+     * Comprueba que los identificadores inválidos
+     * son rechazados antes de consultar el repositorio.
+     *
+     * Incluye identificadores nulos, iguales a cero
+     * y negativos.
+     */
+    @Test
+    void consultarPagoPorOrden_idInvalido_lanzaExcepcion() {
+
+        // Validar un identificador nulo.
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> pagoService.consultarPagoPorOrden(null)
+        );
+
+        assertEquals(
+                "El identificador de la orden no es válido.",
+                excepcion.getMessage()
+        );
+
+        // Validar un identificador igual a cero.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> pagoService.consultarPagoPorOrden(0L)
+        );
+
+        // Validar un identificador negativo.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> pagoService.consultarPagoPorOrden(-1L)
+        );
+
+        // Ningún identificador inválido debe provocar
+        // una consulta a la base de datos.
+        verifyNoInteractions(pagoRepository);
+    }
+
 }

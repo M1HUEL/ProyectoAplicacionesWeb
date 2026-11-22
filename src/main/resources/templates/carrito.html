@@ -200,14 +200,15 @@
             </div>
 
             <!--
-                El acceso al checkout se habilitará cuando
-                se implemente su controlador MVC.
+            Permite continuar al proceso de confirmación
+            de compra mediante el controlador CheckoutController.
             -->
-            <button class="boton boton-primario"
-                    type="button"
-                    disabled>
+            <a class="boton boton-primario"
+               th:href="@{/checkout}">
+
                 Continuar al checkout
-            </button>
+
+            </a>
 
             <a class="boton boton-claro"
                th:href="@{/catalogo}">

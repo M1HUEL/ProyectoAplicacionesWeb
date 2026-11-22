@@ -16,6 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -358,6 +360,232 @@ class OrdenCompraServiceTest {
         // Comprueba que se aceptó la transición.
         assertSame(orden, resultado);
         verify(orden).setEstado(EstadoOrden.CANCELADO);
+    }
+
+    /**
+     * Comprueba que la consulta individual devuelve
+     * la información comercial de una orden propia.
+     *
+     * Los importes deben corresponder a los precios
+     * históricos registrados en los detalles de compra,
+     * independientemente del precio comercial actual.
+     */
+    @Test
+    void consultarOrdenPropia_ordenExistente_retornaDetalles() {
+
+        String correo = "cliente@raudskinna.com";
+        Long ordenId = 5L;
+
+        // 1. Simular el libro comprado.
+        Libro libro = mock(Libro.class);
+
+        when(libro.getTitulo())
+                .thenReturn("La llamada de Cthulhu");
+
+        // 2. Simular su presentación comercial.
+        FormatoLibro formato = mock(FormatoLibro.class);
+
+        when(formato.getId()).thenReturn(10L);
+        when(formato.getLibro()).thenReturn(libro);
+        when(formato.getFormato()).thenReturn(Formato.PASTA_DURA);
+
+        // El precio comercial actual es diferente
+        // al precio registrado durante la compra.
+        when(formato.getPrecio())
+                .thenReturn(new BigDecimal("499.00"));
+
+        // 3. Simular el detalle histórico de compra.
+        DetalleOrden detalle = mock(DetalleOrden.class);
+
+        when(detalle.getId()).thenReturn(100L);
+        when(detalle.getFormatoLibro()).thenReturn(formato);
+        when(detalle.getCantidad()).thenReturn(2);
+
+        when(detalle.getPrecioUnitario())
+                .thenReturn(new BigDecimal("350.00"));
+
+        // 4. Simular la orden registrada.
+        OrdenCompra orden = mock(OrdenCompra.class);
+
+        LocalDateTime fecha =
+                LocalDateTime.of(2026, 11, 21, 17, 35);
+
+        when(orden.getId()).thenReturn(ordenId);
+        when(orden.getFecha()).thenReturn(fecha);
+        when(orden.getEstado()).thenReturn(EstadoOrden.PENDIENTE);
+        when(orden.getTotal()).thenReturn(new BigDecimal("700.00"));
+        when(orden.getDetalles()).thenReturn(List.of(detalle));
+
+        // 5. Simular la consulta restringida al propietario.
+        when(ordenCompraRepository.buscarOrdenPropia(
+                ordenId,
+                correo
+        )).thenReturn(Optional.of(orden));
+
+        // 6. Ejecutar el servicio.
+        OrdenCompraResponseDTO respuesta =
+                ordenCompraService.consultarOrdenPropia(
+                        correo,
+                        ordenId
+                );
+
+        // 7. Comprobar los datos generales.
+        assertEquals(ordenId, respuesta.ordenId());
+        assertEquals(fecha, respuesta.fecha());
+        assertEquals("PENDIENTE", respuesta.estado());
+        assertEquals(new BigDecimal("700.00"), respuesta.total());
+        assertEquals(1, respuesta.detalles().size());
+
+        // 8. Comprobar los datos históricos de compra.
+        var detalleRespuesta = respuesta.detalles().get(0);
+
+        assertEquals(10L, detalleRespuesta.formatoLibroId());
+
+        assertEquals(
+                "La llamada de Cthulhu",
+                detalleRespuesta.titulo()
+        );
+
+        assertEquals("PASTA_DURA", detalleRespuesta.formato());
+        assertEquals(2, detalleRespuesta.cantidad());
+
+        assertEquals(
+                new BigDecimal("350.00"),
+                detalleRespuesta.precioUnitario()
+        );
+
+        assertEquals(
+                new BigDecimal("700.00"),
+                detalleRespuesta.subtotal()
+        );
+
+        // 9. Verificar la consulta restringida al propietario.
+        verify(ordenCompraRepository)
+                .buscarOrdenPropia(ordenId, correo);
+
+        // 10. Comprobar que no se utilizó el precio actual
+        // ni una consulta administrativa sin propietario.
+        verify(formato, never()).getPrecio();
+        verify(ordenCompraRepository, never()).findById(any());
+
+        verify(ordenCompraRepository, never())
+                .listarPorCorreoUsuario(any());
+    }
+
+    /**
+     * Comprueba que una orden ajena o inexistente
+     * genera una respuesta HTTP 404.
+     *
+     * Ambos escenarios deben producir el mismo resultado
+     * para no revelar la existencia de órdenes ajenas.
+     */
+    @Test
+    void consultarOrdenPropia_ordenNoEncontrada_lanza404() {
+
+        String correo = "cliente@raudskinna.com";
+        Long ordenId = 999L;
+
+        when(ordenCompraRepository.buscarOrdenPropia(
+                ordenId,
+                correo
+        )).thenReturn(Optional.empty());
+
+        ResponseStatusException excepcion = assertThrows(
+                ResponseStatusException.class,
+                () -> ordenCompraService.consultarOrdenPropia(
+                        correo,
+                        ordenId
+                )
+        );
+
+        assertEquals(
+                HttpStatus.NOT_FOUND,
+                excepcion.getStatusCode()
+        );
+
+        assertEquals(
+                "No se encontró la orden solicitada.",
+                excepcion.getReason()
+        );
+
+        verify(ordenCompraRepository)
+                .buscarOrdenPropia(ordenId, correo);
+
+        // El servicio no debe intentar buscar la orden
+        // mediante una consulta sin restricción de propietario.
+        verify(ordenCompraRepository, never()).findById(any());
+    }
+
+    /**
+     * Comprueba que una identidad inválida se rechaza
+     * antes de establecer una consulta con el repositorio.
+     */
+    @Test
+    void consultarOrdenPropia_correoInvalido_lanzaExcepcion() {
+
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> ordenCompraService.consultarOrdenPropia(
+                        "  ",
+                        1L
+                )
+        );
+
+        assertEquals(
+                "El correo del cliente autenticado no es válido.",
+                excepcion.getMessage()
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ordenCompraService.consultarOrdenPropia(
+                        null,
+                        1L
+                )
+        );
+
+        verifyNoInteractions(ordenCompraRepository);
+    }
+
+    /**
+     * Comprueba que los identificadores nulos,
+     * iguales a cero o negativos son rechazados.
+     */
+    @Test
+    void consultarOrdenPropia_identificadoresInvalidos_lanzaExcepcion() {
+
+        String correo = "cliente@raudskinna.com";
+
+        IllegalArgumentException excepcion = assertThrows(
+                IllegalArgumentException.class,
+                () -> ordenCompraService.consultarOrdenPropia(
+                        correo,
+                        null
+                )
+        );
+
+        assertEquals(
+                "El identificador de la orden no es válido.",
+                excepcion.getMessage()
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ordenCompraService.consultarOrdenPropia(
+                        correo,
+                        0L
+                )
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ordenCompraService.consultarOrdenPropia(
+                        correo,
+                        -1L
+                )
+        );
+
+        verifyNoInteractions(ordenCompraRepository);
     }
 
 }

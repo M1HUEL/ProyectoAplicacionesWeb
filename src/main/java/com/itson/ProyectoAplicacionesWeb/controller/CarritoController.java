@@ -229,4 +229,27 @@ public class CarritoController {
 
         return "redirect:/carrito";
     }
+
+    /**
+     * Permite recuperar la navegación comercial después
+     * de que un visitante se autentique.
+     *
+     * GET /carrito/continuar/{libroId}
+     *
+     * Esta ruta está protegida mediante Spring Security.
+     *
+     * No agrega artículos al carrito ni modifica datos
+     * persistidos. Únicamente redirige al cliente hacia
+     * el detalle del libro que estaba consultando.
+     *
+     * @param libroId identificador del libro consultado.
+     * @return redirección al detalle del libro.
+     */
+    @GetMapping("/continuar/{libroId}")
+    public String continuarCompra(
+            @PathVariable("libroId") Long libroId) {
+
+        return "redirect:/detalle-libro/" + libroId;
+    }
+
 }

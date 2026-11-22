@@ -7,12 +7,14 @@ import com.itson.ProyectoAplicacionesWeb.model.OrdenCompra;
 import com.itson.ProyectoAplicacionesWeb.model.Pago;
 import com.itson.ProyectoAplicacionesWeb.repository.PagoRepository;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Gestiona el registro de pagos de Librería Raudskinna.
@@ -30,7 +32,7 @@ public class PagoService {
 
     /**
      * Registra un pago pendiente asociado a una orden.
-     *
+     * <p>
      * Participa obligatoriamente en una transacción
      * existente para mantener la integridad del checkout.
      */
@@ -75,4 +77,35 @@ public class PagoService {
 
         return pagoRepository.save(pago);
     }
+
+    /**
+     * Recupera el registro de pago asociado a una orden
+     * de compra desde el módulo administrativo.
+     *
+     * Algunas órdenes anteriores a la implementación
+     * del módulo de pagos pueden no contar con un
+     * registro asociado.
+     *
+     * La consulta no modifica información persistida
+     * ni realiza operaciones bancarias.
+     *
+     * @param ordenId identificador de la orden de compra.
+     * @return pago asociado, si existe.
+     */
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public Optional<Pago> consultarPagoPorOrden(Long ordenId) {
+
+        // Validar el identificador recibido.
+        if (ordenId == null || ordenId <= 0) {
+
+            throw new IllegalArgumentException(
+                    "El identificador de la orden no es válido."
+            );
+        }
+
+        // Recuperar el registro de pago existente.
+        return pagoRepository.findByOrdenCompraId(ordenId);
+    }
+
 }

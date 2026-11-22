@@ -97,7 +97,8 @@ class CatalogoControllerTest {
         // ACT: solicitar el detalle público del libro.
         String vista = catalogoController.mostrarDetalleLibro(
                 1L,
-                model
+                model,
+                null
         );
 
         // ASSERT: verificar la plantilla seleccionada.
@@ -110,6 +111,10 @@ class CatalogoControllerTest {
         // Verificar los datos entregados a Thymeleaf.
         verify(model).addAttribute("libro", libro);
         verify(model).addAttribute("formatos", formatos);
+        verify(model).addAttribute(
+                "clienteAutenticado",
+                false
+        );
 
         // El controlador no debe realizar operaciones adicionales.
         verifyNoMoreInteractions(libroService, model);
@@ -139,7 +144,8 @@ class CatalogoControllerTest {
                 ResponseStatusException.class,
                 () -> catalogoController.mostrarDetalleLibro(
                         99L,
-                        model
+                        model,
+                        null
                 )
         );
 

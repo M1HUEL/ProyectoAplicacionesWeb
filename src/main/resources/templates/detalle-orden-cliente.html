@@ -102,6 +102,25 @@
                     <small th:text="|Precio unitario: $${precio} MXN|">
                     </small>
 
+                    <!-- Descarga disponible únicamente para compras
+                         digitales en órdenes entregadas. -->
+                    <a th:if="${detalle.formato == 'DIGITAL'
+                    and orden.estado == 'ENTREGADO'}"
+                       th:href="@{/mis-ordenes/{ordenId}/descargar/{formatoId}(
+                       ordenId=${orden.ordenId},
+                       formatoId=${detalle.formatoLibroId}
+                       )}"
+                       class="boton boton-primario">
+                        Descargar PDF de demostración
+                    </a>
+
+                    <!-- Información cuando todavía no corresponde descargar. -->
+                    <small th:if="${detalle.formato == 'DIGITAL'
+                    and orden.estado != 'ENTREGADO'
+                    and orden.estado != 'CANCELADO'}">
+                        Descarga disponible cuando la orden esté entregada.
+                    </small>
+
                 </div>
 
                 <span th:text="|$${subtotal} MXN|">

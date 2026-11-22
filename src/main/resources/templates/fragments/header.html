@@ -14,8 +14,22 @@
           <li>
             <a th:href="@{/catalogo}" th:aria-current="${activePage == 'catalogo'} ? 'page' : null">Catálogo</a>
           </li>
-          <li>
-            <a th:href="@{/iniciar-sesion}" th:aria-current="${activePage == 'cuenta'} ? 'page' : null">Cuenta</a>
+
+          <!-- Visitante sin sesión: acceso al formulario de login. -->
+          <li th:if="${#authorization.expression('!isAuthenticated()')}">
+            <a th:href="@{/iniciar-sesion}"
+               th:aria-current="${activePage == 'cuenta'} ? 'page' : null">
+              Iniciar sesión
+            </a>
+          </li>
+
+          <!-- Usuario autenticado: cierre seguro de sesión. -->
+          <li th:if="${#authorization.expression('isAuthenticated()')}">
+            <form th:action="@{/logout}" method="post">
+              <button type="submit" class="menu-logout">
+                Cerrar sesión
+              </button>
+            </form>
           </li>
           <li>
             <a th:href="@{/mis-ordenes}" th:aria-current="${activePage == 'ordenes'} ? 'page' : null">Mis órdenes</a>

@@ -1773,3 +1773,18 @@ main.contenedor:has(.detalle) {
     min-width: 0;
   }
 }
+
+/* Botón de cierre de sesión integrado al menú principal. */
+.menu-logout {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.menu-logout:hover {
+  text-decoration: underline;
+}

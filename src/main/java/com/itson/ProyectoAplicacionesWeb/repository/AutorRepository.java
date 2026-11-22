@@ -5,6 +5,8 @@ import com.itson.ProyectoAplicacionesWeb.model.Autor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 /**
  * Repositorio encargado de la persistencia
  * de los autores de Librería Raudskinna.
@@ -19,5 +21,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface AutorRepository extends JpaRepository<Autor, Long> {
+
+    Optional<Autor> findByNombreIgnoreCase(String nombre);
 
 }

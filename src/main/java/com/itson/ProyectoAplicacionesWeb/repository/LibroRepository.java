@@ -68,4 +68,6 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
      * @return true si existe al menos un libro asociado.
      */
     boolean existsByEditorial_Id(Long editorialId);
+
+    Optional<Libro> findByIsbn(String isbn);
 }

@@ -1,6 +1,7 @@
 
 package com.itson.ProyectoAplicacionesWeb.repository;
 
+import com.itson.ProyectoAplicacionesWeb.model.Formato;
 import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repositorio encargado de la persistencia de las
@@ -68,4 +70,8 @@ public interface FormatoLibroRepository
             """)
     List<FormatoLibro> listarFormatosDeLibrosActivos();
 
+    Optional<FormatoLibro> findByLibroIdAndFormato(
+            Long libroId,
+            Formato formato
+    );
 }

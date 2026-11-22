@@ -204,12 +204,39 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                // Seleccionar el formulario de autenticación según
+                // el recurso protegido solicitado por el visitante.
                 .exceptionHandling(ex -> ex
-                        .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/admin/login"),
-                                request ->
-                                        request.getServletPath().equals("/admin")
-                                                || request.getServletPath().startsWith("/admin/")
+                        .authenticationEntryPoint(
+                                (request, response, excepcion) -> {
+
+                                    // Obtener la ruta relativa de la aplicación.
+                                    String ruta = request.getRequestURI()
+                                            .substring(
+                                                    request.getContextPath().length()
+                                            );
+
+                                    // Identificar los recursos administrativos.
+                                    boolean accesoAdministrativo =
+                                            ruta.equals("/admin")
+                                                    || ruta.startsWith("/admin/")
+                                                    || ruta.equals("/usuarios")
+                                                    || ruta.startsWith("/usuarios/");
+
+                                    // Seleccionar el formulario correspondiente.
+                                    String formularioLogin = accesoAdministrativo
+                                            ? "/admin/login"
+                                            : "/iniciar-sesion";
+
+                                    // Delegar la redirección a Spring Security.
+                                    new LoginUrlAuthenticationEntryPoint(
+                                            formularioLogin
+                                    ).commence(
+                                            request,
+                                            response,
+                                            excepcion
+                                    );
+                                }
                         )
                 )
 

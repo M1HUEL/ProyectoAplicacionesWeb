@@ -147,6 +147,44 @@
                     Agotado
                 </p>
 
+                <!--
+                    Permitir agregar únicamente las presentaciones
+                    comercialmente disponibles.
+
+                    CarritoService realizará nuevamente las validaciones
+                    de disponibilidad y cantidad al recibir la solicitud.
+                -->
+                <form class="formulario-agregar-carrito"
+                      th:if="${presentacion.disponible}"
+                      method="post"
+                      th:action="@{/carrito/agregar}">
+
+                    <!-- Identificador de la presentación seleccionada. -->
+                    <input type="hidden"
+                           name="formatoLibroId"
+                           th:value="${presentacion.id}" />
+
+                    <!-- Cantidad solicitada por el cliente. -->
+                    <label>
+                        Cantidad:
+
+                        <input class="campo cantidad-input"
+                               type="number"
+                               name="cantidad"
+                               value="1"
+                               min="1"
+                               max="2147483647"
+                               step="1"
+                               required />
+                    </label>
+
+                    <button class="boton boton-primario"
+                            type="submit">
+                        Agregar al carrito
+                    </button>
+
+                </form>
+
             </li>
 
         </ul>

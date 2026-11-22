@@ -1322,3 +1322,145 @@ main.contenedor:has(.detalle) {
     );
   }
 }
+
+
+/* =========================================================
+   INTEGRACIÓN DEL CARRITO DE COMPRAS
+
+   Complementa los estilos originales del segundo entregable
+   para permitir operaciones mediante formularios Thymeleaf.
+
+   Las cantidades, precios y subtotales son administrados
+   por CarritoService.
+   ========================================================= */
+
+/* Contenedor principal del carrito. */
+.carrito-publico {
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 40px;
+}
+
+/* Distribución de artículos y resumen económico. */
+.carrito-publico .carrito {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+}
+
+/* Evitar desbordamiento del contenido de los artículos. */
+.carrito-publico .item-carrito {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+}
+
+.carrito-publico .item-carrito > div {
+  min-width: 0;
+}
+
+.carrito-publico .item-carrito h3 {
+  overflow-wrap: anywhere;
+}
+
+/* Campo numérico para las cantidades solicitadas. */
+.cantidad-input {
+  width: 85px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Permitir reorganizar los controles de cantidad. */
+.carrito-publico .cantidad {
+  flex-wrap: wrap;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* Formulario de compra desde el detalle del libro. */
+.formulario-agregar-carrito {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.formulario-agregar-carrito label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Importe correspondiente a cada artículo. */
+.subtotal-item {
+  margin-top: 10px;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+/* Presentación del carrito sin artículos. */
+.carrito-publico .carrito-vacio {
+  text-align: center;
+  padding: 40px 16px;
+}
+
+.carrito-vacio p {
+  margin: 12px 0 24px;
+}
+
+/* Acciones disponibles en el resumen de compra. */
+.carrito-publico .resumen .boton {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* Identificar visualmente las acciones no disponibles. */
+.carrito-publico .boton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   ADAPTACIÓN RESPONSIVA DEL CARRITO
+   ========================================================= */
+
+/* Tabletas y ventanas de escritorio reducidas. */
+@media (max-width: 1000px) {
+  .carrito-publico .carrito {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Dispositivos móviles. */
+@media (max-width: 600px) {
+
+  .carrito-publico .item-carrito {
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* Colocar la acción Eliminar debajo del artículo. */
+  .carrito-publico .item-carrito > form {
+    grid-column: 1 / -1;
+  }
+
+  .carrito-publico .item-carrito > form .boton {
+    width: 100%;
+  }
+
+  .carrito-publico .resumen {
+    padding: 16px;
+  }
+
+  .formulario-agregar-carrito {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .formulario-agregar-carrito .boton {
+    width: 100%;
+  }
+}

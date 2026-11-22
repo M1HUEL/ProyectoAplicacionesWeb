@@ -346,4 +346,68 @@ class NavegacionSecurityIntegrationTest {
 
         return sesion;
     }
+
+    /**
+     * Comprueba que el cliente recupera la navegación
+     * hacia su historial después de iniciar sesión.
+     */
+    @Test
+    void iniciarSesion_desdeHistorial_recuperaSolicitud()
+            throws Exception {
+
+        // Solicitar el historial sin autenticación.
+        MockHttpSession sesion = solicitarRutaProtegida(
+                "/mis-ordenes"
+        );
+
+        // Autenticar al cliente conservando la solicitud.
+        mockMvc.perform(
+                        post("/iniciar-sesion")
+                                .session(sesion)
+                                .param("correo", CORREO_CLIENTE)
+                                .param("contrasena", CONTRASENA)
+                                .with(csrf())
+                )
+                .andExpect(status().is3xxRedirection())
+                .andExpect(authenticated().withUsername(CORREO_CLIENTE))
+                .andExpect(header().string(
+                        "Location",
+                        endsWith("/mis-ordenes")
+                ));
+    }
+
+    /**
+     * Comprueba que el cliente recupera la solicitud
+     * de consulta de una orden individual después
+     * de autenticarse.
+     *
+     * Reproduce la prueba manual realizada en Brave.
+     *
+     * La recuperación de la URL no sustituye
+     * la validación de propiedad de la orden,
+     * responsabilidad de OrdenCompraService.
+     */
+    @Test
+    void iniciarSesion_desdeDetalleOrden_recuperaSolicitud()
+            throws Exception {
+
+        MockHttpSession sesion = solicitarRutaProtegida(
+                "/mis-ordenes/5"
+        );
+
+        mockMvc.perform(
+                        post("/iniciar-sesion")
+                                .session(sesion)
+                                .param("correo", CORREO_CLIENTE)
+                                .param("contrasena", CONTRASENA)
+                                .with(csrf())
+                )
+                .andExpect(status().is3xxRedirection())
+                .andExpect(authenticated().withUsername(CORREO_CLIENTE))
+                .andExpect(header().string(
+                        "Location",
+                        endsWith("/mis-ordenes/5")
+                ));
+    }
+
 }

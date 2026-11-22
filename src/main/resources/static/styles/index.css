@@ -1622,3 +1622,54 @@ main.contenedor:has(.detalle) {
   }
 
 }
+
+/* =====================================================
+   Historial de compras del cliente.
+   ===================================================== */
+
+.historial-ordenes {
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+.historial-ordenes .tabla-contenedor {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.historial-ordenes .tabla {
+  min-width: 760px;
+}
+
+.historial-producto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.35rem 0;
+}
+
+.historial-producto small {
+  color: var(--color-texto-secundario, #666);
+  font-size: 0.8rem;
+}
+
+.historial-vacio {
+  text-align: center;
+  padding: 2rem;
+}
+
+.historial-vacio .acciones {
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.historial-acciones {
+  margin-top: 1.5rem;
+}

@@ -5,14 +5,8 @@ import com.itson.ProyectoAplicacionesWeb.dto.AgregarItemCarritoRequestDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.CarritoResponseDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.ItemCarritoResponseDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.ModificarCantidadCarritoRequestDTO;
-import com.itson.ProyectoAplicacionesWeb.model.CarritoCompra;
-import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
-import com.itson.ProyectoAplicacionesWeb.model.ItemCarrito;
-import com.itson.ProyectoAplicacionesWeb.model.Usuario;
-import com.itson.ProyectoAplicacionesWeb.repository.CarritoCompraRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.FormatoLibroRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.ItemCarritoRepository;
-import com.itson.ProyectoAplicacionesWeb.repository.UsuarioRepository;
+import com.itson.ProyectoAplicacionesWeb.model.*;
+import com.itson.ProyectoAplicacionesWeb.repository.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,17 +27,20 @@ public class CarritoService {
     private final UsuarioRepository usuarioRepository;
     private final ItemCarritoRepository itemCarritoRepository;
     private final FormatoLibroRepository formatoLibroRepository;
+    private final ItemStockRepository itemStockRepository;
 
     public CarritoService(
             CarritoCompraRepository carritoCompraRepository,
             UsuarioRepository usuarioRepository,
             ItemCarritoRepository itemCarritoRepository,
-            FormatoLibroRepository formatoLibroRepository) {
+            FormatoLibroRepository formatoLibroRepository,
+            ItemStockRepository itemStockRepository) {
 
         this.carritoCompraRepository = carritoCompraRepository;
         this.usuarioRepository = usuarioRepository;
         this.itemCarritoRepository = itemCarritoRepository;
         this.formatoLibroRepository = formatoLibroRepository;
+        this.itemStockRepository = itemStockRepository;
     }
 
     /**
@@ -177,11 +174,23 @@ public class CarritoService {
                 );
             }
 
+            // Validar disponibilidad de la cantidad acumulada.
+            validarDisponibilidad(
+                    formatoLibro,
+                    (int) cantidadNueva
+            );
+
             item.setCantidad((int) cantidadNueva);
 
             itemCarritoRepository.save(item);
 
         } else {
+
+            // Validar disponibilidad de la cantidad solicitada.
+            validarDisponibilidad(
+                    formatoLibro,
+                    solicitud.cantidad()
+            );
 
             ItemCarrito nuevoItem = new ItemCarrito(
                     carrito,
@@ -242,6 +251,12 @@ public class CarritoService {
                         "El artículo no existe en el carrito."
                 ));
 
+        // Validar disponibilidad de la nueva cantidad.
+        validarDisponibilidad(
+                item.getFormatoLibro(),
+                solicitud.cantidad()
+        );
+
         // Reemplazar la cantidad anterior.
         item.setCantidad(solicitud.cantidad());
 
@@ -289,6 +304,63 @@ public class CarritoService {
 
         // orphanRemoval=true eliminará el registro asociado.
         return consultarCarrito(correo);
+    }
+
+    /**
+     * Valida la disponibilidad comercial de una presentación
+     * antes de agregarla al carrito o modificar su cantidad.
+     *
+     * Los libros inactivos no pueden incorporarse al carrito.
+     *
+     * Las presentaciones digitales no requieren inventario
+     * físico, por lo que no se consultan sus existencias.
+     *
+     * Para las presentaciones físicas se comprueba que
+     * exista un registro de inventario y que la cantidad
+     * solicitada no supere las existencias disponibles.
+     *
+     * Esta validación no reserva ni descuenta inventario.
+     * La validación definitiva se realiza durante el checkout.
+     *
+     * @param formatoLibro presentación comercial solicitada.
+     * @param cantidad cantidad total solicitada.
+     */
+    private void validarDisponibilidad(
+            FormatoLibro formatoLibro,
+            int cantidad) {
+
+        // Verificar que el libro permanezca activo.
+        if (!formatoLibro.getLibro().isActivo()) {
+            throw new IllegalArgumentException(
+                    "El libro solicitado ya no está disponible."
+            );
+        }
+
+        // Los formatos digitales no requieren inventario físico.
+        if (formatoLibro.getFormato() == Formato.DIGITAL) {
+            return;
+        }
+
+        // Recuperar las existencias de la presentación física.
+        ItemStock inventario = itemStockRepository
+                .findByFormatoLibroId(formatoLibro.getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "La presentación no tiene inventario registrado."
+                ));
+
+        // Verificar que existan unidades disponibles.
+        if (inventario.getCantidad() <= 0) {
+            throw new IllegalArgumentException(
+                    "La presentación solicitada está agotada."
+            );
+        }
+
+        // Comprobar la cantidad total solicitada.
+        if (cantidad > inventario.getCantidad()) {
+            throw new IllegalArgumentException(
+                    "La cantidad solicitada supera las existencias disponibles."
+            );
+        }
     }
 
 }

@@ -21,7 +21,14 @@ public record RegistroRequestDTO(
 
         @NotBlank(message = "La contraseña es obligatoria.")
         @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres.")
-        String contrasena
+        String contrasena,
+
+        @NotBlank(message = "El teléfono es obligatorio.")
+        @jakarta.validation.constraints.Pattern(
+                regexp = "\\d{10}",
+                message = "El teléfono debe contener exactamente 10 dígitos."
+        )
+                String telefono
 
 ) {
 }

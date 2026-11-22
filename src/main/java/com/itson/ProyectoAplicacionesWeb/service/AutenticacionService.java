@@ -83,6 +83,23 @@ public class AutenticacionService implements UserDetailsService {
         // No aceptamos identificadores enviados desde el formulario.
         usuario.setId(null);
 
+        /**
+         * Validar el teléfono de contacto.
+         *
+         * El teléfono es obligatorio para nuevas cuentas,
+         * pero puede permanecer null en registros históricos.
+         */
+        String telefono = usuario.getTelefono();
+
+        if (telefono == null || !telefono.trim().matches("\\d{10}")) {
+            throw new IllegalArgumentException(
+                    "El teléfono debe contener exactamente 10 dígitos."
+            );
+        }
+
+        // Normalizar antes de persistir.
+        usuario.setTelefono(telefono.trim());
+
         // Todo registro público recibe obligatoriamente el rol USER.
         // Nunca aceptamos privilegios administrativos enviados por el cliente.
         usuario.setRol(Rol.USER);

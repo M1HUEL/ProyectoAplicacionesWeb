@@ -73,6 +73,7 @@ public class AuthRestController {
         Usuario usuario = new Usuario();
         usuario.setNombre(solicitud.nombre());
         usuario.setCorreo(solicitud.correo());
+        usuario.setTelefono(solicitud.telefono());
         usuario.setContrasena(solicitud.contrasena());
 
         // Reutilizamos la lógica existente de registro.

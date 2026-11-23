@@ -4,6 +4,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 import com.itson.ProyectoAplicacionesWeb.dto.*;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
+import com.itson.ProyectoAplicacionesWeb.storage.ResolvedorUrlsArchivos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.*;
 
 /**
@@ -45,6 +47,9 @@ class LibroServiceTest {
     @Mock
     private CategoriaRepository categoriaRepository;
 
+    @Mock
+    private ResolvedorUrlsArchivos resolvedorUrlsArchivos;
+
     /** Servicio que se someterá a las pruebas. */
     private LibroService libroService;
 
@@ -54,13 +59,17 @@ class LibroServiceTest {
     @BeforeEach
     void configurar() {
         MockitoAnnotations.openMocks(this);
+        when(resolvedorUrlsArchivos.urlPublica(nullable(String.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
         libroService = new LibroService(
                 libroRepository,
                 formatoLibroRepository,
                 itemStockRepository,
                 autorRepository,
                 editorialRepository,
-                categoriaRepository
+                categoriaRepository,
+                resolvedorUrlsArchivos
         );
     }
 

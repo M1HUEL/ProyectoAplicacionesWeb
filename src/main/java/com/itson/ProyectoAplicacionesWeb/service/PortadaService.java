@@ -1,33 +1,35 @@
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.storage.AlmacenamientoArchivos;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.UUID;
 
+/**
+ * Valida y administra las imágenes de portada.
+ *
+ * Las decisiones de dónde se guarda el archivo se delegan a
+ * {@link AlmacenamientoArchivos}; este servicio conserva únicamente
+ * las reglas de negocio sobre el contenido de la imagen.
+ */
 @Service
 public class PortadaService {
-    /** Prefijo público con el que se guardan las URL en Libro.portadaUrl. */
-    public static final String URL_BASE = "/uploads/portadas/";
+
+    /** Prefijo de las claves de portada dentro del almacenamiento. */
+    public static final String PREFIJO_CLAVES = "portadas/";
 
     /** Tamaño máximo permitido por imagen: 2 MB. */
     static final long TAMANO_MAXIMO_BYTES = 2L * 1024 * 1024;
 
-    private final Path directorio;
+    private final AlmacenamientoArchivos almacenamiento;
 
-    public PortadaService(
-            @Value("${app.uploads.dir:uploads}") String directorioBase) {
-        this.directorio = Path.of(directorioBase)
-                .toAbsolutePath()
-                .normalize()
-                .resolve("portadas");
+    public PortadaService(AlmacenamientoArchivos almacenamiento) {
+        this.almacenamiento = almacenamiento;
     }
 
     /**
@@ -37,7 +39,7 @@ public class PortadaService {
      * para evitar que se publique contenido que no sea una imagen.
      *
      * @param archivo archivo recibido del formulario (puede ser null).
-     * @return URL pública de la imagen, o null si no se envió archivo.
+     * @return clave de la imagen, o null si no se envió archivo.
      * @throws IllegalArgumentException si el archivo no es válido.
      */
     public String guardar(MultipartFile archivo) {
@@ -60,10 +62,9 @@ public class PortadaService {
             );
         }
 
-        String nombre = UUID.randomUUID() + extension;
+        String clave = PREFIJO_CLAVES + UUID.randomUUID() + extension;
 
         try (InputStream entrada = archivo.getInputStream()) {
-
             byte[] cabecera = entrada.readNBytes(12);
 
             if (!coincideConFirma(cabecera, extension)) {
@@ -72,12 +73,7 @@ public class PortadaService {
                 );
             }
 
-            Files.createDirectories(directorio);
-
-            // Se vuelve a abrir el archivo para copiarlo completo.
-            try (InputStream completa = archivo.getInputStream()) {
-                Files.copy(completa, directorio.resolve(nombre));
-            }
+            almacenamiento.guardar(clave, archivo.getBytes());
 
         } catch (IOException e) {
             throw new IllegalArgumentException(
@@ -85,36 +81,36 @@ public class PortadaService {
             );
         }
 
-        return URL_BASE + nombre;
+        return clave;
     }
 
     /**
      * Elimina una imagen guardada por este servicio.
      *
-     * Ignora valores nulos, URL externas y cualquier ruta que no
+     * Ignora valores nulos, URL externas y cualquier referencia que no
      * pertenezca al directorio de portadas.
      */
-    public void eliminar(String url) {
+    public void eliminar(String referencia) {
 
-        if (url == null || !url.startsWith(URL_BASE)) {
+        if (referencia == null || referencia.isBlank()) {
             return;
         }
 
-        String nombre = url.substring(URL_BASE.length());
+        String valor = referencia.trim();
 
-        if (nombre.isBlank()
-                || nombre.contains("/")
-                || nombre.contains("\\")
-                || nombre.contains("..")) {
+        // Nunca se elimina un objeto a partir de una URL externa.
+        if (valor.contains("://")
+                && !valor.startsWith(almacenamiento.baseUrl())) {
             return;
         }
 
-        try {
-            Files.deleteIfExists(directorio.resolve(nombre));
-        } catch (IOException e) {
-            // No se interrumpe la operación del administrador
-            // por un archivo huérfano.
+        String clave = almacenamiento.claveDe(valor);
+
+        if (clave == null || !clave.startsWith(PREFIJO_CLAVES)) {
+            return;
         }
+
+        almacenamiento.eliminar(clave);
     }
 
     private String extensionPorTipo(String tipo) {
@@ -148,4 +144,3 @@ public class PortadaService {
         };
     }
 }
-

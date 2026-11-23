@@ -1,33 +1,35 @@
-
 package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.dto.OrdenCompraResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.storage.AlmacenamientoArchivos;
 
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
-
 /**
- * Gestiona la descarga simulada de libros digitales.
+ * Gestiona la descarga de libros digitales.
  *
  * Reutiliza la validación de propiedad de las órdenes.
- * No modifica inventarios ni entidades JPA.
+ * No modifica inventarios ni entidades JPA. El archivo se obtiene
+ * del proveedor de almacenamiento configurado (local o Cloudflare R2).
  */
 @Service
 public class DescargaDigitalService {
 
-    private static final String ARCHIVO_DEMO =
+    /** Clave lógica del PDF de demostración. */
+    public static final String CLAVE_PDF_DEMO =
             "descargas/raudskinna-muestra-digital.pdf";
 
     private final OrdenCompraService ordenCompraService;
+    private final AlmacenamientoArchivos almacenamiento;
 
     public DescargaDigitalService(
-            OrdenCompraService ordenCompraService) {
+            OrdenCompraService ordenCompraService,
+            AlmacenamientoArchivos almacenamiento) {
 
         this.ordenCompraService = ordenCompraService;
+        this.almacenamiento = almacenamiento;
     }
 
     /**
@@ -77,17 +79,10 @@ public class DescargaDigitalService {
             );
         }
 
-        try {
-            return new ClassPathResource(ARCHIVO_DEMO)
-                    .getInputStream()
-                    .readAllBytes();
-
-        } catch (IOException e) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "No se pudo recuperar el archivo digital.",
-                    e
-            );
-        }
+        return almacenamiento.leer(CLAVE_PDF_DEMO)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "No se pudo recuperar el archivo digital."
+                ));
     }
 }

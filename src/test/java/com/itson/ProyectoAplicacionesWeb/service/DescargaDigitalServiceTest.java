@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.dto.DetalleOrdenResponseDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.OrdenCompraResponseDTO;
+import com.itson.ProyectoAplicacionesWeb.storage.AlmacenamientoArchivos;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -36,6 +38,9 @@ class DescargaDigitalServiceTest {
 
     @Mock
     private OrdenCompraService ordenCompraService;
+
+    @Mock
+    private AlmacenamientoArchivos almacenamiento;
 
     @InjectMocks
     private DescargaDigitalService descargaDigitalService;
@@ -76,6 +81,14 @@ class DescargaDigitalServiceTest {
                 CORREO, ORDEN_ID
         )).thenReturn(crearOrden("ENTREGADO"));
 
+        when(almacenamiento.leer(
+                DescargaDigitalService.CLAVE_PDF_DEMO
+        )).thenReturn(Optional.of(
+                "%PDF-1.4 contenido de prueba".getBytes(
+                        java.nio.charset.StandardCharsets.US_ASCII
+                )
+        ));
+
         byte[] archivo = descargaDigitalService.descargar(
                 CORREO, ORDEN_ID, FORMATO_ID
         );
@@ -92,6 +105,32 @@ class DescargaDigitalServiceTest {
                         java.nio.charset.StandardCharsets.US_ASCII
                 )
         );
+    }
+
+    /**
+     * Si el proveedor no encuentra el archivo, se informa un error
+     * del servidor sin exponer detalles del almacenamiento.
+     */
+    @Test
+    void rechazarDescargaSiElArchivoNoExiste() {
+
+        when(ordenCompraService.consultarOrdenPropia(
+                CORREO, ORDEN_ID
+        )).thenReturn(crearOrden("ENTREGADO"));
+
+        when(almacenamiento.leer(
+                DescargaDigitalService.CLAVE_PDF_DEMO
+        )).thenReturn(Optional.empty());
+
+        ResponseStatusException excepcion = assertThrows(
+                ResponseStatusException.class,
+                () -> descargaDigitalService.descargar(
+                        CORREO, ORDEN_ID, FORMATO_ID
+                )
+        );
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR,
+                excepcion.getStatusCode());
     }
 
     /**

@@ -4,6 +4,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 import com.itson.ProyectoAplicacionesWeb.dto.*;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
+import com.itson.ProyectoAplicacionesWeb.storage.ResolvedorUrlsArchivos;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,9 @@ public class LibroService {
     private final EditorialRepository editorialRepository;
     private final CategoriaRepository categoriaRepository;
 
+    /** Resuelve las URL de portada según el proveedor de archivos activo. */
+    private final ResolvedorUrlsArchivos resolvedorUrlsArchivos;
+
     /**
      * Inyecta los repositorios necesarios para la gestión
      * administrativa de libros.
@@ -56,7 +60,8 @@ public class LibroService {
             ItemStockRepository itemStockRepository,
             AutorRepository autorRepository,
             EditorialRepository editorialRepository,
-            CategoriaRepository categoriaRepository) {
+            CategoriaRepository categoriaRepository,
+            ResolvedorUrlsArchivos resolvedorUrlsArchivos) {
 
         this.libroRepository = libroRepository;
         this.formatoLibroRepository = formatoLibroRepository;
@@ -64,6 +69,7 @@ public class LibroService {
         this.autorRepository = autorRepository;
         this.editorialRepository = editorialRepository;
         this.categoriaRepository = categoriaRepository;
+        this.resolvedorUrlsArchivos = resolvedorUrlsArchivos;
     }
 
     /**
@@ -97,7 +103,9 @@ public class LibroService {
                         libro.getId(),
                         libro.getTitulo(),
                         libro.getSinopsis(),
-                        libro.getPortadaUrl(),
+                        resolvedorUrlsArchivos.urlPublica(
+                                libro.getPortadaUrl()
+                        ),
                         libro.getCategoria().getNombre(),
                         libro.getEditorial().getNombre(),
                         libro.getAutores().stream()
@@ -646,7 +654,9 @@ public class LibroService {
                 libro.getId(),
                 libro.getTitulo(),
                 libro.getSinopsis(),
-                libro.getPortadaUrl(),
+                resolvedorUrlsArchivos.urlPublica(
+                        libro.getPortadaUrl()
+                ),
                 libro.getCategoria().getNombre(),
                 libro.getEditorial().getNombre(),
                 libro.getAutores().stream()
@@ -794,7 +804,9 @@ public class LibroService {
         formulario.setCategoriaId(libro.getCategoria().getId());
         formulario.setEditorialId(libro.getEditorial().getId());
         formulario.setSinopsis(libro.getSinopsis());
-        formulario.setPortadaUrl(libro.getPortadaUrl());
+        formulario.setPortadaUrl(
+                resolvedorUrlsArchivos.urlPublica(libro.getPortadaUrl())
+        );
         formulario.setActivo(libro.isActivo());
 
         // Recupera los identificadores de los autores asociados.

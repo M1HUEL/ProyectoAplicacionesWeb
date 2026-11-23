@@ -28,21 +28,8 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<aws.sdk.version>2.59.7</aws.sdk.version>
+		<cloudinary.sdk.version>2.6.0</cloudinary.sdk.version>
 	</properties>
-
-	<!-- Versiones del SDK de AWS; R2 utiliza la API compatible con S3. -->
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>software.amazon.awssdk</groupId>
-				<artifactId>bom</artifactId>
-				<version>${aws.sdk.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
@@ -114,14 +101,11 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Cliente S3 utilizado para guardar archivos en Cloudflare R2. -->
+		<!-- SDK de Cloudinary para guardar portadas y PDF en la nube. -->
 		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>s3</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>url-connection-client</artifactId>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>${cloudinary.sdk.version}</version>
 		</dependency>
 	</dependencies>
 

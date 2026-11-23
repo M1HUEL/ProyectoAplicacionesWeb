@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * Reutiliza la validación de propiedad de las órdenes.
  * No modifica inventarios ni entidades JPA. El archivo se obtiene
- * del proveedor de almacenamiento configurado (local o Cloudflare R2).
+ * del proveedor de almacenamiento configurado (local o Cloudinary).
  */
 @Service
 public class DescargaDigitalService {

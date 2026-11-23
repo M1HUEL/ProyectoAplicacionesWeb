@@ -65,7 +65,7 @@ class ResolvedorUrlsArchivosTest {
     }
 
     @Test
-    void proveedorCloudflare_resuelveClavesYRutasHistoricas() {
+    void proveedorRemoto_resuelveClavesYRutasHistoricas() {
         ResolvedorUrlsArchivos resolvedor = new ResolvedorUrlsArchivos(
                 new AlmacenamientoFalso("https://cdn.ejemplo.com/")
         );

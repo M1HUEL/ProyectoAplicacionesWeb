@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
  * debe utilizarse con el proveedor activo.
  *
  * Así las portadas guardadas con el proveedor local siguen funcionando
- * después de cambiar a Cloudflare R2 (y viceversa), siempre que las
+ * después de cambiar a Cloudinary (y viceversa), siempre que las
  * claves se hayan migrado al otro proveedor.
  */
 @Component

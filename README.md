@@ -73,12 +73,11 @@ La aplicación utiliza Spring Data JPA y Hibernate para actualizar el esquema du
 | `DB_PASSWORD` | Contraseña de conexión a MySQL | Obligatoria para la configuración habitual |
 | `RAUDSKINNA_ADMIN_PASSWORD` | Contraseña de la cuenta administrativa inicial | Necesaria si el administrador todavía no existe |
 | `JWT_SECRET` | Clave Base64 utilizada para firmar y validar JWT | Opcional en la configuración actual de `main`, que dispone de un valor predeterminado |
-| `ARCHIVOS_PROVEEDOR` | Proveedor de archivos: `local` o `cloudflare` | Opcional; el valor predeterminado es `local` |
-| `CLOUDFLARE_ACCOUNT_ID` | Identificador de la cuenta de Cloudflare | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudflare` |
-| `CLOUDFLARE_R2_BUCKET` | Nombre del bucket de R2 | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudflare` |
-| `CLOUDFLARE_R2_ACCESS_KEY_ID` | Access Key ID del token de R2 | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudflare` |
-| `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Secret Access Key del token de R2 | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudflare` |
-| `CLOUDFLARE_R2_PUBLIC_URL` | Dominio público del bucket (dominio propio o `r2.dev`), sin barra final | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudflare` |
+| `ARCHIVOS_PROVEEDOR` | Proveedor de archivos: `local` o `cloudinary` | Opcional; el valor predeterminado es `local` |
+| `CLOUDINARY_CLOUD_NAME` | Cloud name de la cuenta de Cloudinary | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudinary` |
+| `CLOUDINARY_API_KEY` | API Key de Cloudinary | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudinary` |
+| `CLOUDINARY_API_SECRET` | API Secret de Cloudinary | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudinary` |
+| `CLOUDINARY_SECURE_DISTRIBUTION` | Dominio de entrega propio, sin `https://` ni barra final | Opcional; por defecto se usa `res.cloudinary.com/<cloud_name>` |
 
 La contraseña administrativa se utiliza para crear automáticamente `admin@raudskinna.com` mediante `DataInitializer`.
 
@@ -295,27 +294,30 @@ La colección incluye solicitudes organizadas por módulo para comprobar autenti
 
 **Nota:** esta configuración está destinada al entorno académico de desarrollo. No debe considerarse una configuración preparada para producción.
 
-### 3.10. Almacenamiento de archivos: local o Cloudflare R2
+### 3.10. Almacenamiento de archivos: local o Cloudinary
 
 Las portadas y los PDF de descarga digital se gestionan mediante la interfaz `AlmacenamientoArchivos`, con dos implementaciones seleccionadas por `ARCHIVOS_PROVEEDOR`:
 
 - `local` (predeterminado): los archivos se guardan en `app.uploads.dir` y se publican en `/uploads/**`. El PDF de demostración se lee del classpath cuando no existe en disco.
-- `cloudflare`: los archivos se guardan en un bucket de R2 mediante el SDK de S3 (`https://<CLOUDFLARE_ACCOUNT_ID>.r2.cloudflarestorage.com`, región `auto`, path-style).
+- `cloudinary`: los archivos se guardan con el SDK oficial de Cloudinary (`cloudinary-http5`). Las imágenes se suben como `image` y los PDF como `raw`; las URL de entrega se generan con el mismo SDK (`https://res.cloudinary.com/<cloud_name>/...` o el dominio configurado en `CLOUDINARY_SECURE_DISTRIBUTION`).
 
 La base de datos guarda solo la clave lógica (por ejemplo, `portadas/uuid.png`). `ResolvedorUrlsArchivos` genera la URL correspondiente al proveedor activo, por lo que las referencias históricas `/uploads/...` se resuelven con el proveedor configurado sin migrar la tabla `libros`. Las URL externas y las imágenes estáticas `/img/portadas/...` se respetan tal cual.
 
-Para activar R2 en PowerShell:
+Para activar Cloudinary en PowerShell:
 
 ```powershell
-$env:ARCHIVOS_PROVEEDOR = "cloudflare"
-$env:CLOUDFLARE_ACCOUNT_ID = "id-de-la-cuenta"
-$env:CLOUDFLARE_R2_BUCKET = "nombre-del-bucket"
-$env:CLOUDFLARE_R2_ACCESS_KEY_ID = "access-key-id"
-$env:CLOUDFLARE_R2_SECRET_ACCESS_KEY = "secret-access-key"
-$env:CLOUDFLARE_R2_PUBLIC_URL = "https://dominio-publico-del-bucket"
+$env:ARCHIVOS_PROVEEDOR = "cloudinary"
+$env:CLOUDINARY_CLOUD_NAME = "nombre-de-la-nube"
+$env:CLOUDINARY_API_KEY = "api-key"
+$env:CLOUDINARY_API_SECRET = "api-secret"
+
+# Solo si se usa un dominio de entrega propio:
+$env:CLOUDINARY_SECURE_DISTRIBUTION = "cdn.ejemplo.com"
 ```
 
-Antes de cambiar de proveedor, copiar los objetos existentes al otro almacenamiento manteniendo las mismas claves. Para las portadas en R2 el bucket debe tener un dominio público; el PDF se sigue entregando por el backend para conservar la autorización por orden.
+Las credenciales se obtienen en *Dashboard → API Keys* de Cloudinary. El `API Secret` no se vuelve a mostrar después de crearlo. Para que las nuevas credenciales surtan efecto hay que reiniciar la aplicación, porque el cliente se construye al arrancar.
+
+Antes de cambiar de proveedor, copiar los objetos existentes al otro almacenamiento manteniendo las mismas claves (`public_id` sin la extensión). Las portadas requieren que la entrega pública esté habilitada; el PDF se sigue entregando por el backend para conservar la autorización por orden.
 
 ## 4. Seguridad y autenticación
 

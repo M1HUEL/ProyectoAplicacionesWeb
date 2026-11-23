@@ -8,7 +8,7 @@ import java.util.Optional;
  * Las claves son rutas lógicas relativas, por ejemplo
  * {@code portadas/uuid.png} o {@code descargas/libro.pdf}.
  * La base de datos guarda únicamente esa clave, de modo que cambiar
- * de proveedor (local o Cloudflare R2) no requiere migrar registros.
+ * de proveedor (local o Cloudinary) no requiere migrar registros.
  */
 public interface AlmacenamientoArchivos {
 
@@ -24,7 +24,7 @@ public interface AlmacenamientoArchivos {
      */
     void eliminar(String referencia);
 
-    /** URL pública de una clave (ruta local o URL de Cloudflare R2). */
+    /** URL pública de una clave (ruta local o URL de Cloudinary). */
     String urlPublica(String clave);
 
     /** Prefijo que identifica las URL generadas por este proveedor. */

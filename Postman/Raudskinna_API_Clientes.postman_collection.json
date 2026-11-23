@@ -2,7 +2,8 @@
   "info": {
     "_postman_id": "c316b87f-993a-4d2a-aeed-c43125a8ac04",
     "name": "Librería Raudskinna - API y Vistas",
-    "description": "# Librería Raudskinna - API y vistas\n\nColección para probar los endpoints funcionales y de API de la aplicación.\n\nNo incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. La colección se centra en los endpoints de cliente y de API; las vistas administrativas siguen disponibles en la aplicación.\n\n## Requisitos\n\n1. Importa esta colección de Postman. Las solicitudes incluyen URLs y datos de ejemplo para un entorno local de pruebas. Antes de ejecutar las solicitudes de autenticación, sustituye `REEMPLAZAR_CONTRASENA` por la contraseña de un usuario de prueba existente. Para el inicio de sesión administrativo, sustituye `CAMBIAR_ESTA_CLAVE` por la contraseña correspondiente.\n    \n2. Las solicitudes que utilizan identificadores fijos, como `formatoLibroId: 1`, requieren que los registros correspondientes existan en la base de datos.\n    \n3. Las pruebas negativas de checkout deben ejecutarse con las precondiciones indicadas en la descripción de cada solicitud. No se garantiza que funcionen ejecutando toda la colección consecutivamente sin preparar previamente los datos.\n    \n4. No necesitas environment ni configurar variables. Las únicas variables que existen son `jwtToken` y `csrfToken`, que Postman rellena automáticamente al iniciar sesión.\n    \n5. La colección apunta a `http://localhost:8080`. Si usas otro puerto o host, edita la URL de cada petición.\n    \n6. En la petición **Iniciar sesión como administrador** reemplaza el texto `CAMBIAR_ESTA_CLAVE` por la contraseña real del administrador (variable de entorno `RAUDSKINNA_ADMIN_PASSWORD`). Solo se usa para consultar `/usuarios`.\n    \n7. No desactives el almacenamiento de cookies de Postman: las rutas con sesión dependen de `JSESSIONID`.\n    \n\n## Orden recomendado\n\nEjecuta las carpetas en orden: `00` → `06`. También puedes ejecutar peticiones sueltas.\n\n| Carpeta | Contenido |\n| --- | --- |\n| 00 - Preparación | Comprobación de la app y obtención de tokens CSRF |\n| 01 - Catálogo público (API) | `/api/libros` y errores 400/404 |\n| 02 - Autenticación API (JWT) | Registro, login y captura de `jwtToken` |\n| 03 - Carrito (JWT) | Consultar, agregar, modificar y eliminar ítems |\n| 04 - Checkout y órdenes (JWT) | Confirmar compra e historial |\n| 05 - Vistas públicas y sesión | Registro HTML, login y autorización por rol |\n| 06 - Usuarios (JSON, ADMIN) | `/usuarios` y `/usuarios/{id}` |\n\n## CSRF\n\nLas rutas con sesión tienen CSRF habilitado. Antes de un `POST`, `PATCH` o `DELETE` ejecuta la petición **Obtener token CSRF** correspondiente. El token se guarda en `csrfToken`.\n\n## Datos de prueba\n\nLas peticiones de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores 409. El resto de los datos son literales.\n\n## Nota\n\nLa aplicación debe estar en ejecución. La colección no prueba el panel administrativo ni el logout.",
+    "description": "# Librería Raudskinna - API y vistas\n\nColección para probar los endpoints funcionales y de API de la aplicación.\n\nNo incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. La colección se centra en los endpoints de cliente y de API; las vistas administrativas siguen disponibles en la aplicación.\n\n## Requisitos\n\n1. Importa esta colección de Postman. Las solicitudes incluyen URLs y datos de ejemplo para un entorno local de pruebas. Antes de ejecutar las solicitudes de autenticación, sustituye `REEMPLAZAR_CONTRASENA` por la contraseña de un usuario de prueba existente. Para el inicio de sesión administrativo, sustituye `CAMBIAR_ESTA_CLAVE` por la contraseña correspondiente.\n    \n2. Las solicitudes que utilizan identificadores fijos, como `formatoLibroId: 1`, requieren que los registros correspondientes existan en la base de datos.\n    \n3. Las pruebas negativas de checkout deben ejecutarse con las precondiciones indicadas en la descripción de cada solicitud. No se garantiza que funcionen ejecutando toda la colección consecutivamente sin preparar previamente los datos.\n    \n4. No necesitas environment ni configurar variables. Las únicas variables que existen son `jwtToken` y `csrfToken`, que Postman rellena automáticamente al iniciar sesión.\n    \n5. La colección apunta a `http://localhost:8080`. Si usas otro puerto o host, edita la URL de cada petición.\n    \n6. En la petición **Iniciar sesión como administrador** reemplaza el texto `CAMBIAR_ESTA_CLAVE` por la contraseña real del administrador (variable de entorno `RAUDSKINNA_ADMIN_PASSWORD`). Solo se usa para consultar `/usuarios`.\n    \n7. No desactives el almacenamiento de cookies de Postman: las rutas con sesión dependen de `JSESSIONID`.\n    \n\n## Orden recomendado\n\nEjecuta las carpetas en orden: `00` → `07`. También puedes ejecutar peticiones sueltas.\n\n| Carpeta | Contenido |\n| --- | --- |\n| 00 - Preparación | Comprobación de la app y obtención de tokens CSRF |\n| 01 - Catálogo público (API) | `/api/libros` y errores 400/404 |\n| 02 - Autenticación API (JWT) | Registro, login y captura de `jwtToken` |\n| 03 - Carrito (JWT) | Consultar, agregar, modificar y eliminar ítems |\n| 04 - Checkout y órdenes (JWT) | Confirmar compra e historial |\n| 05 - Vistas públicas y sesión | Registro HTML, login y autorización por rol |\n| 06 - Usuarios (JSON, ADMIN) | `/usuarios` y `/usuarios/{id}` |
+| 07 - Direcciones (JWT) | CRUD de direcciones de envío propias |\n\n## CSRF\n\nLas rutas con sesión tienen CSRF habilitado. Antes de un `POST`, `PATCH` o `DELETE` ejecuta la petición **Obtener token CSRF** correspondiente. El token se guarda en `csrfToken`.\n\n## Datos de prueba\n\nLas peticiones de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores 409. El resto de los datos son literales.\n\n## Nota\n\nLa aplicación debe estar en ejecución. La colección no prueba el panel administrativo ni el logout.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "43567406",
     "_collection_link": "https://go.postman.co/collection/43567406-c316b87f-993a-4d2a-aeed-c43125a8ac04?source=collection_link"
@@ -1614,6 +1615,272 @@
         }
       ],
       "description": "Consulta de usuarios con sesión ADMIN. Responde JSON."
+    },
+    {
+      "name": "07 - Direcciones (JWT)",
+      "item": [
+        {
+          "name": "Listar direcciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /api/direcciones responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta no expone la entidad JPA', function () {",
+                  "    const direcciones = pm.response.json();",
+                  "    pm.expect(direcciones).to.be.an('array');",
+                  "    if (direcciones.length > 0) {",
+                  "        pm.expect(direcciones[0]).to.not.have.property('usuario');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/direcciones",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "direcciones"
+              ]
+            },
+            "description": "Requiere {{jwtToken}}. Lista solo las direcciones del cliente autenticado."
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar dirección (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('POST /api/direcciones responde 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const creada = pm.response.json();",
+                  "pm.collectionVariables.set('direccionId', creada.id);",
+                  "",
+                  "pm.test('La respuesta incluye id y encabezado Location', function () {",
+                  "    pm.expect(creada).to.have.property('id');",
+                  "    pm.response.to.have.header('Location');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombreDestinatario\": \"Ana López\", \"calle\": \"Reforma\", \"numeroExterior\": \"12\", \"numeroInterior\": \"A\", \"colonia\": \"Centro\", \"codigoPostal\": \"83000\", \"ciudad\": \"Hermosillo\", \"estado\": \"Sonora\", \"pais\": \"México\", \"referencias\": \"Portón negro\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/direcciones",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "direcciones"
+              ]
+            },
+            "description": "Requiere {{jwtToken}}. Guarda el id devuelto en la variable direccionId para las siguientes peticiones."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar dirección (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /api/direcciones/{id} responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('La dirección pertenece al cliente', function () {",
+                  "    pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('direccionId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/direcciones/{{direccionId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "direcciones",
+                "{{direccionId}}"
+              ]
+            },
+            "description": "Requiere {{jwtToken}} y el id guardado al registrar."
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar dirección (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PUT /api/direcciones/{id} responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('La dirección actualizada no expone el usuario', function () {",
+                  "    pm.expect(pm.response.json()).to.not.have.property('usuario');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombreDestinatario\": \"Ana López\", \"calle\": \"Insurgentes\", \"numeroExterior\": \"45\", \"numeroInterior\": \"\", \"colonia\": \"Centro\", \"codigoPostal\": \"83000\", \"ciudad\": \"Hermosillo\", \"estado\": \"Sonora\", \"pais\": \"México\", \"referencias\": \"Frente a la plaza\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/direcciones/{{direccionId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "direcciones",
+                "{{direccionId}}"
+              ]
+            },
+            "description": "Requiere {{jwtToken}} y el id guardado al registrar."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar dirección (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('DELETE /api/direcciones/{id} responde 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/direcciones/{{direccionId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "direcciones",
+                "{{direccionId}}"
+              ]
+            },
+            "description": "Requiere {{jwtToken}} y el id guardado al registrar. Ejecutar al final de la carpeta."
+          },
+          "response": []
+        },
+        {
+          "name": "Direcciones sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sin token responde 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/direcciones",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "direcciones"
+              ]
+            },
+            "description": "Comprueba que la API rechace las consultas de direcciones sin JWT."
+          },
+          "response": []
+        }
+      ],
+      "description": "CRUD de direcciones de envío del cliente autenticado. Requiere {{jwtToken}}.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwtToken}}",
+            "type": "string"
+          }
+        ]
+      }
     }
   ],
   "variable": [
@@ -1623,6 +1890,10 @@
     },
     {
       "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "direccionId",
       "value": ""
     }
   ]

@@ -684,6 +684,13 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 | `DELETE` | `/api/carrito/items/{formatoLibroId}` | — | Elimina un ítem del carrito. | `200`, `401` |
 | `POST` | `/api/checkout` | — | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401` |
 | `GET` | `/api/ordenes` | — | Consulta el historial de órdenes del cliente autenticado. | `200`, `401` |
+| `GET` | `/api/direcciones` | — | Lista las direcciones de envío del cliente autenticado. | `200`, `401` |
+| `GET` | `/api/direcciones/{id}` | `id` en la ruta | Consulta una dirección propia. | `200`, `400`, `401` |
+| `POST` | `/api/direcciones` | JSON: `nombreDestinatario`, `calle`, `numeroExterior`, `colonia`, `codigoPostal`, `ciudad`, `estado`, `pais`; opcionales: `numeroInterior`, `referencias` | Registra una dirección y devuelve `Location`. | `201`, `400`, `401` |
+| `PUT` | `/api/direcciones/{id}` | Los mismos campos que `POST` | Actualiza una dirección propia. | `200`, `400`, `401` |
+| `DELETE` | `/api/direcciones/{id}` | `id` en la ruta | Elimina una dirección propia. | `204`, `400`, `401` |
+
+Todas las operaciones de direcciones reutilizan `DireccionService`, por lo que el propietario se toma del JWT y nunca se acepta un `usuarioId` en la petición. Las respuestas usan `DireccionResponseDTO` y no exponen la entidad JPA ni la relación con el usuario.
 
 ### 12.3. Códigos de respuesta
 
@@ -691,6 +698,7 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 |---|---|
 | `200` | Operación exitosa. |
 | `201` | Recurso creado correctamente. |
+| `204` | Operación exitosa sin contenido de respuesta, por ejemplo al eliminar una dirección. |
 | `302` | Redirección (POST/Redirect/GET o falta de sesión). |
 | `400` | Datos inválidos o regla de negocio incumplida. |
 | `401` | Falta el JWT o es inválido. |

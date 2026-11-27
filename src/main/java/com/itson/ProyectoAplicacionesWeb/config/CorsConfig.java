@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -39,7 +40,9 @@ public class CorsConfig {
         configuracion.setAllowedHeaders(
                 List.of("Authorization", "Content-Type", "Accept")
         );
-        configuracion.setExposedHeaders(List.of("Location"));
+        configuracion.setExposedHeaders(
+                List.of("Location", HttpHeaders.CONTENT_DISPOSITION)
+        );
         configuracion.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource fuente =

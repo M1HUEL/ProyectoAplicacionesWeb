@@ -1180,4 +1180,611 @@ body.admin-layout {
   .admin-contenido {
     padding: 24px 16px;
   }
+
+  /*
+ * =========================================================
+ * RAUDSKINNA - TABLA ADMINISTRATIVA DE EDITORIALES
+ * =========================================================
+ *
+ * Mantiene un ancho mínimo para evitar que las columnas
+ * se compriman excesivamente en pantallas pequeñas.
+ *
+ * El contenedor existente permite desplazamiento
+ * horizontal cuando el espacio disponible es insuficiente.
+ */
+
+  .tabla-editoriales {
+    min-width: 560px;
+  }
+
+  /*
+   * Evita que los botones administrativos
+   * se compriman o dividan su texto.
+   */
+  .tabla-editoriales .acciones-tabla .boton {
+    white-space: nowrap;
+  }
+
+  /*
+   * Permite que los nombres y las direcciones
+   * largos se ajusten dentro de sus columnas.
+   */
+  .tabla-editoriales td {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* =========================================================
+   RAUDSKINNA - DETALLE PÚBLICO DE LIBROS
+   ========================================================= */
+
+/* Mantiene el contenido centrado y aprovecha el ancho disponible. */
+main.contenedor:has(.detalle) {
+  width: 100%;
+  padding-bottom: 40px;
+}
+
+/* Evita desbordamientos de la información bibliográfica. */
+.detalle-info {
+  min-width: 0;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+
+/* Ajusta el tamaño del título según el ancho de pantalla. */
+.detalle-info h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+/* Mantiene las proporciones de las imágenes de portada. */
+.detalle .portada {
+  overflow: hidden;
+}
+
+.detalle .portada img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Distribución adaptable de las presentaciones comerciales. */
+.formatos-libro {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, 220px), 1fr)
+  );
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+}
+
+/* Tarjeta individual de cada presentación comercial. */
+.formato-libro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+}
+
+.formato-libro h3 {
+  font-size: 1.2rem;
+}
+
+/* Destaca el precio utilizando la identidad gráfica existente. */
+.formato-libro strong {
+  font-size: 1.25rem;
+  color: var(--color-primario);
+}
+
+/* Ajusta las etiquetas de disponibilidad dentro de las tarjetas. */
+.formato-libro .etiqueta-disponible,
+.formato-libro .etiqueta-agotado {
+  margin: 0;
+}
+
+/* Adaptación del detalle para dispositivos móviles. */
+@media (max-width: 760px) {
+  .detalle-portada {
+    width: 100%;
+    max-width: 260px;
+    margin-inline: auto;
+  }
+
+  .formatos-libro {
+    grid-template-columns: 1fr;
+  }
+}
+/* =========================================================
+   RAUDSKINNA - CATÁLOGO PÚBLICO
+   ========================================================= */
+
+/* Aprovecha el ancho disponible sin desbordar la pantalla. */
+.inicio-publico,
+.catalogo-publico {
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 40px;
+}
+
+/* Adaptación del catálogo a dispositivos móviles. */
+@media (max-width: 760px) {
+  .inicio-publico,
+  .catalogo-publico .libros {
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(100%, 200px), 1fr)
+    );
+  }
+}
+
+
+/* =========================================================
+   INTEGRACIÓN DEL CARRITO DE COMPRAS
+
+   Complementa los estilos originales del segundo entregable
+   para permitir operaciones mediante formularios Thymeleaf.
+
+   Las cantidades, precios y subtotales son administrados
+   por CarritoService.
+   ========================================================= */
+
+/* Contenedor principal del carrito. */
+.carrito-publico {
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 40px;
+}
+
+/* Distribución de artículos y resumen económico. */
+.carrito-publico .carrito {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+}
+
+/* Evitar desbordamiento del contenido de los artículos. */
+.carrito-publico .item-carrito {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+}
+
+.carrito-publico .item-carrito > div {
+  min-width: 0;
+}
+
+.carrito-publico .item-carrito h3 {
+  overflow-wrap: anywhere;
+}
+
+/* Campo numérico para las cantidades solicitadas. */
+.cantidad-input {
+  width: 85px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Permitir reorganizar los controles de cantidad. */
+.carrito-publico .cantidad {
+  flex-wrap: wrap;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* Formulario de compra desde el detalle del libro. */
+.formulario-agregar-carrito {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.formulario-agregar-carrito label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Importe correspondiente a cada artículo. */
+.subtotal-item {
+  margin-top: 10px;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+/* Presentación del carrito sin artículos. */
+.carrito-publico .carrito-vacio {
+  text-align: center;
+  padding: 40px 16px;
+}
+
+.carrito-vacio p {
+  margin: 12px 0 24px;
+}
+
+/* Acciones disponibles en el resumen de compra. */
+.carrito-publico .resumen .boton {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* Identificar visualmente las acciones no disponibles. */
+.carrito-publico .boton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   ADAPTACIÓN RESPONSIVA DEL CARRITO
+   ========================================================= */
+
+/* Tabletas y ventanas de escritorio reducidas. */
+@media (max-width: 1000px) {
+  .carrito-publico .carrito {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Dispositivos móviles. */
+@media (max-width: 600px) {
+
+  .carrito-publico .item-carrito {
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* Colocar la acción Eliminar debajo del artículo. */
+  .carrito-publico .item-carrito > form {
+    grid-column: 1 / -1;
+  }
+
+  .carrito-publico .item-carrito > form .boton {
+    width: 100%;
+  }
+
+  .carrito-publico .resumen {
+    padding: 16px;
+  }
+
+  .formulario-agregar-carrito {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .formulario-agregar-carrito .boton {
+    width: 100%;
+  }
+}
+
+
+/* ==========================================================
+   CHECKOUT Y CONFIRMACIÓN DE COMPRA
+   Librería Raudskinna
+   ========================================================== */
+
+.checkout-publico,
+.confirmacion-publica {
+  padding-bottom: 40px;
+  min-width: 0;
+}
+
+.checkout-publico .checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+  gap: 24px;
+  align-items: start;
+}
+
+.checkout-publico .panel,
+.checkout-publico .resumen {
+  min-width: 0;
+}
+
+.checkout-publico .formulario {
+  width: 100%;
+  min-width: 0;
+}
+
+.checkout-publico .campo-formulario {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.checkout-entrega,
+.checkout-metodos-pago {
+  margin-bottom: 20px;
+}
+
+.checkout-publico .opcion-pago {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #d9d0c4;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.checkout-publico .opcion-pago input {
+  flex: 0 0 auto;
+  accent-color: #6b4f3a;
+}
+
+.checkout-nueva-direccion {
+  border-top: 1px solid #d9d0c4;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+.checkout-nueva-direccion summary {
+  color: #6b4f3a;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.checkout-nueva-direccion textarea {
+  resize: vertical;
+}
+
+.checkout-articulo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.checkout-articulo small {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.checkout-publico .resumen-fila,
+.confirmacion-publica .resumen-fila {
+  gap: 12px;
+}
+
+.checkout-publico .resumen-fila > span:last-child,
+.confirmacion-publica .resumen-fila > span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.checkout-publico .resumen .boton {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.checkout-publico button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmacion-publica .confirmacion {
+  width: 100%;
+  max-width: 760px;
+  margin: 24px auto;
+  box-sizing: border-box;
+}
+
+.confirmacion-publica .confirmacion-detalle {
+  text-align: left;
+}
+
+.confirmacion-publica .acciones {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Diseño responsivo para tablets y dispositivos móviles. */
+@media (max-width: 1000px) {
+
+  .checkout-publico .checkout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+}
+
+@media (max-width: 600px) {
+
+  .checkout-publico .panel,
+  .checkout-publico .resumen,
+  .confirmacion-publica .panel {
+    padding: 16px;
+  }
+
+  .confirmacion-publica .acciones {
+    flex-direction: column;
+  }
+
+  .confirmacion-publica .acciones .boton {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+}
+
+/* =====================================================
+   Historial de compras del cliente.
+   ===================================================== */
+
+.historial-ordenes {
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+.historial-ordenes .tabla-contenedor {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.historial-ordenes .tabla {
+  min-width: 760px;
+}
+
+.historial-producto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.35rem 0;
+}
+
+.historial-producto small {
+  color: var(--color-texto-secundario, #666);
+  font-size: 0.8rem;
+}
+
+.historial-vacio {
+  text-align: center;
+  padding: 2rem;
+}
+
+.historial-vacio .acciones {
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.historial-acciones {
+  margin-top: 1.5rem;
+}
+
+
+/* =========================================================
+   RAUDSKINNA - AJUSTES RESPONSIVOS DEL CATÁLOGO
+   ========================================================= */
+
+/*
+ * Evita que las imágenes grandes del catálogo provoquen
+ * desbordamiento horizontal.
+ *
+ * Aplica tanto al inicio como al catálogo público.
+ */
+.inicio-publico .libros,
+.catalogo-publico .libros {
+  grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, 200px), 1fr)
+    );
+}
+
+/* Permite que las tarjetas se adapten al ancho disponible. */
+.inicio-publico .libro,
+.catalogo-publico .libro {
+  min-width: 0;
+}
+
+/*
+ * Controla el espacio reservado para las portadas.
+ * Conserva una proporción vertical apropiada para libros.
+ */
+.inicio-publico .libro .portada,
+.catalogo-publico .libro .portada {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+}
+
+/*
+ * Ajusta la imagen al contenedor sin deformarla.
+ * Se conserva la imagen completa.
+ */
+.inicio-publico .libro .portada img,
+.catalogo-publico .libro .portada img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  min-width: 0;
+  object-fit: contain;
+}
+
+/*
+ * Permite ajustar los títulos extensos dentro
+ * de las tarjetas.
+ */
+.inicio-publico .libro h3,
+.catalogo-publico .libro h3 {
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   AJUSTES PARA PANTALLAS PEQUEÑAS
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+  /*
+   * Una columna para la sección principal.
+   * Evita que las columnas del hero se desborden.
+   */
+  .inicio-publico .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inicio-publico .hero > * {
+    min-width: 0;
+  }
+
+  /*
+   * Ajusta las tarjetas para aprovechar el ancho
+   * disponible en teléfonos.
+   */
+  .inicio-publico .libros,
+  .catalogo-publico .libros {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /*
+   * Evita que los elementos de navegación
+   * impongan un ancho mayor al disponible.
+   */
+  .encabezado .contenedor {
+    flex-wrap: wrap;
+  }
+
+  .menu {
+    min-width: 0;
+  }
+}
+
+/* Botón de cierre de sesión integrado al menú principal. */
+.menu-logout {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.menu-logout:hover {
+  text-decoration: underline;
 }

@@ -1,0 +1,245 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Tu carrito · Librería Raudskinna</title>
+
+    <!-- Reutilizar los estilos públicos de la librería. -->
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+
+<body>
+
+<!-- Cabecera compartida de las vistas públicas. -->
+<th:block th:replace="~{fragments/header :: header('carrito')}">
+</th:block>
+
+<main class="contenedor carrito-publico">
+
+    <div class="encabezado-pagina">
+
+        <h1>Tu carrito</h1>
+
+        <p>Revisa los libros seleccionados antes de continuar.</p>
+
+    </div>
+
+    <!-- Mensajes proporcionados mediante RedirectAttributes. -->
+    <div class="mensaje-exito"
+         role="status"
+         th:if="${mensajeExito != null}"
+         th:text="${mensajeExito}">
+    </div>
+
+    <div class="mensaje-error"
+         role="alert"
+         th:if="${mensajeError != null}"
+         th:text="${mensajeError}">
+    </div>
+
+    <!--
+        Informar al cliente cuando todavía no tiene
+        artículos agregados al carrito.
+    -->
+    <section class="seccion carrito-vacio"
+             th:if="${#lists.isEmpty(carrito.items)}">
+
+        <h2>Tu carrito está vacío</h2>
+
+        <p>Explora nuestro catálogo y encuentra tu próxima lectura.</p>
+
+        <a class="boton boton-primario"
+           th:href="@{/catalogo}">
+            Explorar catálogo
+        </a>
+
+    </section>
+
+    <!-- Mostrar el contenido cuando existan artículos. -->
+    <div class="carrito"
+         th:unless="${#lists.isEmpty(carrito.items)}">
+
+        <ul class="carrito-lista">
+
+            <!--
+                Cada artículo corresponde a una presentación
+                comercial proporcionada por CarritoService.
+            -->
+            <li class="item-carrito"
+                th:each="item : ${carrito.items}">
+
+                <!-- Portada provisional. -->
+                <div class="portada">
+                    PORTADA
+                </div>
+
+                <div>
+
+                    <!-- Título del libro. -->
+                    <h3 th:text="${item.titulo}">
+                        Título del libro
+                    </h3>
+
+                    <!-- Nombre comercial de la presentación. -->
+                    <p class="autor"
+                       th:switch="${item.formato}">
+
+                        <span th:case="'PASTA_DURA'">
+                            Pasta dura
+                        </span>
+
+                        <span th:case="'PASTA_BLANDA'">
+                            Pasta blanda
+                        </span>
+
+                        <span th:case="'DIGITAL'">
+                            Digital
+                        </span>
+
+                        <span th:case="*"
+                              th:text="${item.formato}">
+                        </span>
+
+                    </p>
+
+                    <!-- Precio unitario calculado en el servidor. -->
+                    <p class="precio"
+                       th:with="precioFormateado=${#numbers.formatDecimal(item.precioUnitario, 1, 'COMMA', 2, 'POINT')}"
+                       th:text="|$${precioFormateado} MXN|">
+                        $350.00 MXN
+                    </p>
+
+                    <!-- Formulario para modificar la cantidad. -->
+                    <form class="cantidad"
+                          method="post"
+                          th:action="@{/carrito/modificar}">
+
+                        <input type="hidden"
+                               name="formatoLibroId"
+                               th:value="${item.formatoLibroId}" />
+
+                        <input class="campo cantidad-input"
+                               type="number"
+                               name="cantidad"
+                               min="1"
+                               max="2147483647"
+                               step="1"
+                               required
+                               aria-label="Cantidad de artículos"
+                               th:value="${item.cantidad}" />
+
+                        <button class="boton boton-claro"
+                                type="submit">
+                            Actualizar
+                        </button>
+
+                    </form>
+
+                    <!-- Subtotal proporcionado por el servicio. -->
+                    <p class="subtotal-item">
+
+                        <strong>Subtotal:</strong>
+
+                        <span th:with="subtotalFormateado=${#numbers.formatDecimal(item.subtotal, 1, 'COMMA', 2, 'POINT')}"
+                              th:text="|$${subtotalFormateado} MXN|">
+                            $700.00 MXN
+                        </span>
+
+                    </p>
+
+                </div>
+
+                <!-- Formulario para eliminar el artículo. -->
+                <form method="post"
+                      th:action="@{/carrito/eliminar}">
+
+                    <input type="hidden"
+                           name="formatoLibroId"
+                           th:value="${item.formatoLibroId}" />
+
+                    <button class="boton boton-claro"
+                            type="submit">
+                        Eliminar
+                    </button>
+
+                </form>
+
+            </li>
+
+        </ul>
+
+        <!-- Resumen económico del carrito. -->
+        <aside class="resumen">
+
+            <h2>Resumen de compra</h2>
+
+            <div class="resumen-fila">
+
+                <span>Subtotal</span>
+
+                <span th:with="totalFormateado=${#numbers.formatDecimal(carrito.total, 1, 'COMMA', 2, 'POINT')}"
+                      th:text="|$${totalFormateado} MXN|">
+                    $700.00 MXN
+                </span>
+
+            </div>
+
+            <div class="resumen-fila resumen-total">
+
+                <span>Total</span>
+
+                <span th:with="totalFormateado=${#numbers.formatDecimal(carrito.total, 1, 'COMMA', 2, 'POINT')}"
+                      th:text="|$${totalFormateado} MXN|">
+                    $700.00 MXN
+                </span>
+
+            </div>
+
+            <!--
+            Permite continuar al proceso de confirmación
+            de compra mediante el controlador CheckoutController.
+            -->
+            <a class="boton boton-primario"
+               th:href="@{/checkout}">
+
+                Continuar al checkout
+
+            </a>
+
+            <a class="boton boton-claro"
+               th:href="@{/catalogo}">
+                Seguir comprando
+            </a>
+
+        </aside>
+
+    </div>
+
+</main>
+
+<!-- Pie de página de Librería Raudskinna. -->
+<footer class="pie">
+
+    <div class="contenedor">
+
+        <span>Librería Raudskinna</span>
+
+        <nav aria-label="Pie de página">
+
+            <a th:href="@{/}">Inicio</a> ·
+            <a th:href="@{/catalogo}">Catálogo</a> ·
+            <a th:href="@{/carrito}">Carrito</a>
+
+        </nav>
+
+    </div>
+
+</footer>
+
+</body>
+
+</html>

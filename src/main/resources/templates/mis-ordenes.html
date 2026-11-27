@@ -1,0 +1,239 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1" />
+
+  <title>Mis órdenes · Librería Raudskinna</title>
+
+  <link rel="stylesheet"
+        th:href="@{/styles/index.css}" />
+
+</head>
+
+<body>
+
+<!-- Encabezado compartido de la interfaz comercial. -->
+<header th:replace="~{fragments/header :: header('ordenes')}">
+</header>
+
+<main class="contenedor historial-ordenes">
+
+  <div class="encabezado-pagina">
+
+    <h1>Historial de órdenes</h1>
+
+    <p>
+      Consulta el estado y resumen de tus compras.
+    </p>
+
+  </div>
+
+  <!--
+      Cuando el cliente todavía no cuenta con compras,
+      se presenta un mensaje informativo en lugar
+      de una tabla vacía.
+  -->
+  <section class="panel historial-vacio"
+           th:if="${#lists.isEmpty(ordenes)}">
+
+    <h2>Todavía no tienes órdenes registradas</h2>
+
+    <p>
+      Explora nuestro catálogo y encuentra tu próxima lectura.
+    </p>
+
+    <div class="acciones">
+
+      <a class="boton boton-primario"
+         th:href="@{/catalogo}">
+
+        Explorar catálogo
+
+      </a>
+
+    </div>
+
+  </section>
+
+  <!--
+      Historial de compras del usuario autenticado.
+
+      Las órdenes son recuperadas mediante la capa
+      Service y corresponden exclusivamente al cliente
+      que inició sesión.
+  -->
+  <div class="tabla-contenedor"
+       th:unless="${#lists.isEmpty(ordenes)}">
+
+    <table class="tabla">
+
+      <thead>
+
+      <tr>
+        <th scope="col">Orden</th>
+        <th scope="col">Fecha</th>
+        <th scope="col">Productos</th>
+        <th scope="col">Estado</th>
+        <th scope="col">Total</th>
+        <th scope="col">Acciones</th>
+      </tr>
+
+      </thead>
+
+      <tbody>
+
+      <!--
+          Cada fila representa una orden
+          previamente registrada por el cliente.
+      -->
+      <tr th:each="orden : ${ordenes}">
+
+        <!-- Identificador real de la orden. -->
+        <td class="orden-id"
+            th:text="|#${orden.ordenId}|">
+        </td>
+
+        <!-- Fecha original de la compra. -->
+        <td th:text="${#temporals.format(
+                            orden.fecha, 'dd/MM/yyyy HH:mm')}">
+        </td>
+
+        <!-- Artículos registrados en la orden. -->
+        <td>
+
+          <div class="historial-producto"
+               th:each="detalle : ${orden.detalles}">
+
+                            <span th:text="|${detalle.titulo} × ${detalle.cantidad}|">
+                            </span>
+
+            <small th:switch="${detalle.formato}">
+
+                                <span th:case="'PASTA_DURA'">
+                                    Pasta dura
+                                </span>
+
+              <span th:case="'PASTA_BLANDA'">
+                                    Pasta blanda
+                                </span>
+
+              <span th:case="'DIGITAL'">
+                                    Digital
+                                </span>
+
+              <span th:case="*"
+                    th:text="${detalle.formato}">
+                                </span>
+
+            </small>
+
+          </div>
+
+        </td>
+
+        <!-- Estado comercial actual de la orden. -->
+        <td>
+
+                        <span class="estado-orden"
+                              th:classappend="${' estado-orden-' +
+                                  #strings.toLowerCase(orden.estado)}"
+                              th:switch="${orden.estado}">
+
+                            <span th:case="'PENDIENTE'">
+                                Pendiente
+                            </span>
+
+                            <span th:case="'PROCESANDO'">
+                                Procesando
+                            </span>
+
+                            <span th:case="'ENVIADO'">
+                                Enviado
+                            </span>
+
+                            <span th:case="'ENTREGADO'">
+                                Entregado
+                            </span>
+
+                            <span th:case="'CANCELADO'">
+                                Cancelado
+                            </span>
+
+                            <span th:case="*"
+                                  th:text="${orden.estado}">
+                            </span>
+
+                        </span>
+
+        </td>
+
+        <!-- Importe histórico de la compra. -->
+        <td th:with="total=${#numbers.formatDecimal(
+                            orden.total, 1, 'COMMA', 2, 'POINT')}">
+
+                        <span th:text="|$${total} MXN|">
+                        </span>
+
+        </td>
+
+        <!-- Consulta individual de una orden propia. -->
+        <td>
+
+          <a class="enlace-detalle"
+             th:href="@{/mis-ordenes/{ordenId}(
+                               ordenId=${orden.ordenId})}">
+
+            Ver detalle
+
+          </a>
+
+        </td>
+
+      </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <div class="acciones historial-acciones"
+       th:unless="${#lists.isEmpty(ordenes)}">
+
+    <a class="boton boton-claro"
+       th:href="@{/catalogo}">
+
+      Seguir comprando
+
+    </a>
+
+  </div>
+
+</main>
+
+<footer class="pie">
+
+  <div class="contenedor">
+
+    <span>Librería Raudskinna</span>
+
+    <nav aria-label="Pie de página">
+
+      <a th:href="@{/}">Inicio</a> ·
+      <a th:href="@{/catalogo}">Catálogo</a> ·
+      <a th:href="@{/carrito}">Carrito</a>
+
+    </nav>
+
+  </div>
+
+</footer>
+
+</body>
+
+</html>

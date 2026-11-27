@@ -2,7 +2,8 @@
   "info": {
     "_postman_id": "c316b87f-993a-4d2a-aeed-c43125a8ac04",
     "name": "Librería Raudskinna - API y Vistas",
-    "description": "# Librería Raudskinna - API y vistas\n\nColección para probar los endpoints funcionales y de API de la aplicación.\n\nNo incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. La colección se centra en los endpoints de cliente y de API; las vistas administrativas siguen disponibles en la aplicación.\n\n## Requisitos\n\n1. Importa esta colección de Postman. Las solicitudes incluyen URLs y datos de ejemplo para un entorno local de pruebas. Antes de ejecutar las solicitudes de autenticación, sustituye `REEMPLAZAR_CONTRASENA` por la contraseña de un usuario de prueba existente. Para el inicio de sesión administrativo, sustituye `CAMBIAR_ESTA_CLAVE` por la contraseña correspondiente.\n    \n2. Las solicitudes que utilizan identificadores fijos, como `formatoLibroId: 1`, requieren que los registros correspondientes existan en la base de datos.\n    \n3. Las pruebas negativas de checkout deben ejecutarse con las precondiciones indicadas en la descripción de cada solicitud. No se garantiza que funcionen ejecutando toda la colección consecutivamente sin preparar previamente los datos.\n    \n4. No necesitas environment ni configurar variables. Las únicas variables que existen son `jwtToken` y `csrfToken`, que Postman rellena automáticamente al iniciar sesión.\n    \n5. La colección apunta a `http://localhost:8080`. Si usas otro puerto o host, edita la URL de cada petición.\n    \n6. En la petición **Iniciar sesión como administrador** reemplaza el texto `CAMBIAR_ESTA_CLAVE` por la contraseña real del administrador (variable de entorno `RAUDSKINNA_ADMIN_PASSWORD`). Solo se usa para consultar `/usuarios`.\n    \n7. No desactives el almacenamiento de cookies de Postman: las rutas con sesión dependen de `JSESSIONID`.\n    \n\n## Orden recomendado\n\nEjecuta las carpetas en orden: `00` → `06`. También puedes ejecutar peticiones sueltas.\n\n| Carpeta | Contenido |\n| --- | --- |\n| 00 - Preparación | Comprobación de la app y obtención de tokens CSRF |\n| 01 - Catálogo público (API) | `/api/libros` y errores 400/404 |\n| 02 - Autenticación API (JWT) | Registro, login y captura de `jwtToken` |\n| 03 - Carrito (JWT) | Consultar, agregar, modificar y eliminar ítems |\n| 04 - Checkout y órdenes (JWT) | Confirmar compra e historial |\n| 05 - Vistas públicas y sesión | Registro HTML, login y autorización por rol |\n| 06 - Usuarios (JSON, ADMIN) | `/usuarios` y `/usuarios/{id}` |\n\n## CSRF\n\nLas rutas con sesión tienen CSRF habilitado. Antes de un `POST`, `PATCH` o `DELETE` ejecuta la petición **Obtener token CSRF** correspondiente. El token se guarda en `csrfToken`.\n\n## Datos de prueba\n\nLas peticiones de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores 409. El resto de los datos son literales.\n\n## Nota\n\nLa aplicación debe estar en ejecución. La colección no prueba el panel administrativo ni el logout.",
+    "description": "# Librería Raudskinna - API y vistas\n\nColección para probar los endpoints funcionales y de API de la aplicación.\n\nNo incluye los endpoints del panel administrativo (`/admin/**`) ni las páginas que solo muestran formularios. La colección se centra en los endpoints de cliente y de API; las vistas administrativas siguen disponibles en la aplicación.\n\n## Requisitos\n\n1. Importa esta colección de Postman. Las solicitudes incluyen URLs y datos de ejemplo para un entorno local de pruebas. Antes de ejecutar las solicitudes de autenticación, sustituye `REEMPLAZAR_CONTRASENA` por la contraseña de un usuario de prueba existente. Para el inicio de sesión administrativo, sustituye `CAMBIAR_ESTA_CLAVE` por la contraseña correspondiente.\n    \n2. Las solicitudes que utilizan identificadores fijos, como `formatoLibroId: 1`, requieren que los registros correspondientes existan en la base de datos.\n    \n3. Las pruebas negativas de checkout deben ejecutarse con las precondiciones indicadas en la descripción de cada solicitud. No se garantiza que funcionen ejecutando toda la colección consecutivamente sin preparar previamente los datos.\n    \n4. Importa también el entorno `Raudskinna local` incluido en esta carpeta y selecciónalo antes de ejecutar la colección. Todas las URLs usan la variable `{{baseUrl}}`. Las variables `jwtToken` y `csrfToken` se rellenan automáticamente al iniciar sesión.\n    \n5. La colección apunta a `{{baseUrl}}`. Para usar otro host o puerto, cambia el valor de `baseUrl` en el entorno; no hace falta editar las peticiones.\n    \n6. En la petición **Iniciar sesión como administrador** reemplaza el texto `CAMBIAR_ESTA_CLAVE` por la contraseña real del administrador (variable de entorno `RAUDSKINNA_ADMIN_PASSWORD`). Solo se usa para consultar `/usuarios`.\n    \n7. No desactives el almacenamiento de cookies de Postman: las rutas con sesión dependen de `JSESSIONID`.\n    \n\n## Orden recomendado\n\nEjecuta las carpetas en orden: `00` → `07`. También puedes ejecutar peticiones sueltas.\n\n| Carpeta | Contenido |\n| --- | --- |\n| 00 - Preparación | Comprobación de la app y obtención de tokens CSRF |\n| 01 - Catálogo público (API) | `/api/libros` y errores 400/404 |\n| 02 - Autenticación API (JWT) | Registro, login y captura de `jwtToken` |\n| 03 - Carrito (JWT) | Consultar, agregar, modificar y eliminar ítems |\n| 04 - Checkout y órdenes (JWT) | Confirmar compra e historial |\n| 05 - Vistas públicas y sesión | Registro HTML, login y autorización por rol |\n| 06 - Usuarios (JSON, ADMIN) | `/usuarios` y `/usuarios/{id}` |
+| 07 - Direcciones (JWT) | CRUD de direcciones de envío propias |\n\n## CSRF\n\nLas rutas con sesión tienen CSRF habilitado. Antes de un `POST`, `PATCH` o `DELETE` ejecuta la petición **Obtener token CSRF** correspondiente. El token se guarda en `csrfToken`.\n\n## Datos de prueba\n\nLas peticiones de registro crean clientes nuevos con un correo único basado en la variable dinámica `{{$timestamp}}` de Postman, para que la colección se pueda reejecutar sin errores 409. El resto de los datos son literales.\n\n## Nota\n\nLa aplicación debe estar en ejecución. La colección no prueba el panel administrativo ni el logout.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "43567406",
     "_collection_link": "https://go.postman.co/collection/43567406-c316b87f-993a-4d2a-aeed-c43125a8ac04?source=collection_link"
@@ -38,17 +39,15 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 ""
               ]
             },
-            "description": "Verifica que la aplicación esté levantada en http://localhost:8080."
+            "description": "Verifica que la aplicación esté levantada en {{baseUrl}}."
           },
           "response": []
         },
@@ -84,12 +83,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/iniciar-sesion",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/iniciar-sesion",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
@@ -140,12 +137,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/libros",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/libros",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "libros"
@@ -190,12 +185,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/libros/1",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/libros/1",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "libros",
@@ -233,12 +226,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/libros/99999",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/libros/99999",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "libros",
@@ -276,12 +267,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/libros/0",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/libros/0",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "libros",
@@ -319,12 +308,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/libros/abc",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/libros/abc",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "libros",
@@ -383,12 +370,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/auth/registro",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/registro",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "auth",
@@ -433,12 +418,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/auth/registro",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/registro",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "auth",
@@ -482,12 +465,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/auth/registro",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/registro",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "auth",
@@ -528,12 +509,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/auth/login",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/login",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "auth",
@@ -578,12 +557,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/auth/login",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/login",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "auth",
@@ -625,12 +602,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/carrito",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/carrito",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "carrito"
@@ -671,12 +646,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/carrito/items",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/carrito/items",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "carrito",
@@ -729,12 +702,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/carrito/items/1",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/carrito/items/1",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "carrito",
@@ -772,12 +743,10 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/carrito/items/1",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/carrito/items/1",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "carrito",
@@ -810,12 +779,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/carrito",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/carrito",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "carrito"
@@ -875,12 +842,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/carrito/items",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/carrito/items",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "carrito",
@@ -899,7 +864,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"POST /api/checkout responde 201 Created\", function () {",
+                  "pm.test(\"POST /api/ordenes responde 201 Created\", function () {",
                   "    pm.response.to.have.status(201);",
                   "});",
                   "",
@@ -909,6 +874,7 @@
                   "    pm.expect(orden).to.have.property(\"fecha\");",
                   "    pm.expect(orden).to.have.property(\"estado\");",
                   "    pm.expect(orden).to.have.property(\"total\");",
+                  "    pm.collectionVariables.set(\"ordenId\", orden.ordenId);",
                   "});"
                 ]
               }
@@ -918,15 +884,13 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/checkout",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
-                "checkout"
+                "ordenes"
               ]
             }
           },
@@ -964,17 +928,56 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/ordenes",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "ordenes"
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar detalle de orden",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/ordenes/{id} responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El detalle contiene la orden solicitada\", function () {",
+                  "    const orden = pm.response.json();",
+                  "    pm.expect(orden).to.have.property(\"ordenId\").that.is.a(\"number\");",
+                  "    pm.expect(orden).to.have.property(\"estado\");",
+                  "    pm.expect(orden).to.have.property(\"total\");",
+                  "    pm.expect(orden.detalles).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "{{ordenId}}"
+              ]
+            },
+            "description": "Consulta el detalle de la orden generada por **Confirmar compra (201)**. El identificador se guarda automáticamente en la variable de colección `ordenId`."
           },
           "response": []
         },
@@ -1000,12 +1003,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/ordenes",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
                 "ordenes"
@@ -1022,7 +1023,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Checkout con carrito vacío responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema rechaza la compra sin artículos\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.mensaje)\n        .to.eql(\"No se puede confirmar un carrito vacío.\");\n    pm.expect(respuesta.ruta).to.eql(\"/api/checkout\");\n});"
+                  "pm.test(\"Checkout con carrito vacío responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema rechaza la compra sin artículos\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.mensaje)\n        .to.eql(\"No se puede confirmar un carrito vacío.\");\n    pm.expect(respuesta.ruta).to.eql(\"/api/ordenes\");\n});"
                 ]
               }
             }
@@ -1031,15 +1032,13 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/checkout",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
-                "checkout"
+                "ordenes"
               ]
             },
             "description": "**Precondición:** El usuario debe estar autenticado mediante JWT y su carrito debe estar vacío.\n\n**Preparación:** Antes de ejecutar esta prueba, consultar `GET /api/carrito` y, si contiene artículos, eliminarlos mediante `DELETE /api/carrito/items/{formatoLibroId}`.\n\n**Resultado esperado:** `400 Bad Request`, con el mensaje `No se puede confirmar un carrito vacío.`\n\n**Nota:** Esta prueba debe ejecutarse por separado de las pruebas que agregan productos al carrito."
@@ -1054,7 +1053,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\npm.test(\"Checkout sin existencias suficientes responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema informa las existencias disponibles\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.error).to.eql(\"Bad Request\");\n    pm.expect(respuesta.mensaje).to.include(\"Existencias insuficientes\");\n    pm.expect(respuesta.mensaje).to.match(/Disponibles:\\s*\\d+/);\n    pm.expect(respuesta.ruta).to.eql(\"/api/checkout\");\n});\n"
+                  "\npm.test(\"Checkout sin existencias suficientes responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema informa las existencias disponibles\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.error).to.eql(\"Bad Request\");\n    pm.expect(respuesta.mensaje).to.include(\"Existencias insuficientes\");\n    pm.expect(respuesta.mensaje).to.match(/Disponibles:\\s*\\d+/);\n    pm.expect(respuesta.ruta).to.eql(\"/api/ordenes\");\n});\n"
                 ]
               }
             }
@@ -1063,15 +1062,13 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/checkout",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "api",
-                "checkout"
+                "ordenes"
               ]
             },
             "description": "**Precondición:** El usuario debe estar autenticado mediante JWT y disponer de un carrito con al menos un artículo cuya cantidad solicitada supere las existencias disponibles.\n\n**Preparación:** Consultar las existencias del producto seleccionado y agregar al carrito una cantidad superior a las unidades disponibles. Para esta prueba se utilizó `formatoLibroId: 1`, con 4 unidades en inventario y 5 unidades solicitadas.\n\n**Resultado esperado:** `400 Bad Request`, con un mensaje que indique `Existencias insuficientes` y la cantidad disponible.\n\n**Integridad de los datos:** La operación rechazada no debe generar una orden de compra, descontar inventario ni vaciar el carrito.\n\n**Nota:** Ejecutar esta prueba por separado del checkout exitoso, ya que depende del inventario y del contenido del carrito."
@@ -1079,7 +1076,7 @@
           "response": []
         }
       ],
-      "description": "Confirmación de compra e historial autenticados con JWT.",
+      "description": "Confirmación de compra, historial y detalle de órdenes autenticados con JWT.",
       "auth": {
         "type": "bearer",
         "bearer": [
@@ -1113,12 +1110,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 ""
               ]
@@ -1158,12 +1153,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/registro",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/registro",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "registro"
               ]
@@ -1224,12 +1217,10 @@
               ]
             },
             "url": {
-              "raw": "http://localhost:8080/registro",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/registro",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "registro"
               ]
@@ -1270,12 +1261,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/iniciar-sesion",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/iniciar-sesion",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
@@ -1332,12 +1321,10 @@
               ]
             },
             "url": {
-              "raw": "http://localhost:8080/iniciar-sesion",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/iniciar-sesion",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
@@ -1365,12 +1352,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/usuarios",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/usuarios",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "usuarios"
               ]
@@ -1410,12 +1395,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/iniciar-sesion",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/iniciar-sesion",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
@@ -1471,12 +1454,10 @@
               ]
             },
             "url": {
-              "raw": "http://localhost:8080/iniciar-sesion",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/iniciar-sesion",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "iniciar-sesion"
               ]
@@ -1523,12 +1504,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/usuarios",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/usuarios",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "usuarios"
               ]
@@ -1565,12 +1544,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/usuarios/1",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/usuarios/1",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "usuarios",
                 "1"
@@ -1598,12 +1575,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/usuarios/9999",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/usuarios/9999",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "usuarios",
                 "9999"
@@ -1614,6 +1589,260 @@
         }
       ],
       "description": "Consulta de usuarios con sesión ADMIN. Responde JSON."
+    },
+    {
+      "name": "07 - Direcciones (JWT)",
+      "item": [
+        {
+          "name": "Listar direcciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /api/direcciones responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta no expone la entidad JPA', function () {",
+                  "    const direcciones = pm.response.json();",
+                  "    pm.expect(direcciones).to.be.an('array');",
+                  "    if (direcciones.length > 0) {",
+                  "        pm.expect(direcciones[0]).to.not.have.property('usuario');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/direcciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "direcciones"
+              ]
+            },
+            "description": "Requiere {{jwtToken}}. Lista solo las direcciones del cliente autenticado."
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar dirección (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('POST /api/direcciones responde 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const creada = pm.response.json();",
+                  "pm.collectionVariables.set('direccionId', creada.id);",
+                  "",
+                  "pm.test('La respuesta incluye id y encabezado Location', function () {",
+                  "    pm.expect(creada).to.have.property('id');",
+                  "    pm.response.to.have.header('Location');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombreDestinatario\": \"Ana López\", \"calle\": \"Reforma\", \"numeroExterior\": \"12\", \"numeroInterior\": \"A\", \"colonia\": \"Centro\", \"codigoPostal\": \"83000\", \"ciudad\": \"Hermosillo\", \"estado\": \"Sonora\", \"pais\": \"México\", \"referencias\": \"Portón negro\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/direcciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "direcciones"
+              ]
+            },
+            "description": "Requiere {{jwtToken}}. Guarda el id devuelto en la variable direccionId para las siguientes peticiones."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar dirección (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /api/direcciones/{id} responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('La dirección pertenece al cliente', function () {",
+                  "    pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('direccionId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/direcciones/{{direccionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "direcciones",
+                "{{direccionId}}"
+              ]
+            },
+            "description": "Requiere {{jwtToken}} y el id guardado al registrar."
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar dirección (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PUT /api/direcciones/{id} responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('La dirección actualizada no expone el usuario', function () {",
+                  "    pm.expect(pm.response.json()).to.not.have.property('usuario');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombreDestinatario\": \"Ana López\", \"calle\": \"Insurgentes\", \"numeroExterior\": \"45\", \"numeroInterior\": \"\", \"colonia\": \"Centro\", \"codigoPostal\": \"83000\", \"ciudad\": \"Hermosillo\", \"estado\": \"Sonora\", \"pais\": \"México\", \"referencias\": \"Frente a la plaza\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/direcciones/{{direccionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "direcciones",
+                "{{direccionId}}"
+              ]
+            },
+            "description": "Requiere {{jwtToken}} y el id guardado al registrar."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar dirección (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('DELETE /api/direcciones/{id} responde 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/direcciones/{{direccionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "direcciones",
+                "{{direccionId}}"
+              ]
+            },
+            "description": "Requiere {{jwtToken}} y el id guardado al registrar. Ejecutar al final de la carpeta."
+          },
+          "response": []
+        },
+        {
+          "name": "Direcciones sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sin token responde 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/direcciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "direcciones"
+              ]
+            },
+            "description": "Comprueba que la API rechace las consultas de direcciones sin JWT."
+          },
+          "response": []
+        }
+      ],
+      "description": "CRUD de direcciones de envío del cliente autenticado. Requiere {{jwtToken}}.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwtToken}}",
+            "type": "string"
+          }
+        ]
+      }
     }
   ],
   "variable": [
@@ -1624,6 +1853,14 @@
     {
       "key": "csrfToken",
       "value": ""
+    },
+    {
+      "key": "direccionId",
+      "value": ""
+    },
+    {
+      "key": "ordenId",
+      "value": "1"
     }
   ]
 }

@@ -3,12 +3,15 @@ package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.model.Autor;
 import com.itson.ProyectoAplicacionesWeb.repository.AutorRepository;
+import com.itson.ProyectoAplicacionesWeb.repository.LibroRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -27,6 +30,9 @@ class AutorServiceTest {
     @Mock
     private AutorRepository autorRepository;
 
+    @Mock
+    private LibroRepository libroRepository;
+
     /** Servicio que se someterá a las pruebas. */
     private AutorService autorService;
 
@@ -35,7 +41,7 @@ class AutorServiceTest {
      */
     @BeforeEach
     void configurar() {
-        autorService = new AutorService(autorRepository);
+        autorService = new AutorService(autorRepository, libroRepository);
     }
 
     /**
@@ -44,10 +50,6 @@ class AutorServiceTest {
      */
     @Test
     void registrar_conNombreValido_debeGuardarAutor() {
-
-        // Simula que todavía no existe el autor.
-        when(autorRepository.existsByNombreIgnoreCase("Bram Stoker"))
-                .thenReturn(false);
 
         // Ejecuta el registro.
         autorService.registrar("  Bram Stoker  ");
@@ -60,10 +62,6 @@ class AutorServiceTest {
 
         // Comprueba que se eliminaron los espacios exteriores.
         assertEquals("Bram Stoker", captor.getValue().getNombre());
-
-        // Comprueba que se verificó el nombre normalizado.
-        verify(autorRepository)
-                .existsByNombreIgnoreCase("Bram Stoker");
     }
 
     /**
@@ -134,38 +132,152 @@ class AutorServiceTest {
     }
 
     /**
-     * Comprueba que no se permita registrar un autor
-     * cuyo nombre ya esté registrado.
+     * Comprueba que el servicio permita registrar dos autores
+     * con el mismo nombre.
      *
-     * El repositorio verifica la existencia sin distinguir
-     * entre mayúsculas y minúsculas.
-     *
+     * Los autores se identifican mediante su ID,
+     * no mediante la exclusividad del nombre.
      */
     @Test
-    void registrar_conNombreDuplicado_debeRechazarRegistro() {
+    void registrar_conNombreRepetido_debePermitirRegistro() {
 
-        // Simula que el autor ya existe en la base de datos.
-        when(autorRepository.existsByNombreIgnoreCase("bram stoker"))
+        // Registra dos autores con nombres idénticos.
+        autorService.registrar("Bram Stoker");
+        autorService.registrar("Bram Stoker");
+
+        // Comprueba que ambos registros llegaron al repositorio.
+        verify(autorRepository, times(2))
+                .save(any(Autor.class));
+    }
+
+    /**
+     * Comprueba que un autor sin libros asociados
+     * pueda eliminarse correctamente.
+     */
+    @Test
+    void eliminar_autorSinLibros_eliminaCorrectamente() {
+
+        Long autorId = 1L;
+        Autor autor = new Autor("H. P. Lovecraft");
+
+        // Simula que el autor existe.
+        when(autorRepository.findById(autorId))
+                .thenReturn(Optional.of(autor));
+
+        // Simula que no existen libros asociados.
+        when(libroRepository.existsByAutores_Id(autorId))
+                .thenReturn(false);
+
+        // Ejecuta la operación.
+        autorService.eliminar(autorId);
+
+        // Comprueba que se solicitó eliminar al autor.
+        verify(autorRepository).delete(autor);
+    }
+
+    /**
+     * Comprueba que no se permita eliminar un autor
+     * cuando tiene libros asociados.
+     */
+    @Test
+    void eliminar_autorConLibros_rechazaEliminacion() {
+
+        Long autorId = 1L;
+        Autor autor = new Autor("H. P. Lovecraft");
+
+        when(autorRepository.findById(autorId))
+                .thenReturn(Optional.of(autor));
+
+        // Simula que el autor participa en al menos un libro.
+        when(libroRepository.existsByAutores_Id(autorId))
                 .thenReturn(true);
 
-        // Intenta registrar el mismo autor con otro uso de mayúsculas.
         IllegalArgumentException excepcion = assertThrows(
                 IllegalArgumentException.class,
-                () -> autorService.registrar("  bram stoker  ")
+                () -> autorService.eliminar(autorId)
         );
 
-        // Comprueba que el servicio informa del duplicado.
         assertEquals(
-                "Ya existe un autor registrado con ese nombre.",
+                "No se puede eliminar el autor porque tiene libros asociados.",
                 excepcion.getMessage()
         );
 
-        // Verifica que se consultó el nombre sin espacios exteriores.
-        verify(autorRepository)
-                .existsByNombreIgnoreCase("bram stoker");
-
-        // Comprueba que no se intentó guardar al autor duplicado.
-        verify(autorRepository, never()).save(any(Autor.class));
+        // Verifica que nunca se solicite eliminar el autor.
+        verify(autorRepository, never()).delete(any(Autor.class));
     }
 
+    @Test
+    void actualizar_autorExistente_actualizaNombre() {
+
+        Long autorId = 1L;
+        Autor autor = new Autor("Howard Lovecraft");
+
+        when(autorRepository.findById(autorId))
+                .thenReturn(Optional.of(autor));
+
+        when(autorRepository.save(autor))
+                .thenReturn(autor);
+
+        Autor resultado = autorService.actualizar(
+                autorId, "  H. P. Lovecraft  "
+        );
+
+        assertEquals("H. P. Lovecraft", resultado.getNombre());
+
+        verify(autorRepository).save(autor);
+    }
+
+    /**
+     * Comprueba que un autor pueda actualizar su nombre
+     * aunque otro autor tenga el mismo.
+     *
+     * Los autores se identifican mediante su ID,
+     * por lo que sus nombres no necesitan ser únicos.
+     */
+    @Test
+    void actualizar_nombreRepetido_permiteActualizacion() {
+
+        Long autorId = 1L;
+        Autor autor = new Autor("H. P. Lovecraft");
+
+        // Simula que el autor existe.
+        when(autorRepository.findById(autorId))
+                .thenReturn(Optional.of(autor));
+
+        // Simula la persistencia de los cambios.
+        when(autorRepository.save(autor))
+                .thenReturn(autor);
+
+        // Actualiza el nombre del autor.
+        Autor resultado = autorService.actualizar(
+                autorId, "Stephen King"
+        );
+
+        // Comprueba que el cambio fue aceptado.
+        assertEquals("Stephen King", resultado.getNombre());
+
+        // Verifica que se solicitó guardar la entidad.
+        verify(autorRepository).save(autor);
+    }
+
+    @Test
+    void actualizar_mismoNombre_permiteActualizacion() {
+
+        Long autorId = 1L;
+        Autor autor = new Autor("H. P. Lovecraft");
+
+        when(autorRepository.findById(autorId))
+                .thenReturn(Optional.of(autor));
+
+        when(autorRepository.save(autor))
+                .thenReturn(autor);
+
+        Autor resultado = autorService.actualizar(
+                autorId, "H. P. Lovecraft"
+        );
+
+        assertEquals("H. P. Lovecraft", resultado.getNombre());
+
+        verify(autorRepository).save(autor);
+    }
 }

@@ -14,7 +14,7 @@
 <!-- Reutilizamos la cabecera de clientes y marcamos Inicio como activo. -->
 <th:block th:replace="~{fragments/header :: header('inicio')}"></th:block>
 
-<main class="contenedor">
+<main class="contenedor inicio-publico">
 
   <!-- Presentación principal de la librería. -->
   <section class="hero">
@@ -34,80 +34,121 @@
     </aside>
   </section>
 
-  <!-- Categorías de ejemplo del segundo avance. -->
+  <!--
+      Categorías destacadas del catálogo público.
+
+      Cada enlace permite acceder directamente al catálogo
+      aplicando el filtro de la categoría seleccionada.
+
+      CatalogoController recibe el parámetro categoria
+      y delega su procesamiento a LibroService.
+  -->
   <section class="seccion">
+
     <h2>Categorías</h2>
 
     <div class="categorias">
-      <a class="categoria" th:href="@{/catalogo}">
+
+      <a class="categoria"
+         th:href="@{/catalogo(categoria='Ficción')}">
         Ficción
       </a>
 
-      <a class="categoria" th:href="@{/catalogo}">
+      <a class="categoria"
+         th:href="@{/catalogo(categoria='Fantasía')}">
         Fantasía
       </a>
 
-      <a class="categoria" th:href="@{/catalogo}">
+      <a class="categoria"
+         th:href="@{/catalogo(categoria='Terror')}">
         Terror
       </a>
+
     </div>
+
   </section>
 
   <!--
-    Productos de demostración del segundo avance.
-    Posteriormente se recuperarán desde MySQL mediante LibroService.
+    Libros activos recuperados desde la base de datos.
+    InicioController proporciona la colección mediante LibroService.
   -->
   <section class="seccion">
     <h2>Novedades y destacados</h2>
 
-    <ul class="libros">
+    <!-- Mensaje cuando todavía no existen libros activos. -->
+    <p th:if="${#lists.isEmpty(libros)}">
+      Todavía no hay libros disponibles en el catálogo.
+    </p>
 
-      <li class="libro">
-        <a th:href="@{/detalle-libro}" class="enlace-libro">
-          <div class="portada">PORTADA</div>
-          <h3>Dune</h3>
+    <!-- Presentar los libros públicos conservando los estilos existentes. -->
+    <ul class="libros" th:unless="${#lists.isEmpty(libros)}">
+
+      <li class="libro" th:each="tarjeta : ${libros}">
+
+        <!-- Portada del libro y alternativa cuando no existe imagen. -->
+        <div class="portada">
+          <img th:if="${tarjeta.libro.portadaUrl != null
+                 and !#strings.isEmpty(tarjeta.libro.portadaUrl)}"
+               th:src="${tarjeta.libro.portadaUrl}"
+               th:alt="|Portada de ${tarjeta.libro.titulo}|"
+               loading="lazy" />
+
+          <span th:unless="${tarjeta.libro.portadaUrl != null
+                      and !#strings.isEmpty(tarjeta.libro.portadaUrl)}">
+      PORTADA
+    </span>
+        </div>
+
+        <!-- Información bibliográfica pública. -->
+        <h3 th:text="${tarjeta.libro.titulo}">
+          Título del libro
+        </h3>
+
+        <p class="autor"
+           th:text="${#strings.listJoin(tarjeta.libro.autores, ', ')}">
+          Autor
+        </p>
+
+        <p th:text="${tarjeta.libro.categoria}">
+          Categoría
+        </p>
+
+        <!--
+          Resumen comercial calculado previamente por LibroService.
+          La vista únicamente presenta los valores recibidos.
+        -->
+        <div class="informacion-comercial">
+
+          <!-- Mostrar el menor precio disponible del libro. -->
+          <p th:if="${tarjeta.disponible}">
+            Desde
+
+            <strong th:with="precioFormateado=${#numbers.formatDecimal(tarjeta.precioDesde, 1, 'COMMA', 2, 'POINT')}"
+                    th:text="|$${precioFormateado} MXN|">
+              $149.00 MXN
+            </strong>
+
+          </p>
+
+
+          <!-- Mostrar agotado cuando ninguna presentación esté disponible. -->
+          <p th:unless="${tarjeta.disponible}">
+            Agotado
+          </p>
+
+        </div>
+
+        <!--
+          Permite consultar el detalle bibliográfico y comercial del libro.
+          El enlace permanece disponible incluso cuando el libro está agotado.
+
+          Thymeleaf construye la URL utilizando el identificador del libro.
+        -->
+        <a class="boton boton-primario"
+           th:href="@{/detalle-libro/{id}(id=${tarjeta.libro.id})}">
+          Ver detalle
         </a>
 
-        <p class="autor">Frank Herbert</p>
-        <p class="precio">$349.00</p>
-
-        <button class="boton boton-primario" type="button">
-          Agregar
-        </button>
-      </li>
-
-      <li class="libro">
-        <div class="portada">PORTADA</div>
-        <h3>El Hobbit</h3>
-
-        <p class="autor">J. R. R. Tolkien</p>
-        <p class="precio">$299.00</p>
-
-        <button class="boton boton-primario" type="button">
-          Agregar
-        </button>
-      </li>
-
-      <li class="libro libro-agotado">
-        <div class="portada">PORTADA</div>
-        <h3>1984</h3>
-
-        <p class="autor">George Orwell</p>
-        <p class="precio">$249.00</p>
-
-        <span class="etiqueta-agotado">Sin stock</span>
-      </li>
-
-      <li class="libro">
-        <div class="portada">PORTADA</div>
-        <h3>Drácula</h3>
-
-        <p class="autor">Bram Stoker</p>
-        <p class="precio">$279.00</p>
-
-        <button class="boton boton-primario" type="button">
-          Agregar
-        </button>
       </li>
 
     </ul>

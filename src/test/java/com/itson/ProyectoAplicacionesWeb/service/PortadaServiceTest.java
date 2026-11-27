@@ -1,5 +1,6 @@
 package com.itson.ProyectoAplicacionesWeb.service;
 
+import com.itson.ProyectoAplicacionesWeb.storage.AlmacenamientoLocalArchivos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -30,12 +31,13 @@ class PortadaServiceTest {
 
     @BeforeEach
     void configurar() {
-        servicio = new PortadaService(directorioTemporal.toString());
+        servicio = new PortadaService(
+                new AlmacenamientoLocalArchivos(directorioTemporal.toString())
+        );
     }
 
-    private Path archivoGuardado(String url) {
-        String nombre = url.substring(PortadaService.URL_BASE.length());
-        return directorioTemporal.resolve("portadas").resolve(nombre);
+    private Path archivoGuardado(String clave) {
+        return directorioTemporal.resolve(clave);
     }
 
     @Test
@@ -56,7 +58,7 @@ class PortadaServiceTest {
         String urlWebp = servicio.guardar(
                 new MockMultipartFile("portada", "a.webp", "image/webp", WEBP));
 
-        assertTrue(urlPng.startsWith(PortadaService.URL_BASE));
+        assertTrue(urlPng.startsWith(PortadaService.PREFIJO_CLAVES));
         assertTrue(urlPng.endsWith(".png"));
         assertTrue(urlJpg.endsWith(".jpg"));
         assertTrue(urlWebp.endsWith(".webp"));
@@ -123,8 +125,36 @@ class PortadaServiceTest {
         assertDoesNotThrow(() -> servicio.eliminar(null));
         assertDoesNotThrow(() -> servicio.eliminar("https://ejemplo.com/a.jpg"));
         assertDoesNotThrow(() ->
-                servicio.eliminar(PortadaService.URL_BASE + "../secreto.txt"));
+                servicio.eliminar(
+                        PortadaService.PREFIJO_CLAVES + "../secreto.txt"
+                ));
 
         assertTrue(Files.exists(ajeno));
+    }
+
+    @Test
+    void eliminar_noBorraArchivoPropioSiLaUrlEsExterna() {
+
+        String clave = servicio.guardar(
+                new MockMultipartFile("portada", "a.png", "image/png", PNG)
+        );
+
+        servicio.eliminar("https://ejemplo.com/" + clave);
+
+        assertTrue(Files.exists(archivoGuardado(clave)));
+    }
+
+    @Test
+    void eliminar_aceptaUrlPublicaLocalHistorica() {
+
+        String clave = servicio.guardar(
+                new MockMultipartFile("portada", "a.png", "image/png", PNG)
+        );
+
+        assertTrue(Files.exists(archivoGuardado(clave)));
+
+        servicio.eliminar("/uploads/" + clave);
+
+        assertFalse(Files.exists(archivoGuardado(clave)));
     }
 }

@@ -19,7 +19,7 @@
     Reutiliza el menú lateral del panel administrativo.
     Autores forma parte de la gestión del catálogo.
 -->
-<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}">
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('autores')}">
 </th:block>
 
 <!-- Contenido principal de administración de autores. -->
@@ -42,8 +42,20 @@
         -->
         <p th:if="${mensaje}"
            th:text="${mensaje}"
+           class="mensaje-exito"
            role="status">
             Autor registrado correctamente.
+        </p>
+
+        <!--
+    Mensaje de error enviado por AutorController.
+    Se muestra cuando una operación no puede completarse,
+    por ejemplo, al intentar eliminar un autor con libros asociados.
+-->
+        <p th:if="${error}"
+           th:text="${error}"
+           class="mensaje-error"
+           role="alert">
         </p>
 
 
@@ -69,6 +81,7 @@
             <tr>
                 <th>ID</th>
                 <th>Nombre del autor</th>
+                <th>Acciones</th>
             </tr>
             </thead>
 
@@ -78,11 +91,30 @@
             <tr th:each="autor : ${autores}">
                 <td th:text="${autor.id}">1</td>
                 <td th:text="${autor.nombre}">Bram Stoker</td>
+                <td>
+                    <!-- Acceso al formulario de edición. -->
+                    <a class="boton boton-claro"
+                       th:href="@{/admin/autores/{id}/editar(id=${autor.id})}">
+                        Editar
+                    </a>
+
+                    <!-- Eliminación protegida mediante POST y CSRF. -->
+                    <form th:action="@{/admin/autores/{id}/eliminar(id=${autor.id})}"
+                          method="post"
+                          style="display: inline;">
+
+                        <button class="boton boton-claro"
+                                type="submit">
+                            Eliminar
+                        </button>
+
+                    </form>
+                </td>
             </tr>
 
             <!-- Mensaje cuando todavía no existen autores. -->
             <tr th:if="${#lists.isEmpty(autores)}">
-                <td colspan="2">
+                <td colspan="3">
                     Todavía no hay autores registrados.
                 </td>
             </tr>

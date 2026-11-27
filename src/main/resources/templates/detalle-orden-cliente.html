@@ -1,0 +1,192 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title th:text="|Orden #${orden.ordenId} · Librería Raudskinna|">
+        Detalle de orden · Librería Raudskinna
+    </title>
+
+    <link rel="stylesheet"
+          th:href="@{/styles/index.css}" />
+
+</head>
+
+<body>
+
+<header th:replace="~{fragments/header :: header('ordenes')}">
+</header>
+
+<main class="contenedor confirmacion-publica">
+
+    <section class="panel confirmacion">
+
+        <h1>Detalle de tu orden</h1>
+
+        <p class="orden-numero"
+           th:text="|Orden #${orden.ordenId}|">
+        </p>
+
+        <p class="nota"
+           th:text="${#temporals.format(
+                   orden.fecha, 'dd/MM/yyyy HH:mm')}">
+        </p>
+
+        <!-- Estado actual de la orden consultada. -->
+        <span class="estado-orden"
+              th:classappend="${' estado-orden-' +
+                  #strings.toLowerCase(orden.estado)}"
+              th:switch="${orden.estado}">
+
+            <span th:case="'PENDIENTE'">Pendiente</span>
+            <span th:case="'PROCESANDO'">Procesando</span>
+            <span th:case="'ENVIADO'">Enviado</span>
+            <span th:case="'ENTREGADO'">Entregado</span>
+            <span th:case="'CANCELADO'">Cancelado</span>
+
+            <span th:case="*"
+                  th:text="${orden.estado}">
+            </span>
+
+        </span>
+
+        <h2>Resumen de la compra</h2>
+
+        <div class="confirmacion-detalle">
+
+            <!--
+                Se presentan los artículos y precios
+                históricos registrados en la orden.
+
+                La consulta no utiliza los precios
+                comerciales actuales del catálogo.
+            -->
+            <div class="resumen-fila"
+                 th:each="detalle : ${orden.detalles}"
+                 th:with="
+                     precio=${#numbers.formatDecimal(
+                         detalle.precioUnitario, 1, 'COMMA', 2, 'POINT')},
+                     subtotal=${#numbers.formatDecimal(
+                         detalle.subtotal, 1, 'COMMA', 2, 'POINT')}">
+
+                <div class="checkout-articulo">
+
+                    <span th:text="|${detalle.titulo} × ${detalle.cantidad}|">
+                    </span>
+
+                    <small th:switch="${detalle.formato}">
+
+                        <span th:case="'PASTA_DURA'">
+                            Pasta dura
+                        </span>
+
+                        <span th:case="'PASTA_BLANDA'">
+                            Pasta blanda
+                        </span>
+
+                        <span th:case="'DIGITAL'">
+                            Digital
+                        </span>
+
+                        <span th:case="*"
+                              th:text="${detalle.formato}">
+                        </span>
+
+                    </small>
+
+                    <small th:text="|Precio unitario: $${precio} MXN|">
+                    </small>
+
+                    <!-- Descarga disponible únicamente para compras
+                         digitales en órdenes entregadas. -->
+                    <a th:if="${detalle.formato == 'DIGITAL'
+                    and orden.estado == 'ENTREGADO'}"
+                       th:href="@{/mis-ordenes/{ordenId}/descargar/{formatoId}(
+                       ordenId=${orden.ordenId},
+                       formatoId=${detalle.formatoLibroId}
+                       )}"
+                       class="boton boton-primario">
+                        Descargar PDF de demostración
+                    </a>
+
+                    <!-- Información cuando todavía no corresponde descargar. -->
+                    <small th:if="${detalle.formato == 'DIGITAL'
+                    and orden.estado != 'ENTREGADO'
+                    and orden.estado != 'CANCELADO'}">
+                        Descarga disponible cuando la orden esté entregada.
+                    </small>
+
+                </div>
+
+                <span th:text="|$${subtotal} MXN|">
+                </span>
+
+            </div>
+
+            <div class="resumen-fila resumen-total"
+                 th:with="total=${#numbers.formatDecimal(
+                     orden.total, 1, 'COMMA', 2, 'POINT')}">
+
+                <span>Total de la orden</span>
+
+                <span th:text="|$${total} MXN|">
+                </span>
+
+            </div>
+
+        </div>
+
+        <p class="nota">
+
+            Orden correspondiente a una simulación académica.
+
+        </p>
+
+        <div class="acciones">
+
+            <a class="boton boton-primario"
+               th:href="@{/mis-ordenes}">
+
+                Volver a mis órdenes
+
+            </a>
+
+            <a class="boton boton-claro"
+               th:href="@{/catalogo}">
+
+                Seguir comprando
+
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+<footer class="pie">
+
+    <div class="contenedor">
+
+        <span>Librería Raudskinna</span>
+
+        <nav aria-label="Pie de página">
+
+            <a th:href="@{/}">Inicio</a> ·
+            <a th:href="@{/catalogo}">Catálogo</a> ·
+            <a th:href="@{/mis-ordenes}">Mis órdenes</a>
+
+        </nav>
+
+    </div>
+
+</footer>
+
+</body>
+
+</html>

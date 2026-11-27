@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.service;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
+import com.itson.ProyectoAplicacionesWeb.storage.ResolvedorUrlsArchivos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -37,6 +38,9 @@ public class LibroServiceVisibilidadTest {
     @Mock
     private CategoriaRepository categoriaRepository;
 
+    @Mock
+    private ResolvedorUrlsArchivos resolvedorUrlsArchivos;
+
     private LibroService servicio;
 
     private Categoria categoria;
@@ -53,7 +57,8 @@ public class LibroServiceVisibilidadTest {
                 itemStockRepository,
                 autorRepository,
                 editorialRepository,
-                categoriaRepository
+                categoriaRepository,
+                resolvedorUrlsArchivos
         );
 
         categoria = new Categoria("Terror");

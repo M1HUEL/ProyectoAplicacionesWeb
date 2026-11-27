@@ -1,6 +1,7 @@
 package com.itson.ProyectoAplicacionesWeb.service;
 
 import com.itson.ProyectoAplicacionesWeb.dto.AjusteInventarioDTO;
+import com.itson.ProyectoAplicacionesWeb.exception.InventarioInsuficienteException;
 import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
 import com.itson.ProyectoAplicacionesWeb.model.Formato;
 import com.itson.ProyectoAplicacionesWeb.model.ItemStock;
@@ -259,7 +260,7 @@ public class InventarioService {
 
         // Impedir ventas superiores a las existencias.
         if (cantidad > cantidadAnterior) {
-            throw new IllegalArgumentException(
+            throw new InventarioInsuficienteException(
                     "Existencias insuficientes. Disponibles: "
                             + cantidadAnterior
             );

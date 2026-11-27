@@ -6,6 +6,7 @@ import com.itson.ProyectoAplicacionesWeb.service.OrdenCompraService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,6 +45,29 @@ public class OrdenCompraRestController {
 
         List<OrdenCompraResponseDTO> respuesta =
                 ordenCompraService.consultarHistorial(correo);
+
+        return ResponseEntity.ok(respuesta);
+    }
+
+    /**
+     * Consulta el detalle de una orden perteneciente
+     * al cliente autenticado.
+     *
+     * El correo se obtiene del JWT validado, por lo que un
+     * cliente no puede consultar órdenes de otras personas
+     * aunque conozca su identificador.
+     *
+     * GET /api/ordenes/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<OrdenCompraResponseDTO> consultarOrden(
+            Authentication authentication,
+            @PathVariable Long id) {
+
+        String correo = authentication.getName();
+
+        OrdenCompraResponseDTO respuesta =
+                ordenCompraService.consultarOrdenPropia(correo, id);
 
         return ResponseEntity.ok(respuesta);
     }

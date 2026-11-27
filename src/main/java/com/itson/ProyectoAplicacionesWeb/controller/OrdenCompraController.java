@@ -3,6 +3,7 @@ package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.model.EstadoOrden;
 import com.itson.ProyectoAplicacionesWeb.service.OrdenCompraService;
+import com.itson.ProyectoAplicacionesWeb.service.PagoService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,10 +20,18 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class OrdenCompraController {
 
     private final OrdenCompraService ordenCompraService;
+    private final PagoService pagoService;
 
-    // Inyección del servicio mediante constructor.
-    public OrdenCompraController(OrdenCompraService ordenCompraService) {
+    /**
+     * Constructor para la inyección de los servicios
+     * utilizados por el módulo administrativo de órdenes.
+     */
+    public OrdenCompraController(
+            OrdenCompraService ordenCompraService,
+            PagoService pagoService) {
+
         this.ordenCompraService = ordenCompraService;
+        this.pagoService = pagoService;
     }
 
     /**
@@ -50,14 +59,36 @@ public class OrdenCompraController {
     }
 
     /**
-     * Actualiza el estado de una orden desde el panel administrativo.
+     * Presenta el detalle administrativo de una orden,
+     * incluyendo los artículos comprados, los datos
+     * históricos de entrega y el registro de pago.
      *
-     * Utiliza POST/Redirect/GET para evitar el reenvío
-     * del formulario al actualizar la página.
+     * GET /admin/ordenes/{ordenId}/detalle
+     *
+     * El acceso está restringido a administradores.
+     *
+     * @param ordenId identificador de la orden solicitada.
+     * @param model modelo de datos para Thymeleaf.
+     * @return plantilla del detalle administrativo.
      */
     @GetMapping("/{ordenId}/detalle")
-    public String verDetalle(@PathVariable Long ordenId, Model model) {
-        model.addAttribute("orden", ordenCompraService.buscarPorId(ordenId));
+    public String verDetalle(
+            @PathVariable Long ordenId,
+            Model model) {
+
+        // Recuperar la orden de compra existente.
+        model.addAttribute(
+                "orden",
+                ordenCompraService.buscarPorId(ordenId)
+        );
+
+        // Recuperar el registro de pago, si existe.
+        model.addAttribute(
+                "pago",
+                pagoService.consultarPagoPorOrden(ordenId)
+                        .orElse(null)
+        );
+
         return "detalle-pedido";
     }
 

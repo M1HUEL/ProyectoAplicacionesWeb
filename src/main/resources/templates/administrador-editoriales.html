@@ -15,7 +15,7 @@
 <body class="admin-layout">
 
 <!-- Menú lateral reutilizable del área administrativa. -->
-<th:block th:replace="~{fragments/admin-sidebar :: sidebar('libros')}">
+<th:block th:replace="~{fragments/admin-sidebar :: sidebar('editoriales')}">
 </th:block>
 
 <main class="admin-contenido">
@@ -43,6 +43,16 @@
         </p>
 
         <!--
+            Mensaje de error enviado por EditorialController.
+            Se muestra cuando una operación no puede completarse.
+        -->
+        <p th:if="${error}"
+           th:text="${error}"
+           class="mensaje-error"
+           role="alert">
+        </p>
+
+        <!--
             Acceso al formulario de registro de editoriales.
         -->
         <a class="boton boton-primario"
@@ -61,12 +71,13 @@
         el desplazamiento horizontal innecesario.
         -->
         <div class="tabla-contenedor">
-            <table class="tabla" style="min-width: 0; width: 100%;">
+            <table class="tabla tabla-editoriales">
                 <thead>
                 <tr>
                     <th>ID</th>
                     <th>Nombre de la editorial</th>
                     <th>Dirección</th>
+                    <th>Acciones</th>
                 </tr>
                 </thead>
 
@@ -83,11 +94,36 @@
                                 : 'Sin especificar'}">
                         Sin especificar
                     </td>
+                    <!-- Acciones administrativas de cada editorial. -->
+                    <td>
+
+                        <!-- Acceso al formulario de edición. -->
+                        <a class="boton boton-claro"
+                           th:href="@{/admin/editoriales/{id}/editar(id=${editorial.id})}">
+                            Editar
+                        </a>
+
+                        <!--
+                            Eliminación mediante POST.
+                            Thymeleaf incorpora el token CSRF al formulario.
+                        -->
+                        <form th:action="@{/admin/editoriales/{id}/eliminar(id=${editorial.id})}"
+                              method="post"
+                              style="display: inline;">
+
+                            <button class="boton boton-claro"
+                                    type="submit">
+                                Eliminar
+                            </button>
+
+                        </form>
+
+                    </td>
                 </tr>
 
                 <!-- Mensaje para una lista vacía. -->
                 <tr th:if="${#lists.isEmpty(editoriales)}">
-                    <td colspan="3">
+                    <td colspan="4">
                         Todavía no hay editoriales registradas.
                     </td>
                 </tr>

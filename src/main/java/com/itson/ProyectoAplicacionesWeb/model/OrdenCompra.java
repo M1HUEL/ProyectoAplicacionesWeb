@@ -59,6 +59,16 @@ public class OrdenCompra {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal total;
 
+    /**
+     * Copia histórica de la dirección utilizada
+     * para entregar esta orden de compra.
+     *
+     * Puede ser null para compras exclusivamente digitales
+     * y para órdenes anteriores a esta funcionalidad.
+     */
+    @Embedded
+    private DireccionEnvio direccionEnvio;
+
     @OneToMany(mappedBy = "ordenCompra", fetch = FetchType.LAZY)
     private List<DetalleOrden> detalles = new ArrayList<>();
 }

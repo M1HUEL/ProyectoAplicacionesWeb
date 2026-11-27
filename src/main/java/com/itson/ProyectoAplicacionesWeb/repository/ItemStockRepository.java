@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,6 +54,19 @@ public interface ItemStockRepository
     @EntityGraph(attributePaths = "formatoLibro")
     @Query("SELECT i FROM ItemStock i")
     List<ItemStock> listarConFormatoLibro();
+
+    /**
+     * Recupera el inventario de las presentaciones comerciales
+     * incluidas en una página del catálogo.
+     *
+     * @param formatoLibroIds identificadores de las presentaciones.
+     * @return existencias de esas presentaciones.
+     */
+    @EntityGraph(attributePaths = "formatoLibro")
+    @Query("SELECT i FROM ItemStock i WHERE i.formatoLibro.id IN :formatoLibroIds")
+    List<ItemStock> listarPorFormatos(
+            @Param("formatoLibroIds") Collection<Long> formatoLibroIds
+    );
 
     /**
      * Recupera el inventario de una presentación junto con

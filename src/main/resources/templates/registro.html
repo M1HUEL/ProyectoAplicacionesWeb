@@ -17,6 +17,14 @@
           órdenes.
         </p>
 
+        <!-- Mensaje de error devuelto por el registro. -->
+        <p
+                th:if="${error}"
+                th:text="${error}"
+                role="alert"
+                class="formulario-error">
+        </p>
+
         <form class="formulario" th:action="@{/registro}" th:object="${usuario}" method="post">
           <label for="nombre">Nombre completo</label>
           <input
@@ -38,6 +46,21 @@
             placeholder="correo@ejemplo.com"
             autocomplete="email"
             required
+          />
+
+          <label for="telefono">Teléfono de contacto</label>
+          <input
+                  class="campo campo-formulario"
+                  id="telefono"
+                  th:field="*{telefono}"
+                  type="tel"
+                  placeholder="10 dígitos"
+                  autocomplete="tel-national"
+                  inputmode="numeric"
+                  pattern="[0-9]{10}"
+                  minlength="10"
+                  maxlength="10"
+                  required
           />
 
           <label for="contrasena">Contraseña</label>

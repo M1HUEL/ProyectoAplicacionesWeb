@@ -20,6 +20,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -66,14 +68,18 @@ public class SecurityConfig {
                         .permitAll()
 
                         // Consultas públicas del catálogo.
+                        // Únicamente se permiten operaciones GET
+                        // para libros activos y sus formatos comerciales.
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/libros",
-                                "/api/libros/*"
+                                "/api/libros/*",
+                                "/api/libros/*/formatos"
                         ).permitAll()
 
                         // Los demás endpoints requieren JWT.
                         .anyRequest().authenticated()
+
                 )
 
                 // La API no utiliza autenticación mediante cookies.
@@ -153,6 +159,46 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
 
+        // Conservar únicamente solicitudes GET de navegación
+        // comercial que requieran autenticación.
+        HttpSessionRequestCache requestCache =
+                new HttpSessionRequestCache();
+
+        requestCache.setRequestMatcher(request -> {
+
+            String ruta = request.getRequestURI()
+                    .substring(request.getContextPath().length());
+
+            return "GET".equals(request.getMethod())
+                    && (
+                    ruta.equals("/carrito")
+                            || ruta.startsWith("/carrito/")
+                            || ruta.equals("/checkout")
+                            || ruta.startsWith("/checkout/")
+                            || ruta.equals("/mis-ordenes")
+                            || ruta.startsWith("/mis-ordenes/")
+            );
+        });
+
+        // Evitar agregar el parámetro continue a las URL.
+        requestCache.setMatchingRequestParameterName(null);
+
+        // Recuperar la navegación previa de los clientes.
+        // Si no existe una solicitud guardada, regresar al inicio.
+        SavedRequestAwareAuthenticationSuccessHandler clienteSuccessHandler =
+                new SavedRequestAwareAuthenticationSuccessHandler();
+
+        clienteSuccessHandler.setRequestCache(requestCache);
+        clienteSuccessHandler.setDefaultTargetUrl("/");
+
+        // Los administradores conservan su acceso directo al panel.
+        SavedRequestAwareAuthenticationSuccessHandler adminSuccessHandler =
+                new SavedRequestAwareAuthenticationSuccessHandler();
+
+        adminSuccessHandler.setRequestCache(requestCache);
+        adminSuccessHandler.setDefaultTargetUrl("/admin");
+        adminSuccessHandler.setAlwaysUseDefaultTargetUrl(true);
+
         http
                 .authorizeHttpRequests(auth -> auth
 
@@ -176,6 +222,15 @@ public class SecurityConfig {
                                 "/api/libros/*"
                         ).permitAll()
 
+                        // Permitir la consulta pública del catálogo y del detalle
+                        // bibliográfico y comercial de los libros.
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/catalogo",
+                                "/detalle-libro/*"
+                                )
+                        .permitAll()
+
                         // La gestión de usuarios es exclusiva de administradores.
                         // Estas rutas no forman parte de /admin, por lo que
                         // necesitan una regla explícita.
@@ -191,12 +246,42 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                // Conservar la navegación comercial previa al login.
+                .requestCache(cache -> cache.requestCache(requestCache))
+
+                // Seleccionar el formulario de autenticación según
+                // el recurso protegido solicitado por el visitante.
                 .exceptionHandling(ex -> ex
-                        .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/admin/login"),
-                                request ->
-                                        request.getServletPath().equals("/admin")
-                                                || request.getServletPath().startsWith("/admin/")
+                        .authenticationEntryPoint(
+                                (request, response, excepcion) -> {
+
+                                    // Obtener la ruta relativa de la aplicación.
+                                    String ruta = request.getRequestURI()
+                                            .substring(
+                                                    request.getContextPath().length()
+                                            );
+
+                                    // Identificar los recursos administrativos.
+                                    boolean accesoAdministrativo =
+                                            ruta.equals("/admin")
+                                                    || ruta.startsWith("/admin/")
+                                                    || ruta.equals("/usuarios")
+                                                    || ruta.startsWith("/usuarios/");
+
+                                    // Seleccionar el formulario correspondiente.
+                                    String formularioLogin = accesoAdministrativo
+                                            ? "/admin/login"
+                                            : "/iniciar-sesion";
+
+                                    // Delegar la redirección a Spring Security.
+                                    new LoginUrlAuthenticationEntryPoint(
+                                            formularioLogin
+                                    ).commence(
+                                            request,
+                                            response,
+                                            excepcion
+                                    );
+                                }
                         )
                 )
 
@@ -208,16 +293,33 @@ public class SecurityConfig {
                         .passwordParameter("contrasena")
                         .successHandler((request, response, authentication) -> {
 
-                            // Los administradores ingresan al panel de gestión.
-                            boolean esAdmin = authentication.getAuthorities().stream()
+                            // Identificar si el usuario tiene privilegios
+                            // administrativos.
+                            boolean esAdmin = authentication.getAuthorities()
+                                    .stream()
                                     .anyMatch(authority ->
-                                            authority.getAuthority().equals("ROLE_ADMIN"));
+                                            authority.getAuthority()
+                                                    .equals("ROLE_ADMIN"));
 
                             if (esAdmin) {
-                                response.sendRedirect(request.getContextPath() + "/admin");
+
+                                // Conservar el ingreso directo al panel
+                                // administrativo.
+                                adminSuccessHandler.onAuthenticationSuccess(
+                                        request,
+                                        response,
+                                        authentication
+                                );
+
                             } else {
-                                // Los clientes regresan a la página principal.
-                                response.sendRedirect(request.getContextPath() + "/");
+
+                                // Recuperar la navegación comercial previa.
+                                // Si no existe, regresar a la página principal.
+                                clienteSuccessHandler.onAuthenticationSuccess(
+                                        request,
+                                        response,
+                                        authentication
+                                );
                             }
                         })
                         .failureUrl("/iniciar-sesion?error")

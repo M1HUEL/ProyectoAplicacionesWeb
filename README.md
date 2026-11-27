@@ -73,6 +73,11 @@ La aplicación utiliza Spring Data JPA y Hibernate para actualizar el esquema du
 | `DB_PASSWORD` | Contraseña de conexión a MySQL | Obligatoria para la configuración habitual |
 | `RAUDSKINNA_ADMIN_PASSWORD` | Contraseña de la cuenta administrativa inicial | Necesaria si el administrador todavía no existe |
 | `JWT_SECRET` | Clave Base64 utilizada para firmar y validar JWT | Opcional en la configuración actual de `main`, que dispone de un valor predeterminado |
+| `ARCHIVOS_PROVEEDOR` | Proveedor de archivos: `local` o `cloudinary` | Opcional; el valor predeterminado es `local` |
+| `CLOUDINARY_CLOUD_NAME` | Cloud name de la cuenta de Cloudinary | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudinary` |
+| `CLOUDINARY_API_KEY` | API Key de Cloudinary | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudinary` |
+| `CLOUDINARY_API_SECRET` | API Secret de Cloudinary | Obligatoria si `ARCHIVOS_PROVEEDOR=cloudinary` |
+| `CLOUDINARY_SECURE_DISTRIBUTION` | Dominio de entrega propio, sin `https://` ni barra final | Opcional; por defecto se usa `res.cloudinary.com/<cloud_name>` |
 
 La contraseña administrativa se utiliza para crear automáticamente `admin@raudskinna.com` mediante `DataInitializer`.
 
@@ -288,6 +293,31 @@ Ejecutar el inicio de sesión para obtener un JWT y utilizarlo en las solicitude
 La colección incluye solicitudes organizadas por módulo para comprobar autenticación, catálogo, carrito, checkout e historial de órdenes.
 
 **Nota:** esta configuración está destinada al entorno académico de desarrollo. No debe considerarse una configuración preparada para producción.
+
+### 3.10. Almacenamiento de archivos: local o Cloudinary
+
+Las portadas y los PDF de descarga digital se gestionan mediante la interfaz `AlmacenamientoArchivos`, con dos implementaciones seleccionadas por `ARCHIVOS_PROVEEDOR`:
+
+- `local` (predeterminado): los archivos se guardan en `app.uploads.dir` y se publican en `/uploads/**`. El PDF de demostración se lee del classpath cuando no existe en disco.
+- `cloudinary`: los archivos se guardan con el SDK oficial de Cloudinary (`cloudinary-http5`). Las imágenes se suben como `image` y los PDF como `raw`; las URL de entrega se generan con el mismo SDK (`https://res.cloudinary.com/<cloud_name>/...` o el dominio configurado en `CLOUDINARY_SECURE_DISTRIBUTION`).
+
+La base de datos guarda solo la clave lógica (por ejemplo, `portadas/uuid.png`). `ResolvedorUrlsArchivos` genera la URL correspondiente al proveedor activo, por lo que las referencias históricas `/uploads/...` se resuelven con el proveedor configurado sin migrar la tabla `libros`. Las URL externas y las imágenes estáticas `/img/portadas/...` se respetan tal cual.
+
+Para activar Cloudinary en PowerShell:
+
+```powershell
+$env:ARCHIVOS_PROVEEDOR = "cloudinary"
+$env:CLOUDINARY_CLOUD_NAME = "nombre-de-la-nube"
+$env:CLOUDINARY_API_KEY = "api-key"
+$env:CLOUDINARY_API_SECRET = "api-secret"
+
+# Solo si se usa un dominio de entrega propio:
+$env:CLOUDINARY_SECURE_DISTRIBUTION = "cdn.ejemplo.com"
+```
+
+Las credenciales se obtienen en *Dashboard → API Keys* de Cloudinary. El `API Secret` no se vuelve a mostrar después de crearlo. Para que las nuevas credenciales surtan efecto hay que reiniciar la aplicación, porque el cliente se construye al arrancar.
+
+Antes de cambiar de proveedor, copiar los objetos existentes al otro almacenamiento manteniendo las mismas claves (`public_id` sin la extensión). Las portadas requieren que la entrega pública esté habilitada; el PDF se sigue entregando por el backend para conservar la autorización por orden.
 
 ## 4. Seguridad y autenticación
 
@@ -641,21 +671,36 @@ Las rutas administrativas (`/admin/**`), las vistas y las páginas que solo mues
 |---|---|---|---|---|---|
 | `POST` | `/api/auth/registro` | Pública | JSON: `nombre`, `correo`, `contrasena` | Registra un cliente con rol `USER`. | `201`, `400`, `409` |
 | `POST` | `/api/auth/login` | Pública | JSON: `correo`, `contrasena` | Autentica y devuelve un JWT. | `200`, `401` |
-| `GET` | `/api/libros` | Pública | — | Lista los libros activos del catálogo. | `200` |
-| `GET` | `/api/libros/{id}` | Pública | `id` en la ruta | Consulta el detalle de un libro activo. | `200`, `404` |
+| `GET` | `/api/libros` | Pública | Opcionales: `q` (título o autor), `categoria`, `page` (default `0`), `size` (default `12`, máximo `50`) | Devuelve una página del catálogo con `precioDesde` y `disponible` por libro. | `200`, `400` |
+| `GET` | `/api/libros/{id}` | Pública | `id` en la ruta | Consulta el detalle de un libro activo, incluyendo `formatos` con `id`, `precio` y `disponible`. | `200`, `404` |
+| `GET` | `/api/libros/{id}/formatos` | Pública | `id` en la ruta | Consulta únicamente las presentaciones comerciales de un libro activo. | `200`, `404` |
+
+La respuesta paginada contiene `contenido`, `pagina`, `tamano`, `totalElementos`, `totalPaginas`, `primera` y `ultima`. Cada elemento de `contenido` incluye el libro, su `precioDesde` y su disponibilidad. Los filtros se aplican en la base de datos, por lo que la respuesta no depende del tamaño total del catálogo.
 
 ### 12.2. API REST autenticada (JWT)
 
 Todas requieren el encabezado `Authorization: Bearer <token>`.
 
+En todos los endpoints autenticados la identidad del cliente se obtiene del subject del JWT validado (`Authentication#getName()`). Ningún endpoint acepta un `usuarioId` o un correo en el cuerpo o en la query para determinar al propietario de carritos, direcciones u órdenes.
+
 | Método | Ruta | Body / parámetros | Descripción | Respuestas |
 |---|---|---|---|---|
 | `GET` | `/api/carrito` | — | Consulta el carrito del cliente autenticado. | `200`, `401` |
-| `POST` | `/api/carrito/items` | JSON: `formatoLibroId`, `cantidad` | Agrega una presentación al carrito. | `200`, `400`, `401` |
+| `POST` | `/api/carrito/items` | JSON: `formatoLibroId`, `cantidad` | Agrega una presentación al carrito. | `200`, `400`, `401`, `404` |
 | `PUT` | `/api/carrito/items/{formatoLibroId}` | JSON: `cantidad` | Modifica la cantidad de un ítem. | `200`, `400`, `401` |
 | `DELETE` | `/api/carrito/items/{formatoLibroId}` | — | Elimina un ítem del carrito. | `200`, `401` |
-| `POST` | `/api/checkout` | — | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401` |
+| `POST` | `/api/ordenes` | JSON: `direccionId`, `metodoPago` | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401`, `409` |
 | `GET` | `/api/ordenes` | — | Consulta el historial de órdenes del cliente autenticado. | `200`, `401` |
+| `GET` | `/api/ordenes/{id}` | `id` en la ruta | Consulta el detalle de una orden propia. | `200`, `401`, `404` |
+| `GET` | `/api/direcciones` | — | Lista las direcciones de envío del cliente autenticado. | `200`, `401` |
+| `GET` | `/api/direcciones/{id}` | `id` en la ruta | Consulta una dirección propia. | `200`, `400`, `401` |
+| `POST` | `/api/direcciones` | JSON: `nombreDestinatario`, `calle`, `numeroExterior`, `colonia`, `codigoPostal`, `ciudad`, `estado`, `pais`; opcionales: `numeroInterior`, `referencias` | Registra una dirección y devuelve `Location`. | `201`, `400`, `401` |
+| `PUT` | `/api/direcciones/{id}` | Los mismos campos que `POST` | Actualiza una dirección propia. | `200`, `400`, `401` |
+| `DELETE` | `/api/direcciones/{id}` | `id` en la ruta | Elimina una dirección propia. | `204`, `400`, `401` |
+
+Todas las operaciones de direcciones reutilizan `DireccionService`, por lo que el propietario se toma del JWT y nunca se acepta un `usuarioId` en la petición. Las respuestas usan `DireccionResponseDTO` y no exponen la entidad JPA ni la relación con el usuario.
+
+El campo `id` de cada elemento de `formatos` es el `formatoLibroId` que debe enviarse a `POST /api/carrito/items`. La disponibilidad informada es informativa; el inventario se valida de nuevo al confirmar la compra.
 
 ### 12.3. Códigos de respuesta
 
@@ -663,10 +708,12 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 |---|---|
 | `200` | Operación exitosa. |
 | `201` | Recurso creado correctamente. |
+| `204` | Operación exitosa sin contenido de respuesta, por ejemplo al eliminar una dirección. |
 | `302` | Redirección (POST/Redirect/GET o falta de sesión). |
 | `400` | Datos inválidos o regla de negocio incumplida. |
 | `401` | Falta el JWT o es inválido. |
 | `403` | Autenticado sin el rol requerido, o CSRF inválido. |
 | `404` | Recurso no encontrado. |
 | `409` | Conflicto, por ejemplo un correo ya registrado. |
+| `500` | Error inesperado; responde con el mismo formato JSON de error de la API. |
 

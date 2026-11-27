@@ -1,11 +1,14 @@
 
 package com.itson.ProyectoAplicacionesWeb.service;
 
-import com.itson.ProyectoAplicacionesWeb.dto.LibroFormularioDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroListadoDTO;
-import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.*;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
+import com.itson.ProyectoAplicacionesWeb.storage.ResolvedorUrlsArchivos;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +50,9 @@ public class LibroService {
     private final EditorialRepository editorialRepository;
     private final CategoriaRepository categoriaRepository;
 
+    /** Resuelve las URL de portada según el proveedor de archivos activo. */
+    private final ResolvedorUrlsArchivos resolvedorUrlsArchivos;
+
     /**
      * Inyecta los repositorios necesarios para la gestión
      * administrativa de libros.
@@ -58,7 +64,8 @@ public class LibroService {
             ItemStockRepository itemStockRepository,
             AutorRepository autorRepository,
             EditorialRepository editorialRepository,
-            CategoriaRepository categoriaRepository) {
+            CategoriaRepository categoriaRepository,
+            ResolvedorUrlsArchivos resolvedorUrlsArchivos) {
 
         this.libroRepository = libroRepository;
         this.formatoLibroRepository = formatoLibroRepository;
@@ -66,6 +73,7 @@ public class LibroService {
         this.autorRepository = autorRepository;
         this.editorialRepository = editorialRepository;
         this.categoriaRepository = categoriaRepository;
+        this.resolvedorUrlsArchivos = resolvedorUrlsArchivos;
     }
 
     /**
@@ -95,19 +103,651 @@ public class LibroService {
 
         return libroRepository.findByActivoTrue()
                 .stream()
-                .map(libro -> new LibroPublicoDTO(
-                        libro.getId(),
-                        libro.getTitulo(),
-                        libro.getSinopsis(),
-                        libro.getPortadaUrl(),
-                        libro.getCategoria().getNombre(),
-                        libro.getEditorial().getNombre(),
-                        libro.getAutores().stream()
-                                .map(autor -> autor.getNombre())
-                                .sorted()
-                                .toList()
+                .map(this::convertirAPublico)
+                .toList();
+    }
+
+    /**
+     * Convierte una entidad Libro en información pública,
+     * sin exponer directamente el modelo de persistencia.
+     *
+     * @param libro libro activo obtenido del repositorio.
+     * @return datos bibliográficos públicos del libro.
+     */
+    private LibroPublicoDTO convertirAPublico(Libro libro) {
+
+        return new LibroPublicoDTO(
+                libro.getId(),
+                libro.getTitulo(),
+                libro.getSinopsis(),
+                resolvedorUrlsArchivos.urlPublica(
+                        libro.getPortadaUrl()
+                ),
+                libro.getCategoria().getNombre(),
+                libro.getEditorial().getNombre(),
+                libro.getAutores().stream()
+                        .map(Autor::getNombre)
+                        .sorted()
+                        .toList()
+        );
+    }
+
+    /**
+     * Recupera los libros activos con un resumen comercial
+     * para las tarjetas del catálogo público.
+     *
+     * El precio inicial corresponde al menor precio entre
+     * las presentaciones disponibles de cada libro.
+     *
+     * Los formatos digitales no requieren inventario físico.
+     * Los formatos físicos necesitan existencias mayores que cero.
+     *
+     * Si un libro no tiene presentaciones disponibles,
+     * su precio inicial será null y disponible será false.
+     *
+     * Utiliza consultas agrupadas para evitar consultar
+     * los formatos y el inventario individualmente por libro.
+     *
+     * @return libros públicos con su resumen comercial.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> listarCatalogoPublico() {
+
+        // Recuperar la información bibliográfica pública.
+        List<LibroPublicoDTO> libros = listarLibrosPublicos();
+
+        // Recuperar las presentaciones de libros activos.
+        List<FormatoLibro> formatos =
+                formatoLibroRepository.listarFormatosDeLibrosActivos();
+
+        // Recuperar el inventario físico mediante una consulta agrupada.
+        List<ItemStock> inventarios =
+                itemStockRepository.listarConFormatoLibro();
+
+        // Preparar los mapas una sola vez para todas las tarjetas.
+        Map<Long, List<FormatoLibro>> formatosPorLibro =
+                agruparFormatos(formatos);
+
+        Map<Long, Integer> existenciasPorFormato =
+                mapearExistencias(inventarios);
+
+        // Construir el resumen comercial de cada libro público.
+        return libros.stream()
+                .map(libro -> construirTarjeta(
+                        libro,
+                        formatosPorLibro,
+                        existenciasPorFormato
                 ))
                 .toList();
+    }
+
+    /**
+     * Agrupa las presentaciones comerciales por identificador de libro.
+     */
+    private Map<Long, List<FormatoLibro>> agruparFormatos(
+            List<FormatoLibro> formatos) {
+
+        return formatos.stream()
+                .collect(Collectors.groupingBy(
+                        formato -> formato.getLibro().getId()
+                ));
+    }
+
+    /**
+     * Asocia cada presentación física con sus existencias.
+     */
+    private Map<Long, Integer> mapearExistencias(
+            List<ItemStock> inventarios) {
+
+        return inventarios.stream()
+                .collect(Collectors.toMap(
+                        inventario -> inventario.getFormatoLibro().getId(),
+                        ItemStock::getCantidad,
+                        (cantidadAnterior, cantidadNueva) -> cantidadNueva
+                ));
+    }
+
+    /**
+     * Construye la tarjeta comercial de un libro a partir de sus
+     * presentaciones y del inventario de las presentaciones físicas.
+     *
+     * El precio inicial es el menor entre las presentaciones que
+     * pueden ofrecerse. Los formatos digitales siempre están
+     * disponibles y los físicos requieren existencias positivas.
+     */
+    private LibroCatalogoDTO construirTarjeta(
+            LibroPublicoDTO libro,
+            Map<Long, List<FormatoLibro>> formatosPorLibro,
+            Map<Long, Integer> existenciasPorFormato) {
+
+        List<FormatoLibro> presentaciones =
+                formatosPorLibro.getOrDefault(libro.id(), List.of());
+
+        BigDecimal precioDesde = presentaciones.stream()
+                .filter(formato ->
+                        formato.getFormato() == Formato.DIGITAL
+                                || existenciasPorFormato.getOrDefault(
+                                formato.getId(),
+                                0
+                        ) > 0
+                )
+                .map(FormatoLibro::getPrecio)
+                .min(BigDecimal::compareTo)
+                .orElse(null);
+
+        return new LibroCatalogoDTO(
+                libro,
+                precioDesde,
+                precioDesde != null
+        );
+    }
+
+    /**
+     * Recupera una página del catálogo público con sus filtros
+     * aplicados en la base de datos.
+     *
+     * La búsqueda es opcional y admite coincidencias parciales
+     * en el título o en cualquier autor. El filtro por categoría
+     * también es opcional y ambos criterios son acumulativos.
+     *
+     * Solo se consultan los formatos y existencias de los libros
+     * incluidos en la página solicitada.
+     *
+     * @param termino texto buscado en título o autores.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param pagina índice de la página, iniciando en cero.
+     * @param tamano cantidad máxima de libros por página.
+     * @return página de libros con su resumen comercial.
+     */
+    @Transactional(readOnly = true)
+    public PaginaCatalogoDTO listarCatalogoPaginado(
+            String termino,
+            String categoria,
+            int pagina,
+            int tamano) {
+
+        if (pagina < 0) {
+            throw new IllegalArgumentException(
+                    "La página debe ser mayor o igual a cero."
+            );
+        }
+
+        if (tamano < 1 || tamano > 50) {
+            throw new IllegalArgumentException(
+                    "El tamaño de página debe estar entre 1 y 50."
+            );
+        }
+
+        Pageable pageable = PageRequest.of(
+                pagina,
+                tamano,
+                Sort.by("titulo").ascending()
+        );
+
+        Page<Libro> resultados = libroRepository.buscarCatalogoPublico(
+                normalizarTextoOpcional(termino),
+                normalizarTextoOpcional(categoria),
+                pageable
+        );
+
+        List<Long> libroIds = resultados.getContent().stream()
+                .map(Libro::getId)
+                .toList();
+
+        List<LibroCatalogoDTO> contenido = List.of();
+
+        if (!libroIds.isEmpty()) {
+
+            List<FormatoLibro> formatos =
+                    formatoLibroRepository.listarPorLibros(libroIds);
+
+            List<Long> formatoIds = formatos.stream()
+                    .map(FormatoLibro::getId)
+                    .toList();
+
+            Map<Long, Integer> existencias = formatoIds.isEmpty()
+                    ? Map.of()
+                    : mapearExistencias(
+                    itemStockRepository.listarPorFormatos(formatoIds)
+            );
+
+            Map<Long, List<FormatoLibro>> formatosPorLibro =
+                    agruparFormatos(formatos);
+
+            contenido = resultados.getContent().stream()
+                    .map(libro -> construirTarjeta(
+                            convertirAPublico(libro),
+                            formatosPorLibro,
+                            existencias
+                    ))
+                    .toList();
+        }
+
+        return new PaginaCatalogoDTO(
+                contenido,
+                resultados.getNumber(),
+                resultados.getSize(),
+                resultados.getTotalElements(),
+                resultados.getTotalPages(),
+                resultados.isFirst(),
+                resultados.isLast()
+        );
+    }
+
+    /**
+     * Busca libros dentro del catálogo público de
+     * Librería Raudskinna mediante su título o autor.
+     *
+     * Reutiliza la consulta pública de libros activos
+     * con su correspondiente información comercial.
+     *
+     * La búsqueda admite coincidencias parciales y
+     * no distingue entre mayúsculas y minúsculas.
+     *
+     * Cuando el término es nulo o está vacío,
+     * devuelve el catálogo público completo.
+     *
+     * @param termino texto introducido por el visitante.
+     * @return libros públicos que coinciden con la búsqueda.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> buscarCatalogoPublico(
+            String termino) {
+
+        // Normalizar el término recibido desde el buscador.
+        String busqueda = normalizarTextoOpcional(termino);
+
+        // Recuperar el catálogo con su información comercial.
+        List<LibroCatalogoDTO> catalogo = listarCatalogoPublico();
+
+        // Sin término de búsqueda, presentar el catálogo completo.
+        if (busqueda == null) {
+            return catalogo;
+        }
+
+        /*
+         * Convertir el término a minúsculas para realizar
+         * comparaciones independientes de la configuración regional.
+         */
+        String terminoNormalizado =
+                busqueda.toLowerCase(Locale.ROOT);
+
+        // Reutilizar la lógica de coincidencias bibliográficas.
+        return catalogo.stream()
+                .filter(tarjeta -> coincideConBusqueda(
+                        tarjeta.libro(),
+                        terminoNormalizado
+                ))
+                .toList();
+    }
+
+    /**
+     * Determina si un libro coincide con el término
+     * de búsqueda normalizado.
+     *
+     * Las coincidencias pueden ser parciales y se evalúan
+     * sobre el título y cualquiera de los autores asociados.
+     *
+     * La comparación no distingue entre mayúsculas
+     * y minúsculas.
+     *
+     * @param libro información bibliográfica del libro.
+     * @param terminoNormalizado término previamente
+     *                           convertido a minúsculas.
+     * @return true si coincide el título o algún autor.
+     */
+    private boolean coincideConBusqueda(
+            LibroPublicoDTO libro,
+            String terminoNormalizado) {
+
+        // Comprobar coincidencias parciales en el título.
+        boolean coincideTitulo = libro.titulo()
+                .toLowerCase(Locale.ROOT)
+                .contains(terminoNormalizado);
+
+        // Comprobar coincidencias entre los autores asociados.
+        boolean coincideAutor = libro.autores()
+                .stream()
+                .anyMatch(autor -> autor
+                        .toLowerCase(Locale.ROOT)
+                        .contains(terminoNormalizado));
+
+        // Basta con que coincida el título o algún autor.
+        return coincideTitulo || coincideAutor;
+    }
+
+    /**
+     * Filtra el catálogo público mediante criterios
+     * de búsqueda bibliográfica y categoría.
+     *
+     * Los criterios son opcionales y acumulativos.
+     * Cuando se proporcionan ambos, el libro debe
+     * satisfacer las dos condiciones.
+     *
+     * Únicamente se consideran libros activos,
+     * conservando su información comercial y
+     * disponibilidad.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @return libros que satisfacen los criterios proporcionados.
+     */
+    @Transactional(readOnly = true)
+
+    public List<LibroCatalogoDTO> filtrarCatalogoPublico(
+            String termino,
+            String categoria) {
+
+        // Delegar el filtrado sin seleccionar un autor específico.
+        return filtrarCatalogoPublico(
+                termino,
+                categoria,
+                null
+        );
+    }
+
+    /**
+     * Filtra el catálogo público mediante criterios
+     * de búsqueda bibliográfica, categoría y autor.
+     *
+     * Los criterios son opcionales y acumulativos.
+     * Cada libro debe satisfacer todos los criterios
+     * proporcionados para formar parte del resultado.
+     *
+     * Se conserva la información bibliográfica,
+     * comercial y de disponibilidad de los libros.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @return libros que satisfacen los criterios proporcionados.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> filtrarCatalogoPublico(
+            String termino,
+            String categoria,
+            String autor) {
+
+        // Delegar el filtrado conservando el orden predeterminado.
+        return filtrarCatalogoPublico(
+                termino,
+                categoria,
+                autor,
+                null
+        );
+    }
+
+    /**
+     * Filtra y ordena el catálogo público mediante los
+     * criterios seleccionados por el visitante.
+     *
+     * Los criterios bibliográficos son opcionales
+     * y acumulativos. Cada libro debe satisfacer
+     * todos los criterios proporcionados.
+     *
+     * El ordenamiento se aplica después del filtrado,
+     * conservando la información bibliográfica,
+     * comercial y de disponibilidad.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return libros filtrados y ordenados.
+     */
+    @Transactional(readOnly = true)
+    public List<LibroCatalogoDTO> filtrarCatalogoPublico(
+            String termino,
+            String categoria,
+            String autor,
+            String orden) {
+
+        // Recuperar el catálogo público una sola vez.
+        List<LibroCatalogoDTO> catalogo =
+                listarCatalogoPublico();
+
+        // Delegar el procesamiento del catálogo recuperado.
+        return aplicarCriteriosCatalogoPublico(
+                catalogo,
+                termino,
+                categoria,
+                autor,
+                orden
+        );
+    }
+
+    /**
+     * Aplica los criterios de búsqueda, filtrado y
+     * ordenamiento sobre un catálogo previamente recuperado.
+     *
+     * Este método no realiza consultas a la base de datos.
+     * Su responsabilidad consiste exclusivamente en
+     * procesar la colección proporcionada.
+     *
+     * Los criterios bibliográficos son opcionales
+     * y acumulativos.
+     *
+     * @param catalogo catálogo público previamente recuperado.
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return libros filtrados y ordenados.
+     */
+    private List<LibroCatalogoDTO> aplicarCriteriosCatalogoPublico(
+            List<LibroCatalogoDTO> catalogo,
+            String termino,
+            String categoria,
+            String autor,
+            String orden) {
+
+        // Normalizar los criterios proporcionados.
+        String busqueda = normalizarTextoOpcional(termino);
+
+        String categoriaSeleccionada =
+                normalizarTextoOpcional(categoria);
+
+        String autorSeleccionado =
+                normalizarTextoOpcional(autor);
+
+        // Normalizar el término para las comparaciones.
+        String terminoNormalizado = busqueda == null
+                ? null
+                : busqueda.toLowerCase(Locale.ROOT);
+
+        // Aplicar los criterios de manera acumulativa.
+        List<LibroCatalogoDTO> resultados = catalogo.stream()
+
+                // Filtrar por coincidencias en título o autor.
+                .filter(tarjeta ->
+                        terminoNormalizado == null
+                                || coincideConBusqueda(
+                                tarjeta.libro(),
+                                terminoNormalizado
+                        )
+                )
+
+                // Filtrar por la categoría seleccionada.
+                .filter(tarjeta ->
+                        categoriaSeleccionada == null
+                                || categoriaSeleccionada.equalsIgnoreCase(
+                                tarjeta.libro().categoria()
+                        )
+                )
+
+                // Filtrar por cualquiera de los autores asociados.
+                .filter(tarjeta ->
+                        autorSeleccionado == null
+                                || tarjeta.libro().autores()
+                                .stream()
+                                .anyMatch(nombreAutor ->
+                                        autorSeleccionado
+                                                .equalsIgnoreCase(nombreAutor)
+                                )
+                )
+
+                // Obtener los libros que cumplen todos los criterios.
+                .toList();
+
+        // Ordenar únicamente los resultados del filtrado.
+        return ordenarCatalogoPublico(resultados, orden);
+    }
+
+    /**
+     * Ordena los resultados del catálogo público mediante
+     * el criterio seleccionado por el visitante.
+     *
+     * El ordenamiento comercial utiliza el precio mínimo
+     * de las presentaciones disponibles de cada libro.
+     *
+     * Los libros sin precio disponible permanecen al final
+     * tanto en orden ascendente como descendente.
+     *
+     * Los criterios nulos, vacíos o desconocidos conservan
+     * el orden original de los resultados.
+     *
+     * @param libros resultados del filtrado bibliográfico.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return resultados ordenados según el criterio.
+     */
+    private List<LibroCatalogoDTO> ordenarCatalogoPublico(
+            List<LibroCatalogoDTO> libros,
+            String orden) {
+
+        // Normalizar el criterio de ordenamiento.
+        String criterio = normalizarTextoOpcional(orden);
+
+        // Sin criterio, conservar el orden original.
+        if (criterio == null) {
+            return libros;
+        }
+
+        // Seleccionar el comparador correspondiente.
+        Comparator<LibroCatalogoDTO> comparador =
+                switch (criterio.toLowerCase(Locale.ROOT)) {
+
+                    // Precio de menor a mayor.
+                    case "precio-asc" -> Comparator.comparing(
+                            LibroCatalogoDTO::precioDesde,
+                            Comparator.nullsLast(
+                                    Comparator.naturalOrder()
+                            )
+                    );
+
+                    // Precio de mayor a menor.
+                    case "precio-desc" -> Comparator.comparing(
+                            LibroCatalogoDTO::precioDesde,
+                            Comparator.nullsLast(
+                                    Comparator.reverseOrder()
+                            )
+                    );
+
+                    // Título en orden alfabético.
+                    case "titulo-asc" -> Comparator.comparing(
+                            tarjeta -> tarjeta.libro().titulo(),
+                            String.CASE_INSENSITIVE_ORDER
+                    );
+
+                    // Relevancia o criterio desconocido.
+                    default -> null;
+                };
+
+        // Conservar el orden original si no existe comparador.
+        if (comparador == null) {
+            return libros;
+        }
+
+        // Ordenar sin modificar la colección original.
+        return libros.stream()
+                .sorted(comparador)
+                .toList();
+    }
+
+    /**
+     * Consulta el catálogo público y genera las opciones
+     * disponibles para su filtrado.
+     *
+     * Las categorías y autores se obtienen del catálogo
+     * completo antes de aplicar los criterios seleccionados
+     * por el visitante.
+     *
+     * Las opciones se presentan sin duplicados y en
+     * orden alfabético.
+     *
+     * El catálogo se recupera una sola vez, evitando
+     * consultas adicionales para construir las opciones.
+     *
+     * @param termino término de búsqueda por título o autor.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param autor nombre completo del autor seleccionado.
+     * @param orden criterio de ordenamiento seleccionado.
+     * @return resultados y opciones dinámicas del catálogo.
+     */
+    @Transactional(readOnly = true)
+    public CatalogoPublicoDTO consultarCatalogoPublico(
+            String termino,
+            String categoria,
+            String autor,
+            String orden) {
+
+        // Recuperar el catálogo público completo una sola vez.
+        List<LibroCatalogoDTO> catalogo =
+                listarCatalogoPublico();
+
+        // Obtener las categorías presentes en el catálogo.
+        List<String> categorias = catalogo.stream()
+
+                // Recuperar la categoría de cada libro.
+                .map(tarjeta -> tarjeta.libro().categoria())
+
+                // Excluir valores nulos o vacíos.
+                .filter(Objects::nonNull)
+                .filter(nombre -> !nombre.isBlank())
+
+                // Eliminar duplicados.
+                .distinct()
+
+                // Ordenar alfabéticamente.
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+
+                .toList();
+
+        // Obtener todos los autores asociados a los libros.
+        List<String> autores = catalogo.stream()
+
+                // Recuperar las colecciones de autores.
+                .flatMap(tarjeta ->
+                        tarjeta.libro().autores().stream()
+                )
+
+                // Excluir valores nulos o vacíos.
+                .filter(Objects::nonNull)
+                .filter(nombre -> !nombre.isBlank())
+
+                // Eliminar duplicados.
+                .distinct()
+
+                // Ordenar alfabéticamente.
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+
+                .toList();
+
+        // Aplicar los criterios sobre el catálogo recuperado.
+        List<LibroCatalogoDTO> resultados =
+                aplicarCriteriosCatalogoPublico(
+                        catalogo,
+                        termino,
+                        categoria,
+                        autor,
+                        orden
+                );
+
+        // Agrupar los resultados y las opciones de filtrado.
+        return new CatalogoPublicoDTO(
+                resultados,
+                categorias,
+                autores
+        );
     }
 
     /**
@@ -138,7 +778,9 @@ public class LibroService {
                 libro.getId(),
                 libro.getTitulo(),
                 libro.getSinopsis(),
-                libro.getPortadaUrl(),
+                resolvedorUrlsArchivos.urlPublica(
+                        libro.getPortadaUrl()
+                ),
                 libro.getCategoria().getNombre(),
                 libro.getEditorial().getNombre(),
                 libro.getAutores().stream()
@@ -146,6 +788,107 @@ public class LibroService {
                         .sorted()
                         .toList()
         );
+    }
+
+    /**
+     * Consulta el detalle público de un libro junto con sus
+     * presentaciones comerciales.
+     *
+     * Reúne en una sola respuesta la información bibliográfica
+     * y los formatos con precio y disponibilidad, de modo que
+     * el cliente pueda obtener el formatoLibroId sin consultas
+     * adicionales.
+     *
+     * @param id identificador del libro.
+     * @return detalle del libro con sus presentaciones públicas.
+     */
+    @Transactional(readOnly = true)
+    public LibroDetallePublicoDTO consultarDetalleLibroPublico(Long id) {
+
+        LibroPublicoDTO libro = consultarLibroPublico(id);
+
+        List<FormatoPublicoDTO> formatos = listarFormatosPublicos(id);
+
+        return new LibroDetallePublicoDTO(
+                libro.id(),
+                libro.titulo(),
+                libro.sinopsis(),
+                libro.portadaUrl(),
+                libro.categoria(),
+                libro.editorial(),
+                libro.autores(),
+                formatos
+        );
+    }
+
+    /**
+     * Recupera las presentaciones comerciales de un libro
+     * visible en el catálogo público de Librería Raudskinna.
+     *
+     * Devuelve el formato, precio y disponibilidad informativa
+     * sin exponer directamente las entidades JPA.
+     *
+     * Las presentaciones digitales no requieren inventario físico.
+     * Las presentaciones físicas solamente se consideran disponibles
+     * cuando tienen existencias mayores que cero.
+     *
+     * La disponibilidad puede cambiar antes del checkout.
+     *
+     * @param libroId identificador del libro solicitado.
+     * @return presentaciones comerciales del libro activo.
+     * @throws IllegalArgumentException si el ID no es válido.
+     */
+    @Transactional(readOnly = true)
+    public List<FormatoPublicoDTO> listarFormatosPublicos(Long libroId) {
+
+        // Validar el identificador recibido.
+        if (libroId == null || libroId <= 0) {
+            throw new IllegalArgumentException(
+                    "El identificador del libro no es válido."
+            );
+        }
+
+        // Impedir que se consulten presentaciones de libros inactivos.
+        libroRepository.findByIdAndActivoTrue(libroId)
+                .orElseThrow(() ->
+                        new org.springframework.web.server.ResponseStatusException(
+                                org.springframework.http.HttpStatus.NOT_FOUND,
+                                "El libro solicitado no está disponible."
+                        )
+                );
+
+        // Recuperar los formatos comerciales asociados al libro.
+        List<FormatoLibro> formatos =
+                formatoLibroRepository.findByLibroId(libroId);
+
+        // Transformar cada presentación en información pública.
+        return formatos.stream()
+                .map(formato -> {
+
+                    boolean disponible;
+
+                    if (formato.getFormato() == Formato.DIGITAL) {
+
+                        // Los libros digitales no manejan inventario físico.
+                        disponible = true;
+
+                    } else {
+
+                        // Los formatos físicos necesitan existencias positivas.
+                        disponible = itemStockRepository
+                                .findByFormatoLibroId(formato.getId())
+                                .map(stock -> stock.getCantidad() > 0)
+                                .orElse(false);
+                    }
+
+                    return new FormatoPublicoDTO(
+                            formato.getId(),
+                            formato.getFormato(),
+                            formato.getPrecio(),
+                            disponible
+                    );
+                })
+                .toList();
     }
 
     /**
@@ -216,7 +959,9 @@ public class LibroService {
         formulario.setCategoriaId(libro.getCategoria().getId());
         formulario.setEditorialId(libro.getEditorial().getId());
         formulario.setSinopsis(libro.getSinopsis());
-        formulario.setPortadaUrl(libro.getPortadaUrl());
+        formulario.setPortadaUrl(
+                resolvedorUrlsArchivos.urlPublica(libro.getPortadaUrl())
+        );
         formulario.setActivo(libro.isActivo());
 
         // Recupera los identificadores de los autores asociados.
@@ -897,15 +1642,31 @@ public class LibroService {
             );
         }
 
+
         /*
-         * Recupera la categoría seleccionada y comprueba
-         * que exista y se encuentre activa.
+         * Permite conservar la categoría original del libro,
+         * incluso cuando haya sido desactivada posteriormente.
          *
-         * Reutiliza la misma regla del registro de libros.
+         * Si el administrador selecciona otra categoría,
+         * esta debe encontrarse activa.
          */
-        Categoria categoria = obtenerCategoriaActiva(
-                formulario.getCategoriaId()
-        );
+        Categoria categoria;
+
+        Long categoriaOriginalId = libro.getCategoria().getId();
+
+        if (categoriaOriginalId != null
+                && categoriaOriginalId.equals(formulario.getCategoriaId())) {
+
+            // La categoría no cambió: conservar la asociación existente.
+            categoria = libro.getCategoria();
+
+        } else {
+
+            // La categoría cambió: exigir que la nueva esté activa.
+            categoria = obtenerCategoriaActiva(
+                    formulario.getCategoriaId()
+            );
+        }
 
         /*
          * Recupera la editorial seleccionada y comprueba

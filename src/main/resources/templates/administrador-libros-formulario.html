@@ -149,10 +149,8 @@
             </a>
 
             <!--
-                Selección de una categoría activa.
-
-                Las categorías se recuperan mediante CategoriaService.
-                No se muestran las categorías desactivadas.
+            Muestra las categorías activas y, durante la edición,
+            también la categoría original del libro si está inactiva.
             -->
             <label for="categoriaId">Categoría</label>
 
@@ -167,7 +165,7 @@
                 <!-- Categorías activas recuperadas desde MySQL. -->
                 <option th:each="categoria : ${categorias}"
                         th:value="${categoria.id}"
-                        th:text="${categoria.nombre}">
+                        th:text="${categoria.nombre + (categoria.activo ? '' : ' (inactiva)')}">
                     Nombre de la categoría
                 </option>
 

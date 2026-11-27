@@ -41,6 +41,172 @@
       <strong>Correo:</strong> <span th:text="${orden.usuario.correo}">correo@ejemplo.com</span>
     </p>
 
+    <!--
+        Dirección histórica de envío.
+
+        Se utilizan los datos almacenados en la orden,
+        no las direcciones actuales del cliente.
+
+        Esto permite conservar los datos originales
+        aunque el cliente modifique posteriormente
+        su dirección personal.
+    -->
+    <section class="pedido-datos">
+
+      <h2>Datos de entrega</h2>
+
+      <div th:if="${orden.direccionEnvio != null}"
+           th:with="envio=${orden.direccionEnvio}">
+
+        <p>
+          <strong>Destinatario:</strong>
+          <span th:text="${envio.nombreDestinatario}">
+            </span>
+        </p>
+
+        <p>
+          <strong>Calle:</strong>
+          <span th:text="${envio.calle}"></span>
+        </p>
+
+        <p>
+          <strong>Número exterior:</strong>
+          <span th:text="${envio.numeroExterior}"></span>
+        </p>
+
+        <p th:if="${envio.numeroInterior != null}">
+          <strong>Número interior:</strong>
+          <span th:text="${envio.numeroInterior}"></span>
+        </p>
+
+        <p>
+          <strong>Colonia:</strong>
+          <span th:text="${envio.colonia}"></span>
+        </p>
+
+        <p>
+          <strong>Código postal:</strong>
+          <span th:text="${envio.codigoPostal}"></span>
+        </p>
+
+        <p>
+          <strong>Ciudad:</strong>
+          <span th:text="${envio.ciudad}"></span>
+        </p>
+
+        <p>
+          <strong>Estado:</strong>
+          <span th:text="${envio.estado}"></span>
+        </p>
+
+        <p>
+          <strong>País:</strong>
+          <span th:text="${envio.pais}"></span>
+        </p>
+
+        <p th:if="${envio.referencias != null}">
+          <strong>Referencias:</strong>
+          <span th:text="${envio.referencias}"></span>
+        </p>
+
+      </div>
+
+      <!--
+          Las compras digitales y algunas órdenes
+          anteriores pueden no tener dirección histórica.
+      -->
+      <p class="nota"
+         th:if="${orden.direccionEnvio == null}">
+
+        Esta orden no tiene una dirección de envío registrada.
+
+      </p>
+
+    </section>
+
+    <!--
+        Información del registro de pago.
+
+        El estado del pago es independiente del estado
+        comercial de la orden de compra.
+    -->
+    <section class="pedido-datos">
+
+      <h2>Información del pago</h2>
+
+      <div th:if="${pago != null}">
+
+        <p>
+
+          <strong>Método de pago:</strong>
+
+          <span th:switch="${pago.metodo.name()}">
+
+                <span th:case="'TRANSFERENCIA'">
+                    Transferencia bancaria
+                </span>
+
+                <span th:case="'TARJETA'">
+                    Tarjeta
+                </span>
+
+                <span th:case="'EFECTIVO'">
+                    Efectivo
+                </span>
+
+                <span th:case="*"
+                      th:text="${pago.metodo}">
+                </span>
+
+            </span>
+
+        </p>
+
+        <p>
+
+          <strong>Estado del pago:</strong>
+
+          <span class="estado-orden"
+                th:text="${pago.estado}">
+            </span>
+
+        </p>
+
+        <p>
+
+          <strong>Monto:</strong>
+
+          <span th:text="|$${#numbers.formatDecimal(pago.monto, 1, 'COMMA', 2, 'POINT')} MXN|">
+            </span>
+
+        </p>
+
+        <p>
+
+          <strong>Fecha de registro:</strong>
+
+          <span th:text="${#temporals.format(pago.fechaRegistro, 'dd/MM/yyyy HH:mm')}">
+            </span>
+
+        </p>
+
+        <p class="nota">
+          Registro correspondiente a una simulación
+          académica. No representa un cobro bancario real.
+        </p>
+
+      </div>
+
+      <!-- Compatibilidad con órdenes anteriores. -->
+      <p class="nota"
+         th:if="${pago == null}">
+
+        Esta orden no tiene un registro de pago asociado.
+
+      </p>
+
+    </section>
+
     <div class="acciones">
       <a class="boton boton-claro" th:href="@{/admin/ordenes}">Volver al listado</a>
     </div>

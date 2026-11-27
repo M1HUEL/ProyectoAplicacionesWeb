@@ -46,15 +46,34 @@ public class AutenticacionController {
     }
 
     /**
-     * Procesa el registro de clientes.
+     * Procesa el registro público de clientes.
      *
-     * AutenticacionService establece obligatoriamente el rol USER,
-     * independientemente de los atributos enviados por el cliente.
+     * Las validaciones de negocio permanecen en
+     * AutenticacionService. Si los datos son inválidos,
+     * se muestra el formulario con un mensaje de error.
      */
     @PostMapping("/registro")
-    public String registrar(@ModelAttribute("usuario") Usuario usuario) {
-        autenticacionService.registrar(usuario);
-        return "redirect:/iniciar-sesion?registrado";
+    public String registrar(
+            @ModelAttribute("usuario") Usuario usuario,
+            Model model) {
+
+        try {
+            autenticacionService.registrar(usuario);
+
+            return "redirect:/iniciar-sesion?registrado";
+
+        } catch (IllegalArgumentException excepcion) {
+
+            // Mostramos el error sin trasladar la regla
+            // de negocio a la capa Controller.
+            model.addAttribute("error", excepcion.getMessage());
+
+            // Nunca devolvemos al formulario la contraseña
+            // que ya pudo haber sido transformada por el servicio.
+            usuario.setContrasena(null);
+
+            return "registro";
+        }
     }
 
     /**

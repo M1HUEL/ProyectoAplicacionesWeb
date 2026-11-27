@@ -1,0 +1,161 @@
+
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Orden confirmada · Librería Raudskinna</title>
+
+    <link rel="stylesheet" th:href="@{/styles/index.css}" />
+</head>
+
+<body>
+
+<!-- Encabezado compartido. -->
+<header th:replace="~{fragments/header :: header('ordenes')}">
+</header>
+
+<main class="contenedor confirmacion-publica">
+
+    <section class="panel confirmacion">
+
+        <h1>¡Gracias por tu compra!</h1>
+
+        <p class="confirmacion-texto">
+            Tu orden fue registrada correctamente.
+        </p>
+
+        <!-- Identificador real de la orden persistida. -->
+        <p class="orden-numero"
+           th:text="|Orden #${orden.ordenId}|">
+
+            Orden
+
+        </p>
+
+        <!-- Fecha de registro de la orden. -->
+        <p class="nota"
+           th:text="${#temporals.format(orden.fecha, 'dd/MM/yyyy HH:mm')}">
+        </p>
+
+        <h2>Resumen de la orden</h2>
+
+        <div class="confirmacion-detalle">
+
+            <!--
+                Los artículos e importes provienen de los
+                detalles históricos de la orden persistida.
+            -->
+            <div class="resumen-fila"
+                 th:each="detalle : ${orden.detalles}"
+                 th:with="subtotal=${#numbers.formatDecimal(detalle.subtotal, 1, 'COMMA', 2, 'POINT')}">
+
+                <div class="checkout-articulo">
+
+                    <span th:text="|${detalle.titulo} × ${detalle.cantidad}|">
+                    </span>
+
+                    <small th:switch="${detalle.formato}">
+
+                        <span th:case="'PASTA_DURA'">
+                            Pasta dura
+                        </span>
+
+                        <span th:case="'PASTA_BLANDA'">
+                            Pasta blanda
+                        </span>
+
+                        <span th:case="'DIGITAL'">
+                            Digital
+                        </span>
+
+                    </small>
+
+                </div>
+
+                <span th:text="|$${subtotal} MXN|">
+                </span>
+
+            </div>
+
+            <div class="resumen-fila resumen-total"
+                 th:with="total=${#numbers.formatDecimal(orden.total, 1, 'COMMA', 2, 'POINT')}">
+
+                <span>Total</span>
+
+                <span th:text="|$${total} MXN|">
+                </span>
+
+            </div>
+
+        </div>
+
+        <!-- Estado actual de la orden. -->
+        <span class="estado-orden"
+              th:switch="${orden.estado}">
+
+            <span th:case="'PENDIENTE'">Pendiente</span>
+            <span th:case="'PROCESANDO'">Procesando</span>
+            <span th:case="'ENVIADO'">Enviado</span>
+            <span th:case="'ENTREGADO'">Entregado</span>
+            <span th:case="'CANCELADO'">Cancelado</span>
+            <span th:case="*" th:text="${orden.estado}"></span>
+
+        </span>
+
+        <p class="nota">
+            Compra registrada como parte de una simulación
+            académica. No se realizó ningún cobro real.
+        </p>
+
+        <p class="confirmacion-ayuda">
+
+            Puedes consultar el estado de tus compras
+            desde tu historial de órdenes o continuar
+            explorando nuestro catálogo.
+
+        </p>
+
+        <div class="acciones">
+
+            <a class="boton boton-primario"
+               th:href="@{/mis-ordenes}">
+
+                Ver mis órdenes
+
+            </a>
+
+            <a class="boton boton-claro"
+               th:href="@{/catalogo}">
+
+                Seguir comprando
+
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+<footer class="pie">
+
+    <div class="contenedor">
+
+        <span>Librería Raudskinna</span>
+
+        <nav aria-label="Pie de página">
+
+            <a th:href="@{/}">Inicio</a> ·
+            <a th:href="@{/catalogo}">Catálogo</a> ·
+            <a th:href="@{/carrito}">Carrito</a>
+
+        </nav>
+
+    </div>
+
+</footer>
+
+</body>
+</html>

@@ -5,6 +5,8 @@ import com.itson.ProyectoAplicacionesWeb.model.Editorial;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 /**
  * Repositorio encargado de la persistencia
  * de las editoriales de Librería Raudskinna.
@@ -34,5 +36,5 @@ public interface EditorialRepository
      */
     boolean existsByNombreIgnoreCase(String nombre);
 
-
+    Optional<Editorial> findByNombreIgnoreCase(String nombre);
 }

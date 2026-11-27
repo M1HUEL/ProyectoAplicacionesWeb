@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repositorio para la persistencia de órdenes de compra.
@@ -53,6 +54,35 @@ public interface OrdenCompraRepository
        ORDER BY o.fecha DESC
        """)
     List<OrdenCompra> listarPorCorreoUsuario(@Param("correo") String correo);
+
+    /**
+     * Recupera una orden específica perteneciente al cliente
+     * identificado mediante su correo electrónico.
+     *
+     * Recupera también los detalles, formatos y libros
+     * necesarios para construir la respuesta.
+     *
+     * La consulta restringe el acceso simultáneamente
+     * por identificador de orden y correo del propietario,
+     * evitando el acceso a órdenes de otros clientes.
+     *
+     * @param ordenId identificador de la orden.
+     * @param correo correo del cliente autenticado.
+     * @return orden encontrada, si pertenece al cliente.
+     */
+    @Query("""
+       SELECT DISTINCT o
+       FROM OrdenCompra o
+       JOIN FETCH o.usuario u
+       LEFT JOIN FETCH o.detalles d
+       LEFT JOIN FETCH d.formatoLibro f
+       LEFT JOIN FETCH f.libro l
+       WHERE o.id = :ordenId
+         AND u.correo = :correo
+       """)
+    Optional<OrdenCompra> buscarOrdenPropia(
+            @Param("ordenId") Long ordenId,
+            @Param("correo") String correo);
 
     /**
      * Filtra las órdenes por estado, rango de fechas y cliente

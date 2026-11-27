@@ -143,7 +143,8 @@ public class CarritoService {
         // Verificar que la presentación comercial exista.
         FormatoLibro formatoLibro = formatoLibroRepository
                 .findById(solicitud.formatoLibroId())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
                         "La presentación comercial solicitada no existe."
                 ));
 

@@ -684,7 +684,7 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 | Método | Ruta | Body / parámetros | Descripción | Respuestas |
 |---|---|---|---|---|
 | `GET` | `/api/carrito` | — | Consulta el carrito del cliente autenticado. | `200`, `401` |
-| `POST` | `/api/carrito/items` | JSON: `formatoLibroId`, `cantidad` | Agrega una presentación al carrito. | `200`, `400`, `401` |
+| `POST` | `/api/carrito/items` | JSON: `formatoLibroId`, `cantidad` | Agrega una presentación al carrito. | `200`, `400`, `401`, `404` |
 | `PUT` | `/api/carrito/items/{formatoLibroId}` | JSON: `cantidad` | Modifica la cantidad de un ítem. | `200`, `400`, `401` |
 | `DELETE` | `/api/carrito/items/{formatoLibroId}` | — | Elimina un ítem del carrito. | `200`, `401` |
 | `POST` | `/api/checkout` | — | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401` |

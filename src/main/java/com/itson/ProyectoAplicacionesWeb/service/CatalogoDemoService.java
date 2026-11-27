@@ -510,74 +510,74 @@ public class CatalogoDemoService {
                 "/img/portadas/raudskinna.png");
 
         asignarPortadaDemo("DEMO-MALLEUS-001",
-                "/img/portadas/malleusMaleficarum.png");
+                "/img/portadas/malleus-maleficarum.png");
 
         asignarPortadaDemo("DEMO-GALDRA-001",
                 "/img/portadas/galdrabok.png");
 
         asignarPortadaDemo("DEMO-GIGAS-001",
-                "/img/portadas/codexGigas.png");
+                "/img/portadas/codex-gigas.png");
 
         asignarPortadaDemo("DEMO-DRAGON-001",
-                "/img/portadas/elGranGrimorio.png");
+                "/img/portadas/el-gran-grimorio.png");
 
         asignarPortadaDemo("DEMO-SALOMON-001",
-                "/img/portadas/laLlaveMenorDeSalomon.png");
+                "/img/portadas/la-llave-menor-de-salomon.png");
 
         asignarPortadaDemo("DEMO-CIPRIANO-001",
-                "/img/portadas/elLibroDeSanCipriano.png");
+                "/img/portadas/el-libro-de-san-cipriano.png");
 
         asignarPortadaDemo("DEMO-OERA-001",
-                "/img/portadas/oeraLinda.png");
+                "/img/portadas/oera-linda.png");
 
         asignarPortadaDemo("DEMO-MONTANAS-001",
-                "/img/portadas/MontanasLocura.png");
+                "/img/portadas/montanas-locura.png");
 
         asignarPortadaDemo("DEMO-COLOR-001",
-                "/img/portadas/elColorQueCayoDelCielo.png");
+                "/img/portadas/el-color-que-cayo-del-cielo.png");
 
         asignarPortadaDemo("DEMO-NYARLA-001",
                 "/img/portadas/nyarlathotep.png");
 
         asignarPortadaDemo("DEMO-ACECHA-001",
-                "/img/portadas/elQueAcechaEnLaOscuridad.png");
+                "/img/portadas/el-que-acecha-en-la-oscuridad.png");
 
         asignarPortadaDemo("DEMO-TINDALOS-001",
-                "/img/portadas/losPerrosDeTindalos.png");
+                "/img/portadas/los-perros-de-tindalos.png");
 
         asignarPortadaDemo("DEMO-NECRON-001",
                 "/img/portadas/necronomicon.png");
 
         asignarPortadaDemo("DEMO-REMINA-001",
-                "/img/portadas/hellstarRemina.png");
+                "/img/portadas/hellstar-remina.png");
 
         // =====================================================
         // PORTADAS - LITERATURA GENERAL
         // =====================================================
 
         asignarPortadaDemo("DEMO-PRINCIPITO-001",
-                "/img/portadas/elPrincipito.png");
+                "/img/portadas/el-principito.png");
 
         asignarPortadaDemo("DEMO-ORGULLO-001",
-                "/img/portadas/orgulloYPrejuicio.png");
+                "/img/portadas/orgullo-y-prejuicio.png");
 
         asignarPortadaDemo("DEMO-PARAMO-001",
-                "/img/portadas/pedroParamo.png");
+                "/img/portadas/pedro-paramo.png");
 
         asignarPortadaDemo("DEMO-DUNE-001",
                 "/img/portadas/dune.png");
 
         asignarPortadaDemo("DEMO-HOBBIT-001",
-                "/img/portadas/elHobbit.png");
+                "/img/portadas/el-hobbit.png");
 
         asignarPortadaDemo("DEMO-COSMOS-001",
                 "/img/portadas/cosmos.png");
 
         asignarPortadaDemo("DEMO-CLEANCODE-001",
-                "/img/portadas/cleanCode.png");
+                "/img/portadas/clean-code.png");
 
         asignarPortadaDemo("DEMO-CHOCOLATE-001",
-                "/img/portadas/comoAguaParaChocolate.png");
+                "/img/portadas/como-agua-para-chocolate.png");
     }
 
     /**

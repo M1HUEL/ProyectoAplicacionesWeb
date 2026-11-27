@@ -78,7 +78,8 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/libros",
                                 "/api/libros/*",
-                                "/api/libros/*/formatos"
+                                "/api/libros/*/formatos",
+                                "/api/catalogo"
                         ).permitAll()
 
                         // Los demás endpoints requieren JWT.

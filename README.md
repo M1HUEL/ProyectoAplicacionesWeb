@@ -671,9 +671,11 @@ Las rutas administrativas (`/admin/**`), las vistas y las páginas que solo mues
 |---|---|---|---|---|---|
 | `POST` | `/api/auth/registro` | Pública | JSON: `nombre`, `correo`, `contrasena` | Registra un cliente con rol `USER`. | `201`, `400`, `409` |
 | `POST` | `/api/auth/login` | Pública | JSON: `correo`, `contrasena` | Autentica y devuelve un JWT. | `200`, `401` |
-| `GET` | `/api/libros` | Pública | — | Lista los libros activos del catálogo. | `200` |
+| `GET` | `/api/libros` | Pública | Opcionales: `q` (título o autor), `categoria`, `page` (default `0`), `size` (default `12`, máximo `50`) | Devuelve una página del catálogo con `precioDesde` y `disponible` por libro. | `200`, `400` |
 | `GET` | `/api/libros/{id}` | Pública | `id` en la ruta | Consulta el detalle de un libro activo, incluyendo `formatos` con `id`, `precio` y `disponible`. | `200`, `404` |
 | `GET` | `/api/libros/{id}/formatos` | Pública | `id` en la ruta | Consulta únicamente las presentaciones comerciales de un libro activo. | `200`, `404` |
+
+La respuesta paginada contiene `contenido`, `pagina`, `tamano`, `totalElementos`, `totalPaginas`, `primera` y `ultima`. Cada elemento de `contenido` incluye el libro, su `precioDesde` y su disponibilidad. Los filtros se aplican en la base de datos, por lo que la respuesta no depende del tamaño total del catálogo.
 
 ### 12.2. API REST autenticada (JWT)
 

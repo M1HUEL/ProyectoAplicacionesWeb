@@ -5,6 +5,10 @@ import com.itson.ProyectoAplicacionesWeb.dto.*;
 import com.itson.ProyectoAplicacionesWeb.model.*;
 import com.itson.ProyectoAplicacionesWeb.repository.*;
 import com.itson.ProyectoAplicacionesWeb.storage.ResolvedorUrlsArchivos;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,21 +103,33 @@ public class LibroService {
 
         return libroRepository.findByActivoTrue()
                 .stream()
-                .map(libro -> new LibroPublicoDTO(
-                        libro.getId(),
-                        libro.getTitulo(),
-                        libro.getSinopsis(),
-                        resolvedorUrlsArchivos.urlPublica(
-                                libro.getPortadaUrl()
-                        ),
-                        libro.getCategoria().getNombre(),
-                        libro.getEditorial().getNombre(),
-                        libro.getAutores().stream()
-                                .map(autor -> autor.getNombre())
-                                .sorted()
-                                .toList()
-                ))
+                .map(this::convertirAPublico)
                 .toList();
+    }
+
+    /**
+     * Convierte una entidad Libro en información pública,
+     * sin exponer directamente el modelo de persistencia.
+     *
+     * @param libro libro activo obtenido del repositorio.
+     * @return datos bibliográficos públicos del libro.
+     */
+    private LibroPublicoDTO convertirAPublico(Libro libro) {
+
+        return new LibroPublicoDTO(
+                libro.getId(),
+                libro.getTitulo(),
+                libro.getSinopsis(),
+                resolvedorUrlsArchivos.urlPublica(
+                        libro.getPortadaUrl()
+                ),
+                libro.getCategoria().getNombre(),
+                libro.getEditorial().getNombre(),
+                libro.getAutores().stream()
+                        .map(Autor::getNombre)
+                        .sorted()
+                        .toList()
+        );
     }
 
     /**
@@ -148,66 +164,174 @@ public class LibroService {
         List<ItemStock> inventarios =
                 itemStockRepository.listarConFormatoLibro();
 
-        // Asociar cada presentación física con sus existencias.
-        Map<Long, Integer> existenciasPorFormato =
-                inventarios.stream()
-                        .collect(Collectors.toMap(
-                                inventario ->
-                                        inventario.getFormatoLibro().getId(),
-                                ItemStock::getCantidad,
-                                (cantidadAnterior, cantidadNueva) ->
-                                        cantidadNueva
-                        ));
-
-        // Agrupar las presentaciones por identificador de libro.
+        // Preparar los mapas una sola vez para todas las tarjetas.
         Map<Long, List<FormatoLibro>> formatosPorLibro =
-                formatos.stream()
-                        .collect(Collectors.groupingBy(
-                                formato -> formato.getLibro().getId()
-                        ));
+                agruparFormatos(formatos);
+
+        Map<Long, Integer> existenciasPorFormato =
+                mapearExistencias(inventarios);
 
         // Construir el resumen comercial de cada libro público.
         return libros.stream()
-                .map(libro -> {
-
-                    // Recuperar sus presentaciones comerciales.
-                    List<FormatoLibro> presentaciones =
-                            formatosPorLibro.getOrDefault(
-                                    libro.id(),
-                                    List.of()
-                            );
-
-                    // Encontrar el menor precio entre las
-                    // presentaciones que pueden ofrecerse.
-                    BigDecimal precioDesde = presentaciones.stream()
-                            .filter(formato -> {
-
-                                // Los formatos digitales están disponibles.
-                                if (formato.getFormato() == Formato.DIGITAL) {
-                                    return true;
-                                }
-
-                                // Los formatos físicos necesitan existencias.
-                                return existenciasPorFormato.getOrDefault(
-                                        formato.getId(),
-                                        0
-                                ) > 0;
-                            })
-                            .map(FormatoLibro::getPrecio)
-                            .min(BigDecimal::compareTo)
-                            .orElse(null);
-
-                    // Existe disponibilidad cuando se encontró
-                    // al menos una presentación comercial válida.
-                    boolean disponible = precioDesde != null;
-
-                    return new LibroCatalogoDTO(
-                            libro,
-                            precioDesde,
-                            disponible
-                    );
-                })
+                .map(libro -> construirTarjeta(
+                        libro,
+                        formatosPorLibro,
+                        existenciasPorFormato
+                ))
                 .toList();
+    }
+
+    /**
+     * Agrupa las presentaciones comerciales por identificador de libro.
+     */
+    private Map<Long, List<FormatoLibro>> agruparFormatos(
+            List<FormatoLibro> formatos) {
+
+        return formatos.stream()
+                .collect(Collectors.groupingBy(
+                        formato -> formato.getLibro().getId()
+                ));
+    }
+
+    /**
+     * Asocia cada presentación física con sus existencias.
+     */
+    private Map<Long, Integer> mapearExistencias(
+            List<ItemStock> inventarios) {
+
+        return inventarios.stream()
+                .collect(Collectors.toMap(
+                        inventario -> inventario.getFormatoLibro().getId(),
+                        ItemStock::getCantidad,
+                        (cantidadAnterior, cantidadNueva) -> cantidadNueva
+                ));
+    }
+
+    /**
+     * Construye la tarjeta comercial de un libro a partir de sus
+     * presentaciones y del inventario de las presentaciones físicas.
+     *
+     * El precio inicial es el menor entre las presentaciones que
+     * pueden ofrecerse. Los formatos digitales siempre están
+     * disponibles y los físicos requieren existencias positivas.
+     */
+    private LibroCatalogoDTO construirTarjeta(
+            LibroPublicoDTO libro,
+            Map<Long, List<FormatoLibro>> formatosPorLibro,
+            Map<Long, Integer> existenciasPorFormato) {
+
+        List<FormatoLibro> presentaciones =
+                formatosPorLibro.getOrDefault(libro.id(), List.of());
+
+        BigDecimal precioDesde = presentaciones.stream()
+                .filter(formato ->
+                        formato.getFormato() == Formato.DIGITAL
+                                || existenciasPorFormato.getOrDefault(
+                                formato.getId(),
+                                0
+                        ) > 0
+                )
+                .map(FormatoLibro::getPrecio)
+                .min(BigDecimal::compareTo)
+                .orElse(null);
+
+        return new LibroCatalogoDTO(
+                libro,
+                precioDesde,
+                precioDesde != null
+        );
+    }
+
+    /**
+     * Recupera una página del catálogo público con sus filtros
+     * aplicados en la base de datos.
+     *
+     * La búsqueda es opcional y admite coincidencias parciales
+     * en el título o en cualquier autor. El filtro por categoría
+     * también es opcional y ambos criterios son acumulativos.
+     *
+     * Solo se consultan los formatos y existencias de los libros
+     * incluidos en la página solicitada.
+     *
+     * @param termino texto buscado en título o autores.
+     * @param categoria nombre de la categoría seleccionada.
+     * @param pagina índice de la página, iniciando en cero.
+     * @param tamano cantidad máxima de libros por página.
+     * @return página de libros con su resumen comercial.
+     */
+    @Transactional(readOnly = true)
+    public PaginaCatalogoDTO listarCatalogoPaginado(
+            String termino,
+            String categoria,
+            int pagina,
+            int tamano) {
+
+        if (pagina < 0) {
+            throw new IllegalArgumentException(
+                    "La página debe ser mayor o igual a cero."
+            );
+        }
+
+        if (tamano < 1 || tamano > 50) {
+            throw new IllegalArgumentException(
+                    "El tamaño de página debe estar entre 1 y 50."
+            );
+        }
+
+        Pageable pageable = PageRequest.of(
+                pagina,
+                tamano,
+                Sort.by("titulo").ascending()
+        );
+
+        Page<Libro> resultados = libroRepository.buscarCatalogoPublico(
+                normalizarTextoOpcional(termino),
+                normalizarTextoOpcional(categoria),
+                pageable
+        );
+
+        List<Long> libroIds = resultados.getContent().stream()
+                .map(Libro::getId)
+                .toList();
+
+        List<LibroCatalogoDTO> contenido = List.of();
+
+        if (!libroIds.isEmpty()) {
+
+            List<FormatoLibro> formatos =
+                    formatoLibroRepository.listarPorLibros(libroIds);
+
+            List<Long> formatoIds = formatos.stream()
+                    .map(FormatoLibro::getId)
+                    .toList();
+
+            Map<Long, Integer> existencias = formatoIds.isEmpty()
+                    ? Map.of()
+                    : mapearExistencias(
+                    itemStockRepository.listarPorFormatos(formatoIds)
+            );
+
+            Map<Long, List<FormatoLibro>> formatosPorLibro =
+                    agruparFormatos(formatos);
+
+            contenido = resultados.getContent().stream()
+                    .map(libro -> construirTarjeta(
+                            convertirAPublico(libro),
+                            formatosPorLibro,
+                            existencias
+                    ))
+                    .toList();
+        }
+
+        return new PaginaCatalogoDTO(
+                contenido,
+                resultados.getNumber(),
+                resultados.getSize(),
+                resultados.getTotalElements(),
+                resultados.getTotalPages(),
+                resultados.isFirst(),
+                resultados.isLast()
+        );
     }
 
     /**

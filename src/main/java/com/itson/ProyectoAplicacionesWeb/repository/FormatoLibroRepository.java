@@ -6,8 +6,10 @@ import com.itson.ProyectoAplicacionesWeb.model.FormatoLibro;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,5 +75,21 @@ public interface FormatoLibroRepository
     Optional<FormatoLibro> findByLibroIdAndFormato(
             Long libroId,
             Formato formato
+    );
+
+    /**
+     * Recupera las presentaciones comerciales de los libros
+     * incluidos en una página del catálogo.
+     *
+     * @param libroIds identificadores de los libros de la página.
+     * @return presentaciones comerciales de esos libros.
+     */
+    @Query("""
+            SELECT f
+            FROM FormatoLibro f
+            WHERE f.libro.id IN :libroIds
+            """)
+    List<FormatoLibro> listarPorLibros(
+            @Param("libroIds") Collection<Long> libroIds
     );
 }

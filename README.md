@@ -712,4 +712,5 @@ El campo `id` de cada elemento de `formatos` es el `formatoLibroId` que debe env
 | `403` | Autenticado sin el rol requerido, o CSRF inválido. |
 | `404` | Recurso no encontrado. |
 | `409` | Conflicto, por ejemplo un correo ya registrado. |
+| `500` | Error inesperado; responde con el mismo formato JSON de error de la API. |
 

@@ -3,8 +3,11 @@ package com.itson.ProyectoAplicacionesWeb.exception;
 
 import com.itson.ProyectoAplicacionesWeb.dto.ErrorRespuestaDTO;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +24,9 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice(annotations = RestController.class)
 public class ApiExceptionHandler {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorRespuestaDTO> manejarErrorHttp(
@@ -136,6 +142,60 @@ public class ApiExceptionHandler {
                 estado.value(),
                 estado.getReasonPhrase(),
                 mensaje,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(estado).body(respuesta);
+    }
+
+    /**
+     * Conserva el formato de error de la API para las excepciones
+     * de autorización lanzadas desde los controladores.
+     *
+     * HTTP 403 Forbidden.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorRespuestaDTO> manejarAccesoDenegado(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+
+        HttpStatus estado = HttpStatus.FORBIDDEN;
+
+        ErrorRespuestaDTO respuesta = new ErrorRespuestaDTO(
+                LocalDateTime.now(),
+                estado.value(),
+                estado.getReasonPhrase(),
+                "No tienes permisos para acceder a este recurso.",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(estado).body(respuesta);
+    }
+
+    /**
+     * Garantiza que cualquier excepción no prevista responda
+     * con el mismo formato JSON que el resto de la API.
+     *
+     * HTTP 500 Internal Server Error.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorRespuestaDTO> manejarErrorInesperado(
+            Exception ex,
+            HttpServletRequest request) {
+
+        log.error(
+                "Error inesperado al procesar {}",
+                request.getRequestURI(),
+                ex
+        );
+
+        HttpStatus estado = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        ErrorRespuestaDTO respuesta = new ErrorRespuestaDTO(
+                LocalDateTime.now(),
+                estado.value(),
+                estado.getReasonPhrase(),
+                "Ocurrió un error inesperado. Inténtalo de nuevo más tarde.",
                 request.getRequestURI()
         );
 

@@ -681,6 +681,8 @@ La respuesta paginada contiene `contenido`, `pagina`, `tamano`, `totalElementos`
 
 Todas requieren el encabezado `Authorization: Bearer <token>`.
 
+En todos los endpoints autenticados la identidad del cliente se obtiene del subject del JWT validado (`Authentication#getName()`). Ningún endpoint acepta un `usuarioId` o un correo en el cuerpo o en la query para determinar al propietario de carritos, direcciones u órdenes.
+
 | Método | Ruta | Body / parámetros | Descripción | Respuestas |
 |---|---|---|---|---|
 | `GET` | `/api/carrito` | — | Consulta el carrito del cliente autenticado. | `200`, `401` |

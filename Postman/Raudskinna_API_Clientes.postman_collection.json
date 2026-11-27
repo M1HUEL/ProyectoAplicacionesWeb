@@ -864,7 +864,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"POST /api/checkout responde 201 Created\", function () {",
+                  "pm.test(\"POST /api/ordenes responde 201 Created\", function () {",
                   "    pm.response.to.have.status(201);",
                   "});",
                   "",
@@ -874,6 +874,7 @@
                   "    pm.expect(orden).to.have.property(\"fecha\");",
                   "    pm.expect(orden).to.have.property(\"estado\");",
                   "    pm.expect(orden).to.have.property(\"total\");",
+                  "    pm.collectionVariables.set(\"ordenId\", orden.ordenId);",
                   "});"
                 ]
               }
@@ -883,13 +884,13 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/checkout",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "checkout"
+                "ordenes"
               ]
             }
           },
@@ -940,6 +941,47 @@
           "response": []
         },
         {
+          "name": "Consultar detalle de orden",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/ordenes/{id} responde 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El detalle contiene la orden solicitada\", function () {",
+                  "    const orden = pm.response.json();",
+                  "    pm.expect(orden).to.have.property(\"ordenId\").that.is.a(\"number\");",
+                  "    pm.expect(orden).to.have.property(\"estado\");",
+                  "    pm.expect(orden).to.have.property(\"total\");",
+                  "    pm.expect(orden.detalles).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "{{ordenId}}"
+              ]
+            },
+            "description": "Consulta el detalle de la orden generada por **Confirmar compra (201)**. El identificador se guarda automáticamente en la variable de colección `ordenId`."
+          },
+          "response": []
+        },
+        {
           "name": "Órdenes sin token (401)",
           "event": [
             {
@@ -981,7 +1023,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Checkout con carrito vacío responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema rechaza la compra sin artículos\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.mensaje)\n        .to.eql(\"No se puede confirmar un carrito vacío.\");\n    pm.expect(respuesta.ruta).to.eql(\"/api/checkout\");\n});"
+                  "pm.test(\"Checkout con carrito vacío responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema rechaza la compra sin artículos\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.mensaje)\n        .to.eql(\"No se puede confirmar un carrito vacío.\");\n    pm.expect(respuesta.ruta).to.eql(\"/api/ordenes\");\n});"
                 ]
               }
             }
@@ -990,13 +1032,13 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/checkout",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "checkout"
+                "ordenes"
               ]
             },
             "description": "**Precondición:** El usuario debe estar autenticado mediante JWT y su carrito debe estar vacío.\n\n**Preparación:** Antes de ejecutar esta prueba, consultar `GET /api/carrito` y, si contiene artículos, eliminarlos mediante `DELETE /api/carrito/items/{formatoLibroId}`.\n\n**Resultado esperado:** `400 Bad Request`, con el mensaje `No se puede confirmar un carrito vacío.`\n\n**Nota:** Esta prueba debe ejecutarse por separado de las pruebas que agregan productos al carrito."
@@ -1011,7 +1053,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\npm.test(\"Checkout sin existencias suficientes responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema informa las existencias disponibles\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.error).to.eql(\"Bad Request\");\n    pm.expect(respuesta.mensaje).to.include(\"Existencias insuficientes\");\n    pm.expect(respuesta.mensaje).to.match(/Disponibles:\\s*\\d+/);\n    pm.expect(respuesta.ruta).to.eql(\"/api/checkout\");\n});\n"
+                  "\npm.test(\"Checkout sin existencias suficientes responde 400\", function () {\n    pm.response.to.have.status(400);\n});\n\npm.test(\"El sistema informa las existencias disponibles\", function () {\n    const respuesta = pm.response.json();\n\n    pm.expect(respuesta.estado).to.eql(400);\n    pm.expect(respuesta.error).to.eql(\"Bad Request\");\n    pm.expect(respuesta.mensaje).to.include(\"Existencias insuficientes\");\n    pm.expect(respuesta.mensaje).to.match(/Disponibles:\\s*\\d+/);\n    pm.expect(respuesta.ruta).to.eql(\"/api/ordenes\");\n});\n"
                 ]
               }
             }
@@ -1020,13 +1062,13 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/checkout",
+              "raw": "{{baseUrl}}/api/ordenes",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "checkout"
+                "ordenes"
               ]
             },
             "description": "**Precondición:** El usuario debe estar autenticado mediante JWT y disponer de un carrito con al menos un artículo cuya cantidad solicitada supere las existencias disponibles.\n\n**Preparación:** Consultar las existencias del producto seleccionado y agregar al carrito una cantidad superior a las unidades disponibles. Para esta prueba se utilizó `formatoLibroId: 1`, con 4 unidades en inventario y 5 unidades solicitadas.\n\n**Resultado esperado:** `400 Bad Request`, con un mensaje que indique `Existencias insuficientes` y la cantidad disponible.\n\n**Integridad de los datos:** La operación rechazada no debe generar una orden de compra, descontar inventario ni vaciar el carrito.\n\n**Nota:** Ejecutar esta prueba por separado del checkout exitoso, ya que depende del inventario y del contenido del carrito."
@@ -1034,7 +1076,7 @@
           "response": []
         }
       ],
-      "description": "Confirmación de compra e historial autenticados con JWT.",
+      "description": "Confirmación de compra, historial y detalle de órdenes autenticados con JWT.",
       "auth": {
         "type": "bearer",
         "bearer": [
@@ -1815,6 +1857,10 @@
     {
       "key": "direccionId",
       "value": ""
+    },
+    {
+      "key": "ordenId",
+      "value": "1"
     }
   ]
 }

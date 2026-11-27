@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * realizadas por clientes autenticados.
  */
 @RestController
-@RequestMapping("/api/checkout")
+@RequestMapping("/api/ordenes")
 public class CheckoutRestController {
 
     private final CheckoutService checkoutService;
@@ -31,7 +31,7 @@ public class CheckoutRestController {
     /**
      * Confirma el carrito del cliente autenticado.
      *
-     * POST /api/checkout
+     * POST /api/ordenes
      */
     @PostMapping
     public ResponseEntity<CheckoutResponseDTO> confirmar(

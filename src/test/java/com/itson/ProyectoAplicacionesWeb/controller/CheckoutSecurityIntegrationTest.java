@@ -55,7 +55,7 @@ class CheckoutSecurityIntegrationTest {
             throws Exception {
 
         mockMvc.perform(
-                        post("/api/checkout")
+                        post("/api/ordenes")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"direccionId\":25}")
                 )
@@ -66,7 +66,7 @@ class CheckoutSecurityIntegrationTest {
                         "Se requiere un token JWT válido "
                                 + "para acceder a este recurso."
                 ))
-                .andExpect(jsonPath("$.ruta").value("/api/checkout"));
+                .andExpect(jsonPath("$.ruta").value("/api/ordenes"));
 
         // La petición debe ser bloqueada por Spring Security.
         verifyNoInteractions(checkoutService);
@@ -81,7 +81,7 @@ class CheckoutSecurityIntegrationTest {
             throws Exception {
 
         mockMvc.perform(
-                        post("/api/checkout")
+                        post("/api/ordenes")
                                 .header("Authorization",
                                         "Bearer token.invalido.falso")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -90,7 +90,7 @@ class CheckoutSecurityIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.estado").value(401))
                 .andExpect(jsonPath("$.error").value("Unauthorized"))
-                .andExpect(jsonPath("$.ruta").value("/api/checkout"));
+                .andExpect(jsonPath("$.ruta").value("/api/ordenes"));
 
         verifyNoInteractions(checkoutService);
     }
@@ -131,7 +131,7 @@ class CheckoutSecurityIntegrationTest {
         )).thenReturn(respuestaSimulada);
 
         mockMvc.perform(
-                        post("/api/checkout")
+                        post("/api/ordenes")
                                 .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""

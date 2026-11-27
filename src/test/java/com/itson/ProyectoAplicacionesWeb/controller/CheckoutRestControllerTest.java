@@ -75,7 +75,7 @@ class CheckoutRestControllerTest {
 
         // ACT + ASSERT
         mockMvc.perform(
-                        post("/api/checkout")
+                        post("/api/ordenes")
                                 .principal(autenticacion)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
@@ -90,7 +90,7 @@ class CheckoutRestControllerTest {
                 .andExpect(jsonPath("$.mensaje").value(
                         "Debes seleccionar una dirección de envío."
                 ))
-                .andExpect(jsonPath("$.ruta").value("/api/checkout"));
+                .andExpect(jsonPath("$.ruta").value("/api/ordenes"));
 
         // Comprobar la delegación al servicio.
         verify(checkoutService).confirmarCompra(
@@ -133,7 +133,7 @@ class CheckoutRestControllerTest {
 
         // ACT + ASSERT: ejecutar la solicitud HTTP.
         mockMvc.perform(
-                        post("/api/checkout")
+                        post("/api/ordenes")
                                 .principal(autenticacion)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
@@ -180,7 +180,7 @@ class CheckoutRestControllerTest {
 
         // ACT + ASSERT
         mockMvc.perform(
-                        post("/api/checkout")
+                        post("/api/ordenes")
                                 .principal(autenticacion)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
@@ -196,7 +196,7 @@ class CheckoutRestControllerTest {
                 .andExpect(jsonPath("$.mensaje").value(
                         "Existencias insuficientes. Disponibles: 2"
                 ))
-                .andExpect(jsonPath("$.ruta").value("/api/checkout"));
+                .andExpect(jsonPath("$.ruta").value("/api/ordenes"));
 
         verify(checkoutService).confirmarCompra(
                 correo,

@@ -687,8 +687,9 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 | `POST` | `/api/carrito/items` | JSON: `formatoLibroId`, `cantidad` | Agrega una presentación al carrito. | `200`, `400`, `401`, `404` |
 | `PUT` | `/api/carrito/items/{formatoLibroId}` | JSON: `cantidad` | Modifica la cantidad de un ítem. | `200`, `400`, `401` |
 | `DELETE` | `/api/carrito/items/{formatoLibroId}` | — | Elimina un ítem del carrito. | `200`, `401` |
-| `POST` | `/api/checkout` | — | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401` |
+| `POST` | `/api/ordenes` | JSON: `direccionId`, `metodoPago` | Confirma la compra del carrito y genera la orden. | `201`, `400`, `401`, `409` |
 | `GET` | `/api/ordenes` | — | Consulta el historial de órdenes del cliente autenticado. | `200`, `401` |
+| `GET` | `/api/ordenes/{id}` | `id` en la ruta | Consulta el detalle de una orden propia. | `200`, `401`, `404` |
 | `GET` | `/api/direcciones` | — | Lista las direcciones de envío del cliente autenticado. | `200`, `401` |
 | `GET` | `/api/direcciones/{id}` | `id` en la ruta | Consulta una dirección propia. | `200`, `400`, `401` |
 | `POST` | `/api/direcciones` | JSON: `nombreDestinatario`, `calle`, `numeroExterior`, `colonia`, `codigoPostal`, `ciudad`, `estado`, `pais`; opcionales: `numeroInterior`, `referencias` | Registra una dirección y devuelve `Location`. | `201`, `400`, `401` |

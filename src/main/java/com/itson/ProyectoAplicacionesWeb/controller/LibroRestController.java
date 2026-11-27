@@ -2,6 +2,7 @@
 package com.itson.ProyectoAplicacionesWeb.controller;
 
 import com.itson.ProyectoAplicacionesWeb.dto.FormatoPublicoDTO;
+import com.itson.ProyectoAplicacionesWeb.dto.LibroDetallePublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.dto.LibroPublicoDTO;
 import com.itson.ProyectoAplicacionesWeb.service.LibroService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,11 +42,14 @@ public class LibroRestController {
      * GET /api/libros/{id}
      *
      * @param id identificador del libro.
-     * @return información pública del libro.
+     * La respuesta incluye las presentaciones comerciales con
+     * su identificador, precio y disponibilidad.
+     *
+     * @return detalle público del libro con sus formatos.
      */
     @GetMapping("/{id}")
-    public LibroPublicoDTO consultarLibro(@PathVariable Long id) {
-        return libroService.consultarLibroPublico(id);
+    public LibroDetallePublicoDTO consultarLibro(@PathVariable Long id) {
+        return libroService.consultarDetalleLibroPublico(id);
     }
 
     /**

@@ -667,6 +667,37 @@ public class LibroService {
     }
 
     /**
+     * Consulta el detalle público de un libro junto con sus
+     * presentaciones comerciales.
+     *
+     * Reúne en una sola respuesta la información bibliográfica
+     * y los formatos con precio y disponibilidad, de modo que
+     * el cliente pueda obtener el formatoLibroId sin consultas
+     * adicionales.
+     *
+     * @param id identificador del libro.
+     * @return detalle del libro con sus presentaciones públicas.
+     */
+    @Transactional(readOnly = true)
+    public LibroDetallePublicoDTO consultarDetalleLibroPublico(Long id) {
+
+        LibroPublicoDTO libro = consultarLibroPublico(id);
+
+        List<FormatoPublicoDTO> formatos = listarFormatosPublicos(id);
+
+        return new LibroDetallePublicoDTO(
+                libro.id(),
+                libro.titulo(),
+                libro.sinopsis(),
+                libro.portadaUrl(),
+                libro.categoria(),
+                libro.editorial(),
+                libro.autores(),
+                formatos
+        );
+    }
+
+    /**
      * Recupera las presentaciones comerciales de un libro
      * visible en el catálogo público de Librería Raudskinna.
      *

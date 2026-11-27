@@ -672,7 +672,8 @@ Las rutas administrativas (`/admin/**`), las vistas y las páginas que solo mues
 | `POST` | `/api/auth/registro` | Pública | JSON: `nombre`, `correo`, `contrasena` | Registra un cliente con rol `USER`. | `201`, `400`, `409` |
 | `POST` | `/api/auth/login` | Pública | JSON: `correo`, `contrasena` | Autentica y devuelve un JWT. | `200`, `401` |
 | `GET` | `/api/libros` | Pública | — | Lista los libros activos del catálogo. | `200` |
-| `GET` | `/api/libros/{id}` | Pública | `id` en la ruta | Consulta el detalle de un libro activo. | `200`, `404` |
+| `GET` | `/api/libros/{id}` | Pública | `id` en la ruta | Consulta el detalle de un libro activo, incluyendo `formatos` con `id`, `precio` y `disponible`. | `200`, `404` |
+| `GET` | `/api/libros/{id}/formatos` | Pública | `id` en la ruta | Consulta únicamente las presentaciones comerciales de un libro activo. | `200`, `404` |
 
 ### 12.2. API REST autenticada (JWT)
 
@@ -693,6 +694,8 @@ Todas requieren el encabezado `Authorization: Bearer <token>`.
 | `DELETE` | `/api/direcciones/{id}` | `id` en la ruta | Elimina una dirección propia. | `204`, `400`, `401` |
 
 Todas las operaciones de direcciones reutilizan `DireccionService`, por lo que el propietario se toma del JWT y nunca se acepta un `usuarioId` en la petición. Las respuestas usan `DireccionResponseDTO` y no exponen la entidad JPA ni la relación con el usuario.
+
+El campo `id` de cada elemento de `formatos` es el `formatoLibroId` que debe enviarse a `POST /api/carrito/items`. La disponibilidad informada es informativa; el inventario se valida de nuevo al confirmar la compra.
 
 ### 12.3. Códigos de respuesta
 

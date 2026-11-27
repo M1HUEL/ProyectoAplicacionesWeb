@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.web.cors.CorsConfigurationSource;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -50,10 +51,13 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(
             HttpSecurity http,
-            ObjectMapper objectMapper) throws Exception {
+            ObjectMapper objectMapper,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
 
         http
                 .securityMatcher("/api/**")
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
                 .authorizeHttpRequests(auth -> auth
 
